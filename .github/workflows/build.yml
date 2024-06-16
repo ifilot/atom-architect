@@ -94,6 +94,7 @@ jobs:
         target: 'desktop'
         arch: 'win64_msvc2019_64'
         modules: 'qtcharts'
+        tools: 'tools_ifw'
         cache: true
     - name: Download artifact
       uses: actions/download-artifact@v3
@@ -110,10 +111,7 @@ jobs:
     - name: Copy assets
       run: copy assets\icon\atom_architect_256.ico packaging\packages\com.vendor.product\data\atom_architect_256.ico
     - name: Create installer
-      run: |
-        dir
-        dir ${IQTA_TOOLS}
-        ${IQTA_TOOLS}\QtInstallerFramework\4.7\bin\binarycreator.exe -c config\config.xml -p packages ${{env.PROGNAME}}-installer-win64.exe
+      run: ${{github.workspace}}\..\Qt\Tools\QtInstallerFramework\4.7\bin\binarycreator.exe -c config\config.xml -p packages ${{env.PROGNAME}}-installer-win64.exe
       working-directory: packaging
     - name: Upload installer
       uses: actions/upload-artifact@v3
