@@ -253,7 +253,7 @@ MainWindow::MainWindow() {
     this->statusbar_timer->start(1000);
 
     // set icon
-    setWindowIcon(QIcon(":/assets/icon/veevee_256.ico"));
+    setWindowIcon(QIcon(":/assets/icon/atom_architect_256.ico"));
 
     // allow dropping of media files
     setAcceptDrops(true);
@@ -333,8 +333,8 @@ void MainWindow::about() {
                         PROGRAM_NAME " is dynamically linked to Qt, which is licensed under LGPLv3.\n");
     message_box.setIcon(QMessageBox::Information);
     message_box.setWindowTitle("About " PROGRAM_NAME);
-    message_box.setWindowIcon(QIcon(":/assets/icon/veevee_256.ico"));
-    message_box.setIconPixmap(QPixmap(":/assets/icon/veevee_256.ico"));
+    message_box.setWindowIcon(QIcon(":/assets/icon/atom_architect_256.ico"));
+    message_box.setIconPixmap(QPixmap(":/assets/icon/atom_architect_256.ico"));
     message_box.exec();
 }
 

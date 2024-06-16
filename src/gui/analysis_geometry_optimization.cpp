@@ -21,7 +21,7 @@
 #include "analysis_geometry_optimization.h"
 
 AnalysisGeometryOptimization::AnalysisGeometryOptimization(QWidget* parent) : QWidget(parent) {
-    this->setWindowIcon(QIcon(":/assets/icon/veevee_256.ico"));
+    this->setWindowIcon(QIcon(":/assets/icon/atom_architect_256.ico"));
 
     // add drop down menu
     QMenuBar *menuBar = new QMenuBar;

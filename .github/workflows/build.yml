@@ -1,0 +1,141 @@
+name: build
+
+on:
+  push:
+    branches: [ "master", "develop" ]
+    tags:
+    - 'v*'
+  pull_request:
+    branches: [ "master", "develop" ]
+
+env:
+  BUILD_TYPE: Release
+  PROGNAME: atom-architect
+  EXEC: atom-architect.exe
+
+jobs:
+  #
+  # (optional) Create release
+  #
+  create-release:
+    runs-on: ubuntu-latest
+    permissions: write-all
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        draft: false
+        prerelease: false
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+
+  #
+  # Windows
+  #
+  build-windows:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: '6.7.0'
+        target: 'desktop'
+        arch: 'win64_msvc2019_64'
+        tools: 'tools_opensslv3_x64'
+        cache: true
+    - name: Configure CMake
+      run: cmake -B ${{github.workspace}}/build -S ${{github.workspace}}/src -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+    - name: Build
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+    - name: Upload executable
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{env.EXEC}}
+        path: ${{github.workspace}}/build/Release/${{env.EXEC}}
+  
+  # create packaging metadata
+  prepare-installer-windows:
+    runs-on: ubuntu-latest
+    needs: build-windows
+    permissions: write-all
+    steps:
+    - uses: actions/checkout@v3
+    - name: install dependencies
+      run: sudo apt-get update && sudo apt-get install -y python3 python3-jinja2
+    - name: run packaging script
+      run: python3 packaging/package.py
+    - name: Upload packaging scripts
+      uses: actions/upload-artifact@v3
+      with:
+        name: package-metadata
+        path: |
+          ${{github.workspace}}/packaging/config/config.xml
+          ${{github.workspace}}/packaging/packages/com.vendor.product/meta/installscript.qs
+          ${{github.workspace}}/packaging/packages/com.vendor.product/meta/package.xml
+
+  # create Windows installer
+  create-installer-windows:
+    runs-on: windows-latest
+    needs: prepare-installer-windows
+    permissions: write-all
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: '6.7.0'
+        target: 'desktop'
+        arch: 'win64_msvc2019_64'
+        cache: true
+    - name: Download artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: ${{env.EXEC}}
+        path: packaging/packages/com.vendor.product/data/
+    - name: Download installer metadata
+      uses: actions/download-artifact@v3
+      with:
+        name: package-metadata
+        path: ${{github.workspace}}/packaging
+    - name: Get dependencies
+      run: windeployqt.exe packaging\packages\com.vendor.product\data\${{env.EXEC}} --release --force
+    - name: Copy assets
+      run: copy assets\icon\atom_architect_256.ico packaging\packages\com.vendor.product\data\atom_architect_256.ico
+    - name: Create installer
+      run: ${{github.workspace}}\..\Qt\Tools\QtInstallerFramework\4.8\bin\binarycreator.exe -c config\config.xml -p packages ${{env.PROGNAME}}-installer-win64.exe
+      working-directory: packaging
+    - name: Upload installer
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{env.PROGNAME}}-installer-win64.exe
+        path: packaging/${{env.PROGNAME}}-installer-win64.exe
+
+  # deploy Windows installer
+  deploy-installer-windows:
+    runs-on: ubuntu-latest
+    needs: [create-installer-windows, create-release]
+    permissions: write-all
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+    - name: Download artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: ${{env.PROGNAME}}-installer-win64.exe
+        path: ./
+    - name: Upload Release Asset
+      id: upload-release-asset 
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: ${{env.PROGNAME}}-installer-win64.exe
+        asset_name: ${{env.PROGNAME}}-installer-win64.exe
+        asset_content_type: application/vnd.microsoft.portable-executable

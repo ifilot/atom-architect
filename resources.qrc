@@ -3,9 +3,9 @@
         <file>assets/configuration/atoms.json</file>
         <file>assets/fragments/adsorbates.json</file>
         <file>assets/fragments/hydrocarbons.json</file>
-        <file>assets/icon/veevee_256.ico</file>
-        <file>assets/icon/veevee_256.png</file>
-        <file>assets/icon/veevee_logo.png</file>
+        <file>assets/icon/atom_architect_256.ico</file>
+        <file>assets/icon/atom_architect_256.png</file>
+        <file>assets/icon/atom_architect_logo.png</file>
         <file>assets/icon/two_dimensional_32.png</file>
         <file>assets/icon/anaglyph_red_cyan_32.png</file>
         <file>assets/icon/interlaced_rows_lr_32.png</file>

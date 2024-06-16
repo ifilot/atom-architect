@@ -21,7 +21,7 @@
 #include "analysis_neb.h"
 
 AnalysisNEB::AnalysisNEB(QWidget* parent) : QWidget(parent) {
-    this->setWindowIcon(QIcon(":/assets/icon/veevee_256.ico"));
+    this->setWindowIcon(QIcon(":/assets/icon/atom_architect_256.ico"));
 
     // set layout
     QVBoxLayout *layout = new QVBoxLayout(this);
