@@ -31,10 +31,12 @@
 #include <QFileInfo>
 #include <QMimeData>
 #include <QTimer>
+#include <QStringList>
 
 #include "interface_window.h"
 #include "analysis_geometry_optimization.h"
 #include "analysis_neb.h"
+#include "logwindow.h"
 
 #include "../config.h"
 
@@ -51,11 +53,18 @@ private:
     QLabel* statusbar_projection_icon;
     QTimer* statusbar_timer;
 
+    // storage for log messages
+    std::shared_ptr<QStringList> log_messages;
+
+    // window for log messages
+    std::unique_ptr<LogWindow> log_window;
+
 public:
     /**
      * @brief      Constructs the object.
      */
-    MainWindow();
+    MainWindow(const std::shared_ptr<QStringList> _log_messages,
+               QWidget *parent = nullptr);
 
 protected:
     void moveEvent(QMoveEvent*) Q_DECL_OVERRIDE;
@@ -112,6 +121,11 @@ private slots:
      * @brief      Clear statusbar when timer runs out
      */
     void statusbar_timeout();
+
+    /**
+     * @brief Show an about window
+     */
+    void slot_debug_log();
 
 private:
     /**

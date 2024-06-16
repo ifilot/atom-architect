@@ -20,24 +20,24 @@
 
 #pragma once
 
-#include <algorithm>
-
+#include <QDebug>
 #include <QVector3D>
 #include <QMatrix4x4>
 #include <QGenericMatrix>
 #include <vector>
 #include <QString>
 
+#include "atom_settings.h"
 #include "matrixmath.h"
 #include "atom.h"
 #include "bond.h"
-#include "atom_settings.h"
 #include "fragment.h"
 
 /**
  * @brief      This class describes a chemical structure.
  */
 class Structure {
+
 private:
     std::vector<Atom> atoms;            // atoms in the structure
     std::vector<Bond> bonds;            // bonds between the atoms
@@ -240,6 +240,12 @@ public:
      */
     inline size_t get_nr_bonds() const {
         return this->bonds.size();
+    }
+
+    ~Structure() {
+        qDebug() << "Deleting structure ("
+                 << QString("0x%1").arg((size_t)this, 0, 16)
+                 << "; " << this->atoms.size() << " atoms ).";
     }
 
     //********************************************

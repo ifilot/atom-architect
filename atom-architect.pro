@@ -11,7 +11,9 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 CONFIG += c++17
 
 HEADERS       = src/gui/anaglyph_widget.h \
+                src/atomarchitectapplication.h \
                 src/gui/interface_window.h \
+                src/gui/logwindow.h \
                 src/gui/mainwindow.h \
                 src/gui/shader_program_types.h \
                 src/gui/shader_program.h \
@@ -41,8 +43,10 @@ HEADERS       = src/gui/anaglyph_widget.h \
                 src/config.h
 
 SOURCES       = src/main.cpp \
+                src/atomarchitectapplication.cpp \
                 src/gui/anaglyph_widget.cpp \
                 src/gui/interface_window.cpp \
+                src/gui/logwindow.cpp \
                 src/gui/mainwindow.cpp \
                 src/gui/periodic_table.cpp \
                 src/gui/shader_program.cpp \

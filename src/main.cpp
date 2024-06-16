@@ -20,64 +20,88 @@
 #include <QApplication>
 #include <QSurfaceFormat>
 #include <QStatusBar>
+#include <QStringList>
 #include <QDebug>
 
 #include <iostream>
 #include <iomanip>
 #include <ctime>
+#include <memory>
 
+#include "atomarchitectapplication.h"
 #include "gui/mainwindow.h"
 #include "config.h"
 
+std::shared_ptr<QStringList> log_messages;
+
+/**
+ * @brief custom function for storing and display messages
+ * @param type
+ * @param context
+ * @param msg
+ */
+void message_output(QtMsgType type, const QMessageLogContext &context, const QString &msg) {
+    QString local_msg = QString(msg.toLocal8Bit());
+
+    QDateTime date = QDateTime::currentDateTime();
+    QString fmtime = date.toString("dd.MM.yyyy hh:mm:ss.zzz");
+
+    switch (type) {
+    case QtDebugMsg:
+        log_messages->append(fmtime + " [DEBUG] " + local_msg);
+        std::cout << "[DEBUG] " << msg.toStdString() << std::endl;
+        break;
+    case QtInfoMsg:
+        log_messages->append(fmtime + " [INFO] " + local_msg);
+        std::cout << "[INFO] " << msg.toStdString() << std::endl;
+        break;
+    case QtWarningMsg:
+        log_messages->append(fmtime + " [WARNING] " + local_msg);
+        std::cout << "[WARNING] " << msg.toStdString() << std::endl;
+        break;
+    case QtCriticalMsg:
+        log_messages->append(fmtime + " [CRITICAL] " + local_msg);
+        std::cerr << "[CRITICAL] " << msg.toStdString() << std::endl;
+        break;
+    case QtFatalMsg:
+        log_messages->append(fmtime + " [FATAL] " + local_msg);
+        std::cerr << "[FATAL] " << msg.toStdString() << std::endl;
+        break;
+    }
+}
+
 int main(int argc, char *argv[]) {
-    QApplication app(argc, argv);
+    QCoreApplication::setOrganizationName("IMC");
+    QCoreApplication::setOrganizationDomain("IMC");
+    QCoreApplication::setApplicationName(PROGRAM_NAME);
 
-    // write boot of program
-    std::ofstream lf("execution.log");
-    auto t = std::time(nullptr);
-    auto tm = *std::localtime(&t);
-    lf << "Start application: " << std::put_time(&tm, "%d-%m-%Y %H-%M-%S") << std::endl;
-
-    qDebug() << "Start application";
-
-    // set OpenGL surface settings
-    QSurfaceFormat fmt;
-    fmt.setDepthBufferSize(24);
-    fmt.setSamples(4);
-    fmt.setVersion(3, 3);
-    fmt.setProfile(QSurfaceFormat::CoreProfile);
-    fmt.setSwapBehavior(QSurfaceFormat::DoubleBuffer);
-    QSurfaceFormat::setDefaultFormat(fmt);
-
-    qDebug() << "Creating MainWindow";
+    AtomArchitectApplication app(argc, argv);
+    qRegisterMetaType<std::vector<uint8_t>>("stdvector_uint8_t");
 
     std::unique_ptr<MainWindow> mainWindow;
+    log_messages = std::make_shared<QStringList>();
 
     try {
         // build main window
-        qDebug() << "Creating MainWindow pointer";
-        mainWindow = std::make_unique<MainWindow>();
+        qInstallMessageHandler(message_output);
+        mainWindow = std::make_unique<MainWindow>(log_messages);
         mainWindow->setWindowTitle(QString(PROGRAM_NAME) + " " + QString(PROGRAM_VERSION));
-        mainWindow->resize(1280,640);
-        qDebug() << "Done setting MainWindow pointer";
     } catch(const std::exception& e) {
-        // if any errors are caught in the process of starting up the application,
-        // they will be printed in the execution.log file
-        qDebug() << "Error detected!";
-        qDebug() << e.what();
-        lf << "Error detected!" << std::endl;
-        lf << e.what() << std::endl;
-        auto texc = std::time(nullptr);
-        auto tmexc = *std::localtime(&texc);
-        lf << "Abnormal closing of program: " << std::put_time(&tmexc, "%d-%m-%Y %H-%M-%S") << std::endl;
-        lf.close();
+        std::cerr << "Error detected!" << std::endl;
+        std::cerr << e.what() << std::endl;
+        std::cerr << "Abnormal closing of program." << std::endl;
     }
 
-    qDebug() << "Perform show() call";
     mainWindow->show();
 
-    lf.close();
+    int res = -1;
+    try {
+        res = app.exec();
+    }  catch (const std::exception& e) {
+        std::cerr << "Error detected!" << std::endl;
+        std::cerr << e.what() << std::endl;
+        std::cerr << "Abnormal closing of program." << std::endl;
+    }
 
-    qDebug() << "Launching application";
-    return app.exec();
+    return -1;
 }

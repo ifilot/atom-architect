@@ -40,6 +40,7 @@ add_executable(atom-architect
     src/gui/scene.cpp
     src/gui/analysis_geometry_optimization.cpp
     src/gui/analysis_neb.cpp
+    src/gui/logwindow.cpp
     src/data/atom_settings.cpp
     src/data/atom.cpp
     src/data/bond.cpp
@@ -50,6 +51,7 @@ add_executable(atom-architect
     src/data/structure_loader.cpp
     src/data/structure_saver.cpp
     src/data/structure_operator.cpp
+    src/atomicarchitectapplication.cpp
     resources.qrc
 )
 

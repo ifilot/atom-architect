@@ -40,10 +40,14 @@ AnaglyphWidget::AnaglyphWidget(QWidget *parent)
     // set default matrix orientation on start-up
     this->reset_matrices();
 
+    // create a pointer to user actions
     this->user_action = std::make_shared<UserAction>(this->scene);
+
+    // connect to user actions
     connect(this->user_action.get(), SIGNAL(request_update()), this, SLOT(call_update()));
     connect(this->user_action.get(), SIGNAL(transmit_message(const QString&)), this, SLOT(transmit_message(const QString&)));
 
+    // enable mouse tracking
     this->setMouseTracking(true);
 }
 

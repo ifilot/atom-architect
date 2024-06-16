@@ -92,6 +92,11 @@ InterfaceWindow::InterfaceWindow(MainWindow *mw)
     // set default fragment
     qDebug() << "Set default fragment";
     this->anaglyph_widget->get_user_action()->set_fragment(this->structure_info_widget->get_fragment_selector()->get_current_fragment());
+
+    // connect structure stack functions
+    connect(this->anaglyph_widget->get_user_action().get(), SIGNAL(signal_push_structure()), this, SLOT(push_structure()));
+    connect(this->anaglyph_widget->get_user_action().get(), SIGNAL(signal_increment_structure_stack_pointer()), this, SLOT(increment_structure_stack_pointer()));
+    connect(this->anaglyph_widget->get_user_action().get(), SIGNAL(signal_decrement_structure_stack_pointer()), this, SLOT(decrement_structure_stack_pointer()));
 }
 
 /**
@@ -140,6 +145,11 @@ void InterfaceWindow::open_file(const QString& filename) {
         QMessageBox::critical(this, tr("Exception encountered"), tr(e.what()) );
         return;
     }
+
+    // clean the structure stack and set a new structure
+    this->structure_stack.clear();
+    this->structure_stack.push_back(structure);
+    this->structure_stack_pointer = 0;
 
     emit(new_file_loaded());
     this->anaglyph_widget->set_structure(structure);
@@ -235,4 +245,55 @@ void InterfaceWindow::update_interaction_label(const QString& text) {
  */
 void InterfaceWindow::update_selection_label(const QString& text) {
     this->selection_label->setText(text);
+}
+
+/**
+ * @brief Grab the latest structure and push it to the stack and
+ *        create a new copy on the stack
+ */
+void InterfaceWindow::push_structure() {
+    qDebug() << "Pushing latest structure to the stack ("
+             << (size_t)this->structure_stack.back().get()
+             << ")";
+
+    // destroy everything "beyond" the stack pointer
+    this->structure_stack.resize(this->structure_stack_pointer+1);
+
+    this->structure_stack.push_back(
+        std::make_shared<Structure>(*this->structure_stack.back()) // creates a copy
+    );
+
+    // increment the structure stack pointer
+    this->structure_stack_pointer++;
+
+    this->anaglyph_widget->set_structure_conservative(this->structure_stack.back());
+    qDebug() << this->structure_stack.size() << ": " << (size_t)this->structure_stack.back().get();
+}
+
+/**
+ * @brief Increment the stack pointer
+ */
+void InterfaceWindow::increment_structure_stack_pointer() {
+    if(this->structure_stack_pointer < (this->structure_stack.size() - 1)) {
+        this->structure_stack_pointer++;
+        qDebug() << "Incrementing stack pointer";
+        qDebug() << "New pointer value: " << this->structure_stack_pointer;
+        this->anaglyph_widget->set_structure_conservative(this->structure_stack[this->structure_stack_pointer]);
+    } else {
+        qDebug() << "Ignoring stack pointer request; structure stack exchausted.";
+    }
+}
+
+/**
+ * @brief Decrement the stack pointer
+ */
+void InterfaceWindow::decrement_structure_stack_pointer() {
+    if(this->structure_stack_pointer > 0) {
+        this->structure_stack_pointer--;
+        qDebug() << "Decrementing stack pointer";
+        qDebug() << "New pointer value: " << this->structure_stack_pointer;
+        this->anaglyph_widget->set_structure_conservative(this->structure_stack[this->structure_stack_pointer]);
+    } else {
+        qDebug() << "Ignoring stack pointer request; structure stack exchausted.";
+    }
 }
