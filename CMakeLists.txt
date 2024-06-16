@@ -23,7 +23,7 @@ add_compile_definitions(GIT_HASH="${GIT_HASH}")
 # Find Qt6 packages
 find_package(Qt6 REQUIRED COMPONENTS Widgets Charts)
 
-add_executable(atom_architect
+add_executable(atom-architect
     src/main.cpp
     src/gui/anaglyph_widget.cpp
     src/gui/interface_window.cpp
@@ -55,7 +55,7 @@ add_executable(atom_architect
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     set(MACOSX TRUE)
-    set_target_properties(atom_architect PROPERTIES
+    set_target_properties(atom-architect PROPERTIES
         MACOSX_BUNDLE TRUE
     )
 endif()
@@ -63,9 +63,9 @@ endif()
 include_directories("src/vendor/eigen-3.4.0"
                     "src/vendor/glm-1.0.1")
 
-target_link_libraries(atom_architect PRIVATE Qt6::Core Qt6::Widgets Qt6::Charts)
+target_link_libraries(atom-architect PRIVATE Qt6::Core Qt6::Widgets Qt6::Charts)
 
-set_target_properties(atom_architect PROPERTIES
+set_target_properties(atom-architect PROPERTIES
     WIN32_EXECUTABLE ON
     MACOSX_BUNDLE ON
 )

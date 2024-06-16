@@ -48,10 +48,10 @@ jobs:
         version: '6.7.0'
         target: 'desktop'
         arch: 'win64_msvc2019_64'
-        tools: 'tools_opensslv3_x64'
+        modules: 'qtcharts'
         cache: true
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -S ${{github.workspace}}/src -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+      run: cmake -B ${{github.workspace}}/build -S ${{github.workspace}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
     - name: Upload executable
@@ -93,6 +93,8 @@ jobs:
         version: '6.7.0'
         target: 'desktop'
         arch: 'win64_msvc2019_64'
+        modules: 'qtcharts'
+        tools: 'tools_ifw'
         cache: true
     - name: Download artifact
       uses: actions/download-artifact@v3
@@ -109,7 +111,7 @@ jobs:
     - name: Copy assets
       run: copy assets\icon\atom_architect_256.ico packaging\packages\com.vendor.product\data\atom_architect_256.ico
     - name: Create installer
-      run: ${{github.workspace}}\..\Qt\Tools\QtInstallerFramework\4.8\bin\binarycreator.exe -c config\config.xml -p packages ${{env.PROGNAME}}-installer-win64.exe
+      run: ${{github.workspace}}\..\Qt\Tools\QtInstallerFramework\4.7\bin\binarycreator.exe -c config\config.xml -p packages ${{env.PROGNAME}}-installer-win64.exe
       working-directory: packaging
     - name: Upload installer
       uses: actions/upload-artifact@v3
