@@ -48,7 +48,7 @@ jobs:
         version: '6.7.0'
         target: 'desktop'
         arch: 'win64_msvc2019_64'
-        tools: 'tools_opensslv3_x64'
+        modules: 'qtcharts'
         cache: true
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build -S ${{github.workspace}}/src -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
@@ -93,6 +93,7 @@ jobs:
         version: '6.7.0'
         target: 'desktop'
         arch: 'win64_msvc2019_64'
+        modules: 'qtcharts'
         cache: true
     - name: Download artifact
       uses: actions/download-artifact@v3
