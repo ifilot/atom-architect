@@ -109,4 +109,8 @@ void ShaderProgram::add_uniforms() {
         this->uniforms.emplace("regular_texture", this->m_program->uniformLocation("regular_texture"));
         this->uniforms.emplace("silhouette_texture", this->m_program->uniformLocation("silhouette_texture"));
     }
+
+    if (this->type == ShaderProgramType::SimpleCanvasShader) {
+        this->uniforms.emplace("regular_texture", this->m_program->uniformLocation("regular_texture"));
+    }
 }

@@ -120,17 +120,14 @@ void AnaglyphWidget::initializeGL() {
  * @brief      Render scene
  */
 void AnaglyphWidget::paintGL() {
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_CULL_FACE);
-    glEnable(GL_BLEND);
-
+    // first perform a structure drawing call
     if (this->stereographic_type_name == "NONE") {
         this->paint_regular();
     } else {
         this->paint_stereographic();
     }
 
-    // paint coordinate axes on top of screen
+    // paint coordinate axes to its own framebuffer
     if(this->flag_axis_enabled) {
         this->structure_renderer->draw_coordinate_axes();
     }
@@ -403,6 +400,7 @@ void AnaglyphWidget::load_shaders() {
 
     // load shader for the Canvas
     shader_manager->create_shader_program("canvas_shader", ShaderProgramType::CanvasShader, ":/assets/shaders/stereo.vs", ":/assets/shaders/canvas.fs");
+    shader_manager->create_shader_program("simple_canvas_shader", ShaderProgramType::SimpleCanvasShader, ":/assets/shaders/stereo.vs", ":/assets/shaders/simplecanvas.fs");
 }
 
 /**

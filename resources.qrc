@@ -56,5 +56,6 @@
         <file>assets/themes/darkorange/icons/checkbox.png</file>
         <file>assets/themes/darkorange/icons/down_arrow.png</file>
         <file>assets/themes/darkorange/icons/handle.png</file>
+        <file>assets/shaders/simplecanvas.fs</file>
     </qresource>
 </RCC>

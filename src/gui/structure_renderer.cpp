@@ -105,16 +105,17 @@ void StructureRenderer::draw_coordinate_axes() {
     // set view port, projection and view matrices
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
     f->glViewport(0.75f * this->scene->canvas_width, 0.0f, this->scene->canvas_width * 0.25f, this->scene->canvas_height * 0.25f);
+    f->glEnable(GL_DEPTH_TEST);
+    f->glEnable(GL_CULL_FACE);
 
     QMatrix4x4 projection_ortho;
     projection_ortho.setToIdentity();
     float ratio = (float)this->scene->canvas_height / (float)this->scene->canvas_width;
     static const float sz = 25.0f;
-    projection_ortho.ortho(-sz, sz, -sz * ratio, sz * ratio, 0.1f, 1000.0f);
+    projection_ortho.ortho(-sz, sz, -sz * ratio, sz * ratio, -1000.0f, 1000.0f);
 
     QMatrix4x4 model, view, mvp;
     view.lookAt(QVector3D(0.0, -10.0, 0.0), QVector3D(0.0, 0.0, 0.0), QVector3D(0.0, 0.0, 1.0));
-    QMatrix4x4 axis_rotation;
     model.setToIdentity();
 
     // set general properties
@@ -126,6 +127,7 @@ void StructureRenderer::draw_coordinate_axes() {
     // *******************
 
     // z-axis
+    QMatrix4x4 axis_rotation;
     axis_rotation.setToIdentity();
     model = this->scene->arcball_rotation * this->scene->rotation_matrix * axis_rotation;
     mvp = projection_ortho * view * model;
