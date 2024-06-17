@@ -51,7 +51,7 @@ add_executable(atom-architect
     src/data/structure_loader.cpp
     src/data/structure_saver.cpp
     src/data/structure_operator.cpp
-    src/atomicarchitectapplication.cpp
+    src/atomarchitectapplication.cpp
     resources.qrc
 )
 
