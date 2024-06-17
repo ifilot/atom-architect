@@ -91,3 +91,6 @@ unix {
 }
 
 RESOURCES += resources.qrc
+
+DISTFILES += \
+    assets/shaders/simplecanvas.vs

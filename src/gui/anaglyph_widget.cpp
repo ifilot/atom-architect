@@ -120,6 +120,16 @@ void AnaglyphWidget::initializeGL() {
  * @brief      Render scene
  */
 void AnaglyphWidget::paintGL() {
+    // paint coordinate axes to its own framebuffer
+    if(this->flag_axis_enabled) {
+        glBindFramebuffer(GL_FRAMEBUFFER, this->framebuffers[FrameBuffer::COORDINATE_AXES]);
+        glEnable(GL_DEPTH_TEST);
+        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        this->structure_renderer->draw_coordinate_axes();
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+
     // first perform a structure drawing call
     if (this->stereographic_type_name == "NONE") {
         this->paint_regular();
@@ -127,9 +137,25 @@ void AnaglyphWidget::paintGL() {
         this->paint_stereographic();
     }
 
-    // paint coordinate axes to its own framebuffer
     if(this->flag_axis_enabled) {
-        this->structure_renderer->draw_coordinate_axes();
+        glDisable(GL_DEPTH_TEST);
+        glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
+        glBlendEquation(GL_FUNC_ADD);
+
+        ShaderProgram *shader = this->shader_manager->get_shader_program("simple_canvas_shader");
+        shader->bind();
+
+        // update screen coordinates
+        shader->set_uniform("regular_texture", 0);
+
+        // draw quad on screen
+        this->quad_vao.bind();
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, this->texture_color_buffers[FrameBuffer::COORDINATE_AXES]);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        this->quad_vao.release();
+
+        shader->release();
     }
 }
 
@@ -400,7 +426,7 @@ void AnaglyphWidget::load_shaders() {
 
     // load shader for the Canvas
     shader_manager->create_shader_program("canvas_shader", ShaderProgramType::CanvasShader, ":/assets/shaders/stereo.vs", ":/assets/shaders/canvas.fs");
-    shader_manager->create_shader_program("simple_canvas_shader", ShaderProgramType::SimpleCanvasShader, ":/assets/shaders/stereo.vs", ":/assets/shaders/simplecanvas.fs");
+    shader_manager->create_shader_program("simple_canvas_shader", ShaderProgramType::SimpleCanvasShader, ":/assets/shaders/simplecanvas.vs", ":/assets/shaders/simplecanvas.fs");
 }
 
 /**
@@ -432,15 +458,15 @@ void AnaglyphWidget::build_framebuffers() {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     // create screen quad vao
-    // TODO maybe move this away from here?
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
 
-    float quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
-        // positions   // texCoords
+    // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
+    float quadvecs[] = {
+        // positions
         -1.0f,  1.0f,  0.0f, 1.0f,
         -1.0f, -1.0f,  0.0f, 0.0f,
          1.0f, -1.0f,  1.0f, 0.0f,
-
+        // texCoords
         -1.0f,  1.0f,  0.0f, 1.0f,
          1.0f, -1.0f,  1.0f, 0.0f,
          1.0f,  1.0f,  1.0f, 1.0f
@@ -452,7 +478,7 @@ void AnaglyphWidget::build_framebuffers() {
     this->quad_vbo.create();
     this->quad_vbo.setUsagePattern(QOpenGLBuffer::StaticDraw);
     this->quad_vbo.bind();
-    this->quad_vbo.allocate(quadVertices, sizeof(quadVertices));
+    this->quad_vbo.allocate(quadvecs, sizeof(quadvecs));
     f->glEnableVertexAttribArray(0);
     f->glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
     f->glEnableVertexAttribArray(1);

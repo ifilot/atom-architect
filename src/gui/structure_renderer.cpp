@@ -104,7 +104,7 @@ void StructureRenderer::draw_coordinate_axes() {
 
     // set view port, projection and view matrices
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
-    f->glViewport(0.75f * this->scene->canvas_width, 0.0f, this->scene->canvas_width * 0.25f, this->scene->canvas_height * 0.25f);
+    //f->glViewport(0.75f * this->scene->canvas_width, 0.0f, this->scene->canvas_width * 0.25f, this->scene->canvas_height * 0.25f);
     f->glEnable(GL_DEPTH_TEST);
     f->glEnable(GL_CULL_FACE);
 
