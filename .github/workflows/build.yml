@@ -42,6 +42,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+    - name: Install packages
+      run: |
+        apt update && apt install -y qt6-tools-dev qt6-base-dev build-essential cmake libeigen3-dev libglm-dev
     - name: Configure CMake
       run: |
         mkdir build
