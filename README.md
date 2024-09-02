@@ -39,9 +39,7 @@ libqt6gui6 \
 libqt6opengl6-dev \
 libgl1-mesa-dev \
 build-essential \
-cmake \
-libeigen3-dev \
-libglm-dev
+cmake
 ```
 
 After having cloned this repository and starting at its root folder, execute
@@ -67,4 +65,6 @@ sudo cp -v ./atom_architect /usr/local/bin/atom_architect
 Atom Architect depends on [GLM](https://github.com/g-truc/glm) and
 [Eigen3](https://eigen.tuxfamily.org/index.php?title=Main_Page). Both are
 header-only C++ libraries and are for convenience purposes added to this
+repository. This implies that compilation of Atom Architect will not use your
+system-installed version of GLM and Eigen3, but use the one provided in this
 repository.
