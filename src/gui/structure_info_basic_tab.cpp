@@ -63,7 +63,7 @@ void StructureInfoBasicTab::update_data() {
     MatrixUnitcell unitcell = this->structure->get_unitcell();
     QString unitcell_str = "<pre>";
     for(unsigned int i=0; i<3; i++) {
-        unitcell_str += tr("%1  %2  %3").arg(unitcell(i,0)).arg(unitcell(i,1)).arg(unitcell(i,2));
+        unitcell_str += tr("%1  %2  %3\n").arg(unitcell(i,0),12).arg(unitcell(i,1),12).arg(unitcell(i,2),12);
     }
     unitcell_str += "</pre>";
     this->get_label("unitcell_dimensions")->setText(unitcell_str);

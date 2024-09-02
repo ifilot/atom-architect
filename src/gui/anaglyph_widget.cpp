@@ -527,7 +527,7 @@ int AnaglyphWidget::get_atom_raycast(const QVector3D& ray_origin, const QVector3
         model.setToIdentity();
         model *= this->scene->rotation_matrix;
         model.translate(vec_ctr);
-        QVector3D pos = model.map(atom.get_pos());
+        QVector3D pos = model.map(atom.get_pos_qtvec());
 
         float radius = AtomSettings::get().get_atom_radius_from_elnr(atom.atnr);
         float b = QVector3D::dotProduct(ray_vector, ray_origin - pos);
@@ -558,7 +558,7 @@ int AnaglyphWidget::get_atom_raycast(const QVector3D& ray_origin, const QVector3
         model.setToIdentity();
         model *= this->scene->arcball_rotation * this->scene->rotation_matrix;
         model.translate(vec_ctr);
-        QVector3D pos = model.map(atom.get_pos());
+        QVector3D pos = model.map(atom.get_pos_qtvec());
 
         float radius = AtomSettings::get().get_atom_radius_from_elnr(atom.atnr);
         float b = QVector3D::dotProduct(ray_vector, ray_origin - pos);

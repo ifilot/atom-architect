@@ -196,7 +196,7 @@ QVector3D Structure::get_largest_distance() const {
 
     #pragma omp parallel for
     for(unsigned int i=0; i<this->atoms.size(); i++) {
-        float vdist = this->atoms[i].get_pos().lengthSquared();
+        float vdist = this->atoms[i].get_pos_qtvec().lengthSquared();
 
         if(vdist > dist) {
             #pragma omp critical
@@ -207,7 +207,7 @@ QVector3D Structure::get_largest_distance() const {
         }
     }
 
-    return this->atoms[idx].get_pos();
+    return this->atoms[idx].get_pos_qtvec();
 }
 
 /**
@@ -286,9 +286,9 @@ QVector3D Structure::get_position_primary_buffer() const {
     QVector3D ctr(0.0, 0.0, 0.0);
     for(unsigned int idx : this->primary_buffer) {
         if(idx >= this->get_nr_atoms()) {
-            ctr += this->atoms_expansion[idx - this->get_nr_atoms()].get_pos();
+            ctr += this->atoms_expansion[idx - this->get_nr_atoms()].get_pos_qtvec();
         } else {
-            ctr += this->atoms[idx].get_pos();
+            ctr += this->atoms[idx].get_pos_qtvec();
         }
     }
     ctr /= (float)this->primary_buffer.size();
@@ -309,9 +309,9 @@ QVector3D Structure::get_position_secondary_buffer() const {
     QVector3D ctr(0.0, 0.0, 0.0);
     for(unsigned int idx : this->secondary_buffer) {
         if(idx >= this->get_nr_atoms()) {
-            ctr += this->atoms_expansion[idx - this->get_nr_atoms()].get_pos();
+            ctr += this->atoms_expansion[idx - this->get_nr_atoms()].get_pos_qtvec();
         } else {
-            ctr += this->atoms[idx].get_pos();
+            ctr += this->atoms[idx].get_pos_qtvec();
         }
     }
     ctr /= (float)this->secondary_buffer.size();
@@ -511,7 +511,7 @@ void Structure::build_expansion() {
  */
 void Structure::transpose_atom(unsigned int idx, const QMatrix4x4& transposition) {
     QMatrix4x4 unitcellmatrix(this->get_matrix3x3(this->unitcell));
-    auto pos = this->atoms[idx].get_pos();
+    auto pos = this->atoms[idx].get_pos_qtvec();
     QVector3D newpos = transposition.map(pos);
 
     // convert to direct coordinates and replace atom within the unitcell

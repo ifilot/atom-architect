@@ -42,20 +42,20 @@ public:
     Atom(unsigned int _atnr, double _x, double _y, double _z, unsigned int _atomtype = (1 << ATOM_CENTRAL_UNITCELL));
 
     /**
-     * @brief      Gets the position.
+     * @brief      Gets the position as a QVector3D vector.
      *
      * @return     The position.
      */
-    inline QVector3D get_pos() const {
+    inline QVector3D get_pos_qtvec() const {
         return QVector3D(this->x, this->y, this->z);
     }
 
     /**
-     * @brief      Gets the position.
+     * @brief      Gets the position as an Eigen-type vector.
      *
      * @return     The position.
      */
-    inline VectorPosition get_vector_pos() const {
+    inline VectorPosition get_pos_eigen() const {
         VectorPosition v;
         v[0] = this->x;
         v[1] = this->y;

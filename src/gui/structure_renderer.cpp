@@ -239,7 +239,7 @@ void StructureRenderer::draw_atoms(const std::vector<Atom>& atoms, const Structu
         if(atom.select == 1) {
             model *= this->scene->transposition;
         }
-        model.translate(atom.get_pos());
+        model.translate(atom.get_pos_qtvec());
         model.scale(radius);
 
         // build model - view - projection matrix
@@ -311,7 +311,7 @@ void StructureRenderer::draw_atoms_silhouette(const std::vector<Atom>& atoms, co
         if(atom.select == 1) {
             model *= this->scene->transposition;
         }
-        model.translate(atom.get_pos());
+        model.translate(atom.get_pos_qtvec());
         model.scale(radius);
 
         // build model - view - projection matrix
@@ -360,7 +360,7 @@ void StructureRenderer::draw_bonds(const Structure* structure) {
         model.setToIdentity();
         model *= (this->scene->arcball_rotation) * (this->scene->rotation_matrix);
         model.translate(ctr_vector);        // position the center of the unitcell at the origin
-        model.translate(bond.atom1.get_pos());
+        model.translate(bond.atom1.get_pos_qtvec());
         model.rotate(qRadiansToDegrees(bond.angle), bond.axis);
         model.scale(QVector3D(0.15, 0.15, bond.length * 0.5));
 
@@ -383,7 +383,7 @@ void StructureRenderer::draw_bonds(const Structure* structure) {
         model.setToIdentity();
         model *= (this->scene->arcball_rotation) * (this->scene->rotation_matrix);
         model.translate(ctr_vector);        // position the center of the unitcell at the origin
-        model.translate(bond.atom1.get_pos() + (bond.direction * bond.length * 0.5));
+        model.translate(bond.atom1.get_pos_qtvec() + (bond.direction * bond.length * 0.5));
         model.rotate(qRadiansToDegrees(bond.angle), bond.axis);
         model.scale(QVector3D(0.15, 0.15, bond.length * 0.5));
 
