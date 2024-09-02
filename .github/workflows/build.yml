@@ -80,7 +80,7 @@ jobs:
   #
   # Debian 11
   #
-  build-debian12:
+  build-debian11:
     runs-on: ubuntu-latest
     container:
       image: debian:11
