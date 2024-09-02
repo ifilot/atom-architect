@@ -32,6 +32,17 @@ void StructureSaver::save_poscar(const Structure* structure, const std::string& 
     const std::string path = filename;
     std::ofstream outfile(path.c_str());
 
+    // Prepare numeric output format; everything is direct via the "numform" variable, which
+    // specifies how floating point numbers should be outputted. Numform is used to generate
+    // 'sprintf-strings', which in turn are used to produce the atomic coordinate and unit
+    // cell representations in the POSCAR file.
+    char buf[250]; // buffer used for sprintf
+    static const char numform[] = "%12.6f";
+    sprintf(buf, "  %s  %s  %s\n", numform, numform, numform);
+    std::string output3f(buf);
+    sprintf(buf, "  %s  %s  %s  %%c  %%c  %%c\n", numform, numform, numform);
+    std::string output3f3b(buf);
+
     // sort by atom types
     std::vector<unsigned int> elnrs;
     std::vector<unsigned int> nrs;
@@ -62,7 +73,12 @@ void StructureSaver::save_poscar(const Structure* structure, const std::string& 
         // unitcell
         MatrixUnitcell unitcell = structure->get_unitcell();
         for(unsigned int i=0; i<3; i++) {
-            outfile << (QString("  %1  %2  %3\n").arg(unitcell(i,0)).arg(unitcell(i,1)).arg(unitcell(i,2))).toStdString();
+            sprintf(buf, output3f.c_str(),
+                    unitcell(i,0),
+                    unitcell(i,1),
+                    unitcell(i,2)
+            );
+            outfile << std::string(buf);
         }
 
         // elements
@@ -100,18 +116,24 @@ void StructureSaver::save_poscar(const Structure* structure, const std::string& 
         for(unsigned int i=0; i<elnrs.size(); i++) {
             for(const Atom& atom : structure->get_atoms()) {
                 if(atom.atnr == elnrs[i]) {
-                    VectorPosition directpos = unitcell.inverse().transpose() * atom.get_vector_pos();
+                    VectorPosition directpos = unitcell.inverse().transpose() * atom.get_pos_eigen();
                     if(flag_selective_dynamics) {
-                        outfile << (QString("  %1  %2  %3  %4  %5  %6\n")
-                                    .arg(directpos[0])
-                                    .arg(directpos[1])
-                                    .arg(directpos[2])
-                                    .arg(atom.selective_dynamics[0] ? "T" : "F")
-                                    .arg(atom.selective_dynamics[1] ? "T" : "F")
-                                    .arg(atom.selective_dynamics[2] ? "T" : "F")
-                        ).toStdString();
+                        sprintf(buf, output3f3b.c_str(),
+                            directpos[0],
+                            directpos[1],
+                            directpos[2],
+                            atom.selective_dynamics[0] ? 'T' : 'F',
+                            atom.selective_dynamics[1] ? 'T' : 'F',
+                            atom.selective_dynamics[2] ? 'T' : 'F'
+                        );
+                        outfile << std::string(buf);
                     } else {
-                        outfile << QString("  %1  %2  %3\n").arg(directpos[0]).arg(directpos[1]).arg(directpos[2]).toStdString();
+                        sprintf(buf, output3f.c_str(),
+                                directpos[0],
+                                directpos[1],
+                                directpos[2]
+                        );
+                        outfile << std::string(buf);
                     }
                 }
             }

@@ -23,7 +23,7 @@
 Bond::Bond(const Atom& _atom1, const Atom& _atom2) :
 atom1(_atom1),
 atom2(_atom2) {
-    auto v = this->atom2.get_pos() - this->atom1.get_pos();
+    auto v = this->atom2.get_pos_qtvec() - this->atom1.get_pos_qtvec();
 
     this->direction = v.normalized();
     this->length = v.length();

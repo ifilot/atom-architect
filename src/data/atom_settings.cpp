@@ -71,8 +71,6 @@ AtomSettings::AtomSettings() {
  * @brief      Load the JSON file and parse its contents
  */
 void AtomSettings::load() {
-    qDebug() << "Loading AtomSettings object";
-
     // try to locate atoms.json
     QFile f(":/assets/configuration/atoms.json");
     if (!f.exists()) {

@@ -105,8 +105,6 @@ void FragmentSelector::add_fragment(const Fragment& fragment) {
  * @param[in]  filename  The filename
  */
 void FragmentSelector::add_fragments_from_file(const QString& filename) {
-    qDebug() << "Loading fragments: " << filename;
-
     // try to locate atoms.json
     QFile f(":/assets/fragments/" + filename);
     if (!f.exists()) {
@@ -133,12 +131,8 @@ void FragmentSelector::add_fragments_from_file(const QString& filename) {
         QJsonValue value = fragments.value(key);
         Fragment fragment(key.toStdString(), root["fragments"][key]["label"].toString());
 
-        qDebug() << key;
-
         QJsonArray atoms = root["fragments"][key]["atoms"].toArray();
         foreach(const auto& v, atoms) {
-            qDebug() << v;
-
             unsigned int elnr = AtomSettings::get().get_atom_elnr(v[0].toString().toStdString());
             double x = v[1].toDouble();
             double y = v[2].toDouble();
@@ -151,7 +145,6 @@ void FragmentSelector::add_fragments_from_file(const QString& filename) {
         if(root["fragments"][key]["synonyms"].toArray().size() != 0) {
             QJsonArray synonyms = root["fragments"][key]["synonyms"].toArray();
             foreach(const auto& v, synonyms) {
-                qDebug() << v.toString();
                 fragment.label = v.toString();
                 this->add_fragment(fragment);
             }

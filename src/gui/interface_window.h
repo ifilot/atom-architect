@@ -67,6 +67,9 @@ private:
     StructureLoader structure_loader;
     StructureSaver structure_saver;
 
+    size_t structure_stack_pointer = 0;
+    std::vector<std::shared_ptr<Structure>> structure_stack;
+
 public:
     /**
      * @brief      Constructs the object.
@@ -179,6 +182,22 @@ private slots:
     void propagate_message_statusbar(const QString& message) {
         emit(signal_message_statusbar(message));
     }
+
+    /**
+     * @brief Grab the latest structure and push it to the stack and
+     *        create a new copy on the stack
+     */
+    void push_structure();
+
+    /**
+     * @brief Increment the stack pointer
+     */
+    void increment_structure_stack_pointer();
+
+    /**
+     * @brief Decrement the stack pointer
+     */
+    void decrement_structure_stack_pointer();
 
 signals:
     void new_file_loaded();

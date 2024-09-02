@@ -102,6 +102,9 @@ public:
      */
     void handle_left_mouse_click();
 
+    /**
+     * @brief Deselect all atoms
+     */
     void deselect();
 
     /**
@@ -177,6 +180,24 @@ signals:
      * @brief      Update structure information
      */
     void signal_update_structure_info();
+
+    /**
+     * @brief Provides a signal that the old structure should be
+     *        stored and a new structure should be pushed to the
+     *        structure stack. The structure stack pointer is
+     *        decremented accordingly.
+     */
+    void signal_push_structure();
+
+    /**
+     * @brief Increment the structure stack pointer
+     */
+    void signal_increment_structure_stack_pointer();
+
+    /**
+     * @brief Decrement the structure stack pointer
+     */
+    void signal_decrement_structure_stack_pointer();
 
 private:
     /**

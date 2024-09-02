@@ -58,6 +58,7 @@ void UserAction::handle_action_movement() {
         emit request_update();
     } else {
         this->movement_action = MovementAction::MOVEMENT_NONE;
+        emit(signal_push_structure());
         this->structure->commit_transposition(this->scene->transposition);
         this->scene->transposition.setToIdentity();
         emit transmit_message("");
@@ -81,6 +82,7 @@ void UserAction::handle_action_rotation() {
         emit request_update();
     } else {
         this->rotation_action = RotationAction::ROTATION_NONE;
+        emit(signal_push_structure());
         this->structure->commit_transposition(this->scene->transposition);
         this->scene->transposition.setToIdentity();
         emit transmit_message("");
@@ -121,102 +123,97 @@ void UserAction::handle_key(int key, Qt::KeyboardModifiers modifiers) {
 
     // align movement
     if(this->movement_action != MovementAction::MOVEMENT_NONE) {
-        if(key == Qt::Key_X) {
-            this->movement_action = MovementAction::MOVEMENT_X;
-            emit transmit_message("<b>Move atoms</b> | X-alignment");
-            emit request_update();
-            return;
+        switch(key) {
+            case Qt::Key_X:
+                this->movement_action = MovementAction::MOVEMENT_X;
+                emit transmit_message("<b>Move atoms</b> | X-alignment");
+            break;
+            case Qt::Key_Y:
+                this->movement_action = MovementAction::MOVEMENT_Y;
+                emit transmit_message("<b>Move atoms</b> | Y-alignment");
+            break;
+            case Qt::Key_Z:
+                this->movement_action = MovementAction::MOVEMENT_Z;
+                emit transmit_message("<b>Move atoms</b> | Z-alignment");
+            break;
+            case Qt::Key_F:
+                if(this->structure->get_nr_atoms_secondary_buffer() == 0) {
+                    return;
+                }
+                this->movement_action = MovementAction::MOVEMENT_FOCUS;
+                emit transmit_message("<b>Move atoms<b> | Focus alignment");
+            break;
         }
 
-        if(key == Qt::Key_Y) {
-            this->movement_action = MovementAction::MOVEMENT_Y;
-            emit transmit_message("<b>Move atoms</b> | Y-alignment");
-            emit request_update();
-            return;
-        }
-
-        if(key == Qt::Key_Z) {
-            this->movement_action = MovementAction::MOVEMENT_Z;
-            emit transmit_message("<b>Move atoms</b> | Z-alignment");
-            emit request_update();
-            return;
-        }
-
-        if(key == Qt::Key_F) {
-            if(this->structure->get_nr_atoms_secondary_buffer() == 0) {
-                return;
-            }
-            this->movement_action = MovementAction::MOVEMENT_FOCUS;
-            emit transmit_message("<b>Move atoms<b> | Focus alignment");
-            emit request_update();
-            return;
-        }
+        emit request_update();
+        return;
     }
 
     // set align rotation
     if(this->rotation_action != RotationAction::ROTATION_NONE) {
-        if(key == Qt::Key_X) {
-            this->rotation_action = RotationAction::ROTATION_X;
-            emit transmit_message("<b>Rotate atoms</b> | X-alignment");
-            emit request_update();
-            return;
+        switch(key) {
+            case Qt::Key_X:
+                this->rotation_action = RotationAction::ROTATION_X;
+                emit transmit_message("<b>Rotate atoms</b> | X-alignment");
+            break;
+            case Qt::Key_Y:
+                this->rotation_action = RotationAction::ROTATION_Y;
+                emit transmit_message("<b>Rotate atoms</b> | Y-alignment");
+            break;
+            case Qt::Key_Z:
+                this->rotation_action = RotationAction::ROTATION_Z;
+                emit transmit_message("<b>Rotate atoms</b> | Z-alignment");
+            break;
+            case Qt::Key_F:
+                if(this->structure->get_nr_atoms_secondary_buffer() == 0) {
+                    return;
+                }
+                this->rotation_action = RotationAction::ROTATION_FOCUS;
+            break;
         }
 
-        if(key == Qt::Key_Y) {
-            this->rotation_action = RotationAction::ROTATION_Y;
-            emit transmit_message("<b>Rotate atoms</b> | Y-alignment");
-            emit request_update();
-            return;
-        }
-
-        if(key == Qt::Key_Z) {
-            this->rotation_action = RotationAction::ROTATION_Z;
-            emit transmit_message("<b>Rotate atoms</b> | Z-alignment");
-            emit request_update();
-            return;
-        }
-
-        if(key == Qt::Key_F) {
-            if(this->structure->get_nr_atoms_secondary_buffer() == 0) {
-                return;
-            }
-            this->rotation_action = RotationAction::ROTATION_FOCUS;
-            emit transmit_message("<b>Rotate atoms<b> | Focus alignment");
-            emit request_update();
-            return;
-        }
+        emit request_update();
+        return;
     }
 
     // deselect all atoms if movement and rotation are not active
     if(this->movement_action == MovementAction::MOVEMENT_NONE &&
        this->rotation_action == RotationAction::ROTATION_NONE) {
 
-        // deselect atoms
-        if(key == Qt::Key_D && modifiers == Qt::ControlModifier) {
-            this->structure->clear_selection();
-            emit signal_selection_message(this->structure->get_selection_string());
-            emit request_update();
-        }
-
-        // select all atoms
-        if(key == Qt::Key_A && modifiers == Qt::ControlModifier) {
-            this->structure->select_all_atoms();
-            emit signal_selection_message(this->structure->get_selection_string());
-            emit request_update();
-        }
-
-        // invert selection
-        if(key == Qt::Key_I && modifiers == Qt::ControlModifier) {
-            this->structure->invert_selection();
-            emit signal_selection_message(this->structure->get_selection_string());
-            emit request_update();
-        }
-
-        // toggle frozen
-        if(key == Qt::Key_F && modifiers == Qt::ControlModifier) {
-            this->structure->toggle_frozen();
-            emit request_update();
-            emit signal_update_structure_info();
+        if(modifiers == Qt::ControlModifier) {
+            switch(key) {
+                case Qt::Key_D:
+                    this->structure->clear_selection();
+                    emit signal_selection_message(this->structure->get_selection_string());
+                    emit request_update();
+                break;
+                case Qt::Key_A:
+                    this->structure->select_all_atoms();
+                    emit signal_selection_message(this->structure->get_selection_string());
+                    emit request_update();
+                break;
+                case Qt::Key_Z: // undo action
+                    emit signal_decrement_structure_stack_pointer();
+                    emit request_update();
+                    emit signal_update_structure_info();
+                break;
+                case Qt::Key_Y: // redo action
+                    emit signal_increment_structure_stack_pointer();
+                    emit request_update();
+                    emit signal_update_structure_info();
+                break;
+                case Qt::Key_I: // invert selection
+                    this->structure->invert_selection();
+                    emit signal_selection_message(this->structure->get_selection_string());
+                    emit request_update();
+                break;
+                case Qt::Key_F: // toggle frozen
+                    emit(signal_push_structure());
+                    this->structure->toggle_frozen();
+                    emit request_update();
+                    emit signal_update_structure_info();
+                break;
+            }
         }
 
         // add atom
@@ -224,14 +221,17 @@ void UserAction::handle_key(int key, Qt::KeyboardModifiers modifiers) {
             this->add_fragment();
             emit request_update();
             emit signal_update_structure_info();
+            return;
         }
 
         // delete selected atoms in primary buffer
         if(key == Qt::Key_Delete && this->structure->get_nr_atoms_primary_buffer() != 0) {
+            emit(signal_push_structure());
             this->structure->delete_atoms();
             this->structure->clear_selection();
             emit request_update();
             emit signal_update_structure_info();
+            return;
         }
     }
 
@@ -361,6 +361,7 @@ void UserAction::add_fragment() {
 
         // check if a fragment is actually set
         if(this->fragment) {
+            emit(signal_push_structure());
             this->structure_operator.add_fragment(this->structure.get(), *this->fragment.get(), distance);
         } else {
             throw std::runtime_error("No fragment is set");
@@ -403,7 +404,7 @@ void UserAction::calculate_transposition_matrix() {
 /**
  * @brief      Calculate a movement projection vector for aligned movement
  *
- * @param[in]  vin   Input vector
+ * @param[in]  vin Input vector
  *
  * @return     Output vector
  */

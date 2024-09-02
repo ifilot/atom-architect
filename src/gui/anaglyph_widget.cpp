@@ -40,10 +40,14 @@ AnaglyphWidget::AnaglyphWidget(QWidget *parent)
     // set default matrix orientation on start-up
     this->reset_matrices();
 
+    // create a pointer to user actions
     this->user_action = std::make_shared<UserAction>(this->scene);
+
+    // connect to user actions
     connect(this->user_action.get(), SIGNAL(request_update()), this, SLOT(call_update()));
     connect(this->user_action.get(), SIGNAL(transmit_message(const QString&)), this, SLOT(transmit_message(const QString&)));
 
+    // enable mouse tracking
     this->setMouseTracking(true);
 }
 
@@ -116,19 +120,42 @@ void AnaglyphWidget::initializeGL() {
  * @brief      Render scene
  */
 void AnaglyphWidget::paintGL() {
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_CULL_FACE);
-    glEnable(GL_BLEND);
+    // paint coordinate axes to its own framebuffer
+    if(this->flag_axis_enabled) {
+        glBindFramebuffer(GL_FRAMEBUFFER, this->framebuffers[FrameBuffer::COORDINATE_AXES]);
+        glEnable(GL_DEPTH_TEST);
+        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        this->structure_renderer->draw_coordinate_axes();
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
 
+    // first perform a structure drawing call
     if (this->stereographic_type_name == "NONE") {
         this->paint_regular();
     } else {
         this->paint_stereographic();
     }
 
-    // paint coordinate axes on top of screen
     if(this->flag_axis_enabled) {
-        this->structure_renderer->draw_coordinate_axes();
+        glDisable(GL_DEPTH_TEST);
+        glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
+        glBlendEquation(GL_FUNC_ADD);
+
+        ShaderProgram *shader = this->shader_manager->get_shader_program("simple_canvas_shader");
+        shader->bind();
+
+        // update screen coordinates
+        shader->set_uniform("regular_texture", 0);
+
+        // draw quad on screen
+        this->quad_vao.bind();
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, this->texture_color_buffers[FrameBuffer::COORDINATE_AXES]);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        this->quad_vao.release();
+
+        shader->release();
     }
 }
 
@@ -399,6 +426,7 @@ void AnaglyphWidget::load_shaders() {
 
     // load shader for the Canvas
     shader_manager->create_shader_program("canvas_shader", ShaderProgramType::CanvasShader, ":/assets/shaders/stereo.vs", ":/assets/shaders/canvas.fs");
+    shader_manager->create_shader_program("simple_canvas_shader", ShaderProgramType::SimpleCanvasShader, ":/assets/shaders/simplecanvas.vs", ":/assets/shaders/simplecanvas.fs");
 }
 
 /**
@@ -430,15 +458,15 @@ void AnaglyphWidget::build_framebuffers() {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     // create screen quad vao
-    // TODO maybe move this away from here?
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
 
-    float quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
-        // positions   // texCoords
+    // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
+    float quadvecs[] = {
+        // positions
         -1.0f,  1.0f,  0.0f, 1.0f,
         -1.0f, -1.0f,  0.0f, 0.0f,
          1.0f, -1.0f,  1.0f, 0.0f,
-
+        // texCoords
         -1.0f,  1.0f,  0.0f, 1.0f,
          1.0f, -1.0f,  1.0f, 0.0f,
          1.0f,  1.0f,  1.0f, 1.0f
@@ -450,7 +478,7 @@ void AnaglyphWidget::build_framebuffers() {
     this->quad_vbo.create();
     this->quad_vbo.setUsagePattern(QOpenGLBuffer::StaticDraw);
     this->quad_vbo.bind();
-    this->quad_vbo.allocate(quadVertices, sizeof(quadVertices));
+    this->quad_vbo.allocate(quadvecs, sizeof(quadvecs));
     f->glEnableVertexAttribArray(0);
     f->glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
     f->glEnableVertexAttribArray(1);
@@ -499,7 +527,7 @@ int AnaglyphWidget::get_atom_raycast(const QVector3D& ray_origin, const QVector3
         model.setToIdentity();
         model *= this->scene->rotation_matrix;
         model.translate(vec_ctr);
-        QVector3D pos = model.map(atom.get_pos());
+        QVector3D pos = model.map(atom.get_pos_qtvec());
 
         float radius = AtomSettings::get().get_atom_radius_from_elnr(atom.atnr);
         float b = QVector3D::dotProduct(ray_vector, ray_origin - pos);
@@ -530,7 +558,7 @@ int AnaglyphWidget::get_atom_raycast(const QVector3D& ray_origin, const QVector3
         model.setToIdentity();
         model *= this->scene->arcball_rotation * this->scene->rotation_matrix;
         model.translate(vec_ctr);
-        QVector3D pos = model.map(atom.get_pos());
+        QVector3D pos = model.map(atom.get_pos_qtvec());
 
         float radius = AtomSettings::get().get_atom_radius_from_elnr(atom.atnr);
         float b = QVector3D::dotProduct(ray_vector, ray_origin - pos);

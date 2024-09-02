@@ -23,7 +23,15 @@
 /**
  * @brief      Class for main window.
  */
-MainWindow::MainWindow() {
+MainWindow::MainWindow(const std::shared_ptr<QStringList> _log_messages,
+                       QWidget *parent)
+    : QMainWindow(parent),
+    log_messages(_log_messages) {
+
+    // log window
+    this->log_window = std::make_unique<LogWindow>(this->log_messages);
+
+    // dropdown menu bar
     QMenuBar *menuBar = new QMenuBar;
 
     // add drop-down menus
@@ -82,6 +90,13 @@ MainWindow::MainWindow() {
 
     // actions for help menu
     QAction *action_about = new QAction(menu_help);
+
+    // debug log
+    QAction *action_debug_log = new QAction(menu_help);
+    action_debug_log->setText(tr("Debug Log"));
+    action_debug_log ->setShortcut(Qt::Key_F2);
+    menu_help->addAction(action_debug_log);
+    connect(action_debug_log, &QAction::triggered, this, &MainWindow::slot_debug_log);
 
     // create actions for file menu
     action_open->setText(tr("Open"));
@@ -260,6 +275,9 @@ MainWindow::MainWindow() {
 
     this->load_theme();
 
+    this->setWindowTitle(QString(PROGRAM_NAME) + " " + QString(PROGRAM_VERSION));
+    this->resize(1280,640);
+
     qDebug() << "Done building MainWindow";
 }
 
@@ -267,7 +285,13 @@ MainWindow::MainWindow() {
  * @brief      Open a new object file
  */
 void MainWindow::open() {
-    QString filename = QFileDialog::getOpenFileName(this, tr("Open file"), "", tr("All supported files (*.geo *.xyz OUTCAR CONTCAR* POSCAR*);;VASP POSCAR/CONTCAR (POSCAR* CONTCAR*);;VASP OUTCAR (OUTCAR);;ADF geometry file (*.geo);;xyz file (*.xyz)"));
+    QString filename = QFileDialog::getOpenFileName(this,
+        tr("Open file"),
+        "",
+        tr("All supported files (*.geo *.xyz OUTCAR CONTCAR* POSCAR*);;"
+           "VASP POSCAR/CONTCAR (POSCAR* CONTCAR*);;VASP OUTCAR (OUTCAR);;"
+           "ADF geometry file (*.geo);;xyz file (*.xyz)")
+    );
 
     if(filename.isEmpty()) {
         return;
@@ -494,4 +518,11 @@ void MainWindow::load_theme() {
 void MainWindow::show_message_statusbar(const QString& message) {
     statusBar()->showMessage(message);
     this->statusbar_timer->start(1000);
+}
+
+/**
+ * @brief Show an about window
+ */
+void MainWindow::slot_debug_log() {
+    this->log_window->show();
 }

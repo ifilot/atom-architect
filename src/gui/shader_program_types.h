@@ -29,5 +29,6 @@ enum class ShaderProgramType {
     UnitcellShader,
     SilhouetteShader,
     CanvasShader,
-    PlaneShader
+    PlaneShader,
+    SimpleCanvasShader,
 };

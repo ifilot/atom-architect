@@ -42,7 +42,7 @@ void StructureOperator::add_fragment(Structure* structure, const Fragment& fragm
     auto rotmat = this->build_z_align_matrix(direction);
 
     for(const Atom& at : fragment.atoms) {
-        auto apos = at.get_pos();
+        auto apos = at.get_pos_qtvec();
         QVector4D apos4(apos, 1.0);
         auto newpos = (rotmat * apos4).toVector3D();
         newpos += v1 + direction * distance;

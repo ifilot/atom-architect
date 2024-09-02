@@ -60,6 +60,7 @@ enum FrameBuffer {
     STRUCTURE_RIGHT,
     ANAGLYPH_LEFT,
     ANAGLYPH_RIGHT,
+    COORDINATE_AXES,
 
     NR_FRAMEBUFFERS
 };
@@ -82,6 +83,7 @@ private:
     unsigned int rbo[FrameBuffer::NR_FRAMEBUFFERS];
 
     QOpenGLVertexArrayObject quad_vao;
+    QOpenGLVertexArrayObject quad_vao_small;
     QOpenGLBuffer quad_vbo;
 
     // used for arcball rotation
