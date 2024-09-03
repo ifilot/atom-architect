@@ -326,9 +326,11 @@ void MainWindow::save() {
 void MainWindow::exit() {
     QMessageBox msgBox;
     msgBox.setText("Exit program.");
-    msgBox.setInformativeText("Are you sure you want to quit?");
+    msgBox.setStyleSheet("QLabel{min-width: 350px; font-weight: normal;}");
+    msgBox.setInformativeText("Are you sure you want to quit? Your progress will be <b>unsaved</b>.");
     msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
     msgBox.setDefaultButton(QMessageBox::Cancel);
+    msgBox.setWindowIcon(QIcon(":/assets/icon/atom_architect_256.ico"));
     int ret = msgBox.exec();
 
     switch (ret) {
