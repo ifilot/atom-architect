@@ -329,6 +329,7 @@ void MainWindow::exit() {
     msgBox.setInformativeText("Are you sure you want to quit?");
     msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
     msgBox.setDefaultButton(QMessageBox::Cancel);
+    msgBox.setMinimumWidth(300);
     int ret = msgBox.exec();
 
     switch (ret) {

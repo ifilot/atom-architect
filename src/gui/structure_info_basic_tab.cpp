@@ -60,10 +60,13 @@ void StructureInfoBasicTab::update_data() {
     this->get_label("number_of_atoms")->setText(QString::number(this->structure->get_nr_atoms()));
     this->get_label("type_of_elements")->setText(this->structure->get_elements_string().c_str());
 
+    char buf[64];
+
     MatrixUnitcell unitcell = this->structure->get_unitcell();
     QString unitcell_str = "<pre>";
     for(unsigned int i=0; i<3; i++) {
-        unitcell_str += tr("%1  %2  %3\n").arg(unitcell(i,0),12).arg(unitcell(i,1),12).arg(unitcell(i,2),12);
+        sprintf(buf, "%12.6f  %12.6f  %12.6f\n", unitcell(i,0), unitcell(i,1), unitcell(i,2));
+        unitcell_str += QString(buf);
     }
     unitcell_str += "</pre>";
     this->get_label("unitcell_dimensions")->setText(unitcell_str);

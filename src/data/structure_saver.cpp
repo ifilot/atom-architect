@@ -36,7 +36,8 @@ void StructureSaver::save_poscar(const Structure* structure, const std::string& 
     // specifies how floating point numbers should be outputted. Numform is used to generate
     // 'sprintf-strings', which in turn are used to produce the atomic coordinate and unit
     // cell representations in the POSCAR file.
-    char buf[250]; // buffer used for sprintf
+    static const size_t BUFSIZE = 64;
+    char buf[BUFSIZE]; // buffer used for sprintf
     static const char numform[] = "%12.6f";
     sprintf(buf, "  %s  %s  %s\n", numform, numform, numform);
     std::string output3f(buf);
@@ -73,11 +74,14 @@ void StructureSaver::save_poscar(const Structure* structure, const std::string& 
         // unitcell
         MatrixUnitcell unitcell = structure->get_unitcell();
         for(unsigned int i=0; i<3; i++) {
-            sprintf(buf, output3f.c_str(),
+            size_t nrwritten = sprintf(buf, output3f.c_str(),
                     unitcell(i,0),
                     unitcell(i,1),
                     unitcell(i,2)
             );
+            if(nrwritten > BUFSIZE) {
+                throw std::runtime_error("Buffer overflow detected.");
+            }
             outfile << std::string(buf);
         }
 
@@ -118,7 +122,7 @@ void StructureSaver::save_poscar(const Structure* structure, const std::string& 
                 if(atom.atnr == elnrs[i]) {
                     VectorPosition directpos = unitcell.inverse().transpose() * atom.get_pos_eigen();
                     if(flag_selective_dynamics) {
-                        sprintf(buf, output3f3b.c_str(),
+                        size_t nrwritten = sprintf(buf, output3f3b.c_str(),
                             directpos[0],
                             directpos[1],
                             directpos[2],
@@ -126,13 +130,19 @@ void StructureSaver::save_poscar(const Structure* structure, const std::string& 
                             atom.selective_dynamics[1] ? 'T' : 'F',
                             atom.selective_dynamics[2] ? 'T' : 'F'
                         );
+                        if(nrwritten > BUFSIZE) {
+                            throw std::runtime_error("Buffer overflow detected.");
+                        }
                         outfile << std::string(buf);
                     } else {
-                        sprintf(buf, output3f.c_str(),
+                        size_t nrwritten = sprintf(buf, output3f.c_str(),
                                 directpos[0],
                                 directpos[1],
                                 directpos[2]
                         );
+                        if(nrwritten > BUFSIZE) {
+                            throw std::runtime_error("Buffer overflow detected.");
+                        }
                         outfile << std::string(buf);
                     }
                 }
