@@ -373,12 +373,23 @@ void Structure::invert_selection() {
 }
 
 /**
- * @brief      Toggle frozen
+ * @brief      Set frozen
  */
-void Structure::toggle_frozen() {
+void Structure::set_frozen() {
     for(unsigned int idx : this->primary_buffer) {
         for(unsigned int j=0; j<3; j++) {
-            this->atoms[idx].selective_dynamics[j] = !this->atoms[idx].selective_dynamics[j];
+            this->atoms[idx].selective_dynamics[j] = false;
+        }
+    }
+}
+
+/**
+ * @brief      Set frozen
+ */
+void Structure::set_unfrozen() {
+    for(unsigned int idx : this->primary_buffer) {
+        for(unsigned int j=0; j<3; j++) {
+            this->atoms[idx].selective_dynamics[j] = true;
         }
     }
 }

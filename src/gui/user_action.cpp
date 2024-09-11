@@ -176,10 +176,12 @@ void UserAction::handle_key(int key, Qt::KeyboardModifiers modifiers) {
         return;
     }
 
-    // deselect all atoms if movement and rotation are not active
+    // the following operations are only valid when the atoms are neither in
+    // movement nor in rotation mode
     if(this->movement_action == MovementAction::MOVEMENT_NONE &&
        this->rotation_action == RotationAction::ROTATION_NONE) {
 
+        // CTRL + KEY operations
         if(modifiers == Qt::ControlModifier) {
             switch(key) {
                 case Qt::Key_D:
@@ -207,9 +209,23 @@ void UserAction::handle_key(int key, Qt::KeyboardModifiers modifiers) {
                     emit signal_selection_message(this->structure->get_selection_string());
                     emit request_update();
                 break;
-                case Qt::Key_F: // toggle frozen
+                case Qt::Key_F: // set frozen
+                    qDebug() << "Freezing atoms";
                     emit(signal_push_structure());
-                    this->structure->toggle_frozen();
+                    this->structure->set_frozen();
+                    emit request_update();
+                    emit signal_update_structure_info();
+                break;
+            }
+        }
+
+        // CTRL + SHIFT + KEY operations
+        if((modifiers & Qt::ControlModifier) && (modifiers & Qt::ShiftModifier)) {
+            switch(key) {
+                case Qt::Key_F: // unset frozen
+                    qDebug() << "Unfreezing atoms";
+                    emit(signal_push_structure());
+                    this->structure->set_unfrozen();
                     emit request_update();
                     emit signal_update_structure_info();
                 break;

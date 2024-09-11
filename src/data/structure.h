@@ -340,7 +340,12 @@ public:
     /**
      * @brief      Toggle frozen
      */
-    void toggle_frozen();
+    void set_frozen();
+
+    /**
+     * @brief      Set unfrozen
+     */
+    void set_unfrozen();
 
     /**
      * @brief      Get a string containing current selection data
