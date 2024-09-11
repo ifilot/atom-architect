@@ -241,10 +241,33 @@ void InterfaceWindow::update_interaction_label(const QString& text) {
 /**
  * @brief      Update the selection label
  *
+ * If the list of atoms exceeds 120 characters, truncate the list and show
+ * cdots
+ *
  * @param[in]  text  The text
  */
 void InterfaceWindow::update_selection_label(const QString& text) {
-    this->selection_label->setText(text);
+    QStringList atomlists = text.split("<br>");
+    QStringList pieces1 = atomlists[0].split(";");
+    QStringList pieces2 = atomlists[1].split(";");
+
+    // maximum size of the atomlist string
+    static const unsigned int sz = 120;
+
+    if(pieces1[0].length() > sz) {
+        pieces1[0] = pieces1[0].first(sz) + "...";
+
+    }
+
+    if(pieces2[0].length() > sz) {
+        pieces2[0] = pieces2[0].first(sz) + "...";
+
+    }
+
+    atomlists[0] = pieces1.join(";");
+    atomlists[1] = pieces2.join(";");
+
+    this->selection_label->setText(atomlists.join("<br>"));
 }
 
 /**
