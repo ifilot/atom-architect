@@ -68,3 +68,13 @@ header-only C++ libraries and are for convenience purposes added to this
 repository. This implies that compilation of Atom Architect will not use your
 system-installed version of GLM and Eigen3, but use the one provided in this
 repository.
+
+## Common problems
+
+> I have troubles running `Atom Architect` remotely via MobaXterm.
+
+Try to enable direct rendering by setting the following environmental variable:
+
+```bash
+export LIBGL_ALWAYS_INDIRECT=0
+```
