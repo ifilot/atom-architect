@@ -223,10 +223,17 @@ void InterfaceWindow::invert_selection() {
 }
 
 /**
- * @brief      Invert selection
+ * @brief      Set selected atoms to frozen state
  */
-void InterfaceWindow::toggle_frozen() {
+void InterfaceWindow::set_frozen() {
     this->anaglyph_widget->get_user_action()->handle_key(Qt::Key_F, Qt::ControlModifier);
+}
+
+/**
+ * @brief      Set selected atoms to unfrozen state
+ */
+void InterfaceWindow::set_unfrozen() {
+    this->anaglyph_widget->get_user_action()->handle_key(Qt::Key_F, Qt::ControlModifier | Qt::ShiftModifier);
 }
 
 /**

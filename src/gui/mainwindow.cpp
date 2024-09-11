@@ -50,7 +50,8 @@ MainWindow::MainWindow(const std::shared_ptr<QStringList> _log_messages,
     QAction *action_select_all = new QAction(menu_select);
     QAction *action_deselect_all = new QAction(menu_select);
     QAction *action_invert_selection = new QAction(menu_select);
-    QAction *action_toggle_frozen = new QAction(menu_select);
+    QAction *action_set_frozen = new QAction(menu_select);
+    QAction *action_set_unfrozen = new QAction(menu_select);
 
     // actions for projection menu
     QMenu *menu_camera = new QMenu(tr("Camera"));
@@ -116,8 +117,10 @@ MainWindow::MainWindow(const std::shared_ptr<QStringList> _log_messages,
     action_deselect_all->setShortcut(Qt::CTRL | Qt::Key_D);
     action_invert_selection->setText(tr("Invert selection"));
     action_invert_selection->setShortcut(Qt::CTRL | Qt::Key_I);
-    action_toggle_frozen->setText(tr("Toggle frozen"));
-    action_toggle_frozen->setShortcut(Qt::CTRL | Qt::Key_F);
+    action_set_frozen->setText(tr("Set frozen"));
+    action_set_frozen->setShortcut(Qt::CTRL | Qt::Key_F);
+    action_set_unfrozen->setText(tr("Set unfrozen"));
+    action_set_unfrozen->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_F);
 
     // create actions for projection menu
     action_camera_default->setText(tr("Default"));
@@ -185,7 +188,8 @@ MainWindow::MainWindow(const std::shared_ptr<QStringList> _log_messages,
     menu_select->addAction(action_deselect_all);
     menu_select->addAction(action_invert_selection);
     menu_select->addSeparator();
-    menu_select->addAction(action_toggle_frozen);
+    menu_select->addAction(action_set_frozen);
+    menu_select->addAction(action_set_unfrozen);
 
     // add actions to projection menu
     menu_view->addMenu(menu_projection);
@@ -251,7 +255,8 @@ MainWindow::MainWindow(const std::shared_ptr<QStringList> _log_messages,
     connect(action_select_all, SIGNAL(triggered()), this->interface_window, SLOT(select_all_atoms()));
     connect(action_deselect_all, SIGNAL(triggered()), this->interface_window, SLOT(deselect_all_atoms()));
     connect(action_invert_selection, SIGNAL(triggered()), this->interface_window, SLOT(invert_selection()));
-    connect(action_toggle_frozen, SIGNAL(triggered()), this->interface_window, SLOT(toggle_frozen()));
+    connect(action_set_frozen, SIGNAL(triggered()), this->interface_window, SLOT(set_frozen()));
+    connect(action_set_unfrozen, SIGNAL(triggered()), this->interface_window, SLOT(set_unfrozen()));
 
     // connect actions camera menu
     connect(menu_camera_align, SIGNAL(triggered(QAction*)), this->interface_window, SLOT(set_camera_align(QAction*)));

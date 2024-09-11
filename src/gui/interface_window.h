@@ -145,9 +145,14 @@ public slots:
     void invert_selection();
 
     /**
-     * @brief      Toggle frozen
+     * @brief      Set selected atoms to frozen state
      */
-    void toggle_frozen();
+    void set_frozen();
+
+    /**
+     * @brief      Set selected atoms to unfrozen state
+     */
+    void set_unfrozen();
 
 private slots:
     /**
