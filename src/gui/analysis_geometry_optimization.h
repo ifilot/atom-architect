@@ -53,7 +53,7 @@ private:
 public:
     AnalysisGeometryOptimization(QWidget* parent = nullptr);
 
-    inline void set_structures(const std::vector<std::shared_ptr<Structure>> _structures) {
+    inline void set_structures(const std::vector<std::shared_ptr<Structure>>& _structures) {
         this->structures = _structures;
         this->structures.front()->update();
         this->anaglyph_widget->set_structure(this->structures.front());

@@ -196,6 +196,14 @@ void AnalysisNEB::open() {
         return;
     }
 
+    this->load_file(filename);
+}
+
+/**
+ * @brief load_file
+ * @param filename
+ */
+void AnalysisNEB::load_file(const QString& filename) {
     StructureLoader sl;
     this->set_structures(sl.load_neb_bin(filename.toStdString()));
 

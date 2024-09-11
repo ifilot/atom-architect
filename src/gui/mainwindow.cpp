@@ -28,6 +28,8 @@ MainWindow::MainWindow(const std::shared_ptr<QStringList> _log_messages,
     : QMainWindow(parent),
     log_messages(_log_messages) {
 
+    qDebug() << "Constructing Main Window";
+
     // log window
     this->log_window = std::make_unique<LogWindow>(this->log_messages);
 
@@ -275,15 +277,37 @@ MainWindow::MainWindow(const std::shared_ptr<QStringList> _log_messages,
     // set icon
     setWindowIcon(QIcon(":/assets/icon/atom_architect_256.ico"));
 
-    // allow dropping of media files
+    // allow dropping of data files
     setAcceptDrops(true);
 
+    // load UI theme
     this->load_theme();
 
+    // set Window properties
     this->setWindowTitle(QString(PROGRAM_NAME) + " " + QString(PROGRAM_VERSION));
     this->resize(1280,640);
 
     qDebug() << "Done building MainWindow";
+}
+
+/**
+ * @brief Parse command line arguments
+ */
+void MainWindow::set_cli_parser(const QCommandLineParser& cli_parser) {
+    if(!cli_parser.value("n").isEmpty()) {
+        qDebug() << "Received CLI '-n': " << cli_parser.value("n");
+        auto* neb_widget = new AnalysisNEB();
+        neb_widget->load_file(cli_parser.value("n"));
+        neb_widget->show();
+    }
+
+    if(!cli_parser.value("g").isEmpty()) {
+        qDebug() << "Received CLI '-g': " << cli_parser.value("g");
+        auto* ago_widget = new AnalysisGeometryOptimization();
+        auto sl = StructureLoader();
+        ago_widget->set_structures(sl.load_outcar(cli_parser.value("g").toStdString()));
+        ago_widget->show();
+    }
 }
 
 /**

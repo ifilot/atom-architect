@@ -392,7 +392,7 @@ std::vector<std::shared_ptr<Structure>> StructureLoader::load_outcar(const std::
                 unsigned int version_major = match.captured(2).toUInt();
                 unsigned int version_minor = match.captured(3).toUInt();
 
-                qDebug() << "Detected VASP: " << vasp_version;
+                qDebug() << "Detected VASP: " << vasp_version << "." << version_major << "." << version_minor;
 
                 continue;
             }

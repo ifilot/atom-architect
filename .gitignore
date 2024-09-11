@@ -54,3 +54,4 @@ glm/*
 *.exe
 bin/
 *.zip
+debbuild

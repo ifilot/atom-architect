@@ -22,6 +22,7 @@
 #include <QStatusBar>
 #include <QStringList>
 #include <QDebug>
+#include <QCommandLineParser>
 
 #include <iostream>
 #include <iomanip>
@@ -74,6 +75,19 @@ int main(int argc, char *argv[]) {
     QCoreApplication::setOrganizationName("IMC");
     QCoreApplication::setOrganizationDomain("IMC");
     QCoreApplication::setApplicationName(PROGRAM_NAME);
+    QCoreApplication::setApplicationVersion(PROGRAM_VERSION);
+
+    // set command line options
+    QCommandLineParser parser;
+    parser.setApplicationDescription("Atomistic visualization and builder tool");
+    parser.addHelpOption();
+    parser.addVersionOption();
+
+    QCommandLineOption loadNEB("n", "Load NEB analysis", "file");
+    parser.addOption(loadNEB);
+
+    QCommandLineOption loadGeoOpt("g", "Load geometry analysis", "file");
+    parser.addOption(loadGeoOpt);
 
     AtomArchitectApplication app(argc, argv);
     qRegisterMetaType<std::vector<uint8_t>>("stdvector_uint8_t");
@@ -81,11 +95,15 @@ int main(int argc, char *argv[]) {
     std::unique_ptr<MainWindow> mainWindow;
     log_messages = std::make_shared<QStringList>();
 
+    // parse command line arguments
+    parser.process(app);
+
     try {
         // build main window
         qInstallMessageHandler(message_output);
         mainWindow = std::make_unique<MainWindow>(log_messages);
         mainWindow->setWindowTitle(QString(PROGRAM_NAME) + " " + QString(PROGRAM_VERSION));
+        mainWindow->set_cli_parser(parser);
     } catch(const std::exception& e) {
         std::cerr << "Error detected!" << std::endl;
         std::cerr << e.what() << std::endl;
@@ -103,5 +121,5 @@ int main(int argc, char *argv[]) {
         std::cerr << "Abnormal closing of program." << std::endl;
     }
 
-    return -1;
+    return res;
 }
