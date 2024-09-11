@@ -57,7 +57,7 @@ private:
 public:
     AnalysisNEB(QWidget* parent = nullptr);
 
-    inline void set_structures(const std::vector<std::vector<std::shared_ptr<Structure>>> _structures) {
+    inline void set_structures(const std::vector<std::vector<std::shared_ptr<Structure>>>& _structures) {
         this->structures = _structures;
     }
 

@@ -190,7 +190,7 @@ void AnalysisNEB::update_graph() {
  * @brief      Open new OUTCAR file
  */
 void AnalysisNEB::open() {
-    QString filename = QFileDialog::getOpenFileName(this, tr("Open file"), "", tr("VASP NEB binary (nebpack.bin)"));
+    QString filename = QFileDialog::getOpenFileName(this, tr("Open file"), "", tr("VASP NEB binary (*.bin)"));
 
     if(filename.isEmpty()) {
         return;
