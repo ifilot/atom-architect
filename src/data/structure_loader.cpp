@@ -432,7 +432,7 @@ std::vector<std::shared_ptr<Structure>> StructureLoader::load_outcar(const std::
                 readstate |= (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_LATTICE_VECTORS);
 
                 // check if a vasp version has been identified, if not, terminate
-                if(!(vasp_version == 4 || vasp_version == 5)) {
+                if(!(vasp_version == 4 || vasp_version == 5 || vasp_version == 6)) {
                     throw std::runtime_error("Invalid VASP version encountered: " + QString::number(vasp_version).toStdString());
                 }
 
