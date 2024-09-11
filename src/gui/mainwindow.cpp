@@ -293,8 +293,8 @@ void MainWindow::open() {
     QString filename = QFileDialog::getOpenFileName(this,
         tr("Open file"),
         "",
-        tr("All supported files (*.geo *.xyz OUTCAR CONTCAR* POSCAR*);;"
-           "VASP POSCAR/CONTCAR (POSCAR* CONTCAR*);;VASP OUTCAR (OUTCAR);;"
+        tr("All supported files (*.geo *.xyz OUTCAR* CONTCAR* POSCAR*);;"
+           "VASP POSCAR/CONTCAR (POSCAR* CONTCAR*);;VASP OUTCAR (OUTCAR*);;"
            "ADF geometry file (*.geo);;xyz file (*.xyz)")
     );
 
