@@ -145,9 +145,14 @@ public slots:
     void invert_selection();
 
     /**
-     * @brief      Toggle frozen
+     * @brief      Set selected atoms to frozen state
      */
-    void toggle_frozen();
+    void set_frozen();
+
+    /**
+     * @brief      Set selected atoms to unfrozen state
+     */
+    void set_unfrozen();
 
 private slots:
     /**
@@ -200,6 +205,9 @@ private slots:
     void decrement_structure_stack_pointer();
 
 signals:
+    /**
+     * @brief A new file is loaded into the window
+     */
     void new_file_loaded();
 
     /**

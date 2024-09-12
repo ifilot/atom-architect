@@ -174,12 +174,11 @@ signals:
      */
     void signal_message_statusbar(const QString& text);
 
-    void signal_selection_message(const QString& text);
-
     /**
-     * @brief      Update structure information
+     * @brief send atomic selection message
+     * @param text to send
      */
-    void signal_update_structure_info();
+    void signal_selection_message(const QString& text);
 
     /**
      * @brief Provides a signal that the old structure should be

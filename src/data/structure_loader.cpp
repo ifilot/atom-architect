@@ -35,9 +35,9 @@ StructureLoader::StructureLoader(){}
 std::shared_ptr<Structure> StructureLoader::load_file(const std::string& filename) {
     QFileInfo qfi(QString(filename.c_str()));
     std::shared_ptr<Structure> structure;
-    if(qfi.fileName() == "POSCAR" || qfi.fileName() == "CONTCAR") {
+    if(qfi.fileName().startsWith("POSCAR") || qfi.fileName().startsWith("CONTCAR")) {
         structure = this->load_poscar(filename);
-    } else if(qfi.fileName() == "OUTCAR") {
+    } else if(qfi.fileName().startsWith("OUTCAR")) {
         structure = this->load_outcar(filename).back();
     } else if(qfi.completeSuffix() == "geo") {
         structure = this->load_geo(filename);
@@ -392,7 +392,7 @@ std::vector<std::shared_ptr<Structure>> StructureLoader::load_outcar(const std::
                 unsigned int version_major = match.captured(2).toUInt();
                 unsigned int version_minor = match.captured(3).toUInt();
 
-                qDebug() << "Detected VASP: " << vasp_version;
+                qDebug() << "Detected VASP: " << vasp_version << "." << version_major << "." << version_minor;
 
                 continue;
             }

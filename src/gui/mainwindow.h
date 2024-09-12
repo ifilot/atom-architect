@@ -66,6 +66,11 @@ public:
     MainWindow(const std::shared_ptr<QStringList> _log_messages,
                QWidget *parent = nullptr);
 
+    /**
+     * @brief Parse command line arguments
+     */
+    void set_cli_parser(const QCommandLineParser& cli_parser);
+
 protected:
     void moveEvent(QMoveEvent*) Q_DECL_OVERRIDE;
 

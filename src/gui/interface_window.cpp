@@ -223,10 +223,17 @@ void InterfaceWindow::invert_selection() {
 }
 
 /**
- * @brief      Invert selection
+ * @brief      Set selected atoms to frozen state
  */
-void InterfaceWindow::toggle_frozen() {
+void InterfaceWindow::set_frozen() {
     this->anaglyph_widget->get_user_action()->handle_key(Qt::Key_F, Qt::ControlModifier);
+}
+
+/**
+ * @brief      Set selected atoms to unfrozen state
+ */
+void InterfaceWindow::set_unfrozen() {
+    this->anaglyph_widget->get_user_action()->handle_key(Qt::Key_F, Qt::ControlModifier | Qt::ShiftModifier);
 }
 
 /**
@@ -255,12 +262,12 @@ void InterfaceWindow::update_selection_label(const QString& text) {
     static const unsigned int sz = 120;
 
     if(pieces1[0].length() > sz) {
-        pieces1[0] = pieces1[0].first(sz) + "...";
+        pieces1[0] = pieces1[0].left(sz) + "...";
 
     }
 
     if(pieces2[0].length() > sz) {
-        pieces2[0] = pieces2[0].first(sz) + "...";
+        pieces2[0] = pieces2[0].left(sz) + "...";
 
     }
 
@@ -289,8 +296,9 @@ void InterfaceWindow::push_structure() {
     // increment the structure stack pointer
     this->structure_stack_pointer++;
 
-    this->anaglyph_widget->set_structure_conservative(this->structure_stack.back());
-    qDebug() << this->structure_stack.size() << ": " << (size_t)this->structure_stack.back().get();
+    this->anaglyph_widget->set_structure_conservative(this->structure_stack[this->structure_stack_pointer]);
+    this->structure_info_widget->set_structure(this->structure_stack[this->structure_stack_pointer]);
+    qDebug() << "Stack size: " << this->structure_stack.size() << ": " << (size_t)this->structure_stack.back().get();
 }
 
 /**
@@ -302,6 +310,7 @@ void InterfaceWindow::increment_structure_stack_pointer() {
         qDebug() << "Incrementing stack pointer";
         qDebug() << "New pointer value: " << this->structure_stack_pointer;
         this->anaglyph_widget->set_structure_conservative(this->structure_stack[this->structure_stack_pointer]);
+        this->structure_info_widget->set_structure(this->structure_stack[this->structure_stack_pointer]);
     } else {
         qDebug() << "Ignoring stack pointer request; structure stack exchausted.";
     }
@@ -316,6 +325,7 @@ void InterfaceWindow::decrement_structure_stack_pointer() {
         qDebug() << "Decrementing stack pointer";
         qDebug() << "New pointer value: " << this->structure_stack_pointer;
         this->anaglyph_widget->set_structure_conservative(this->structure_stack[this->structure_stack_pointer]);
+        this->structure_info_widget->set_structure(this->structure_stack[this->structure_stack_pointer]);
     } else {
         qDebug() << "Ignoring stack pointer request; structure stack exchausted.";
     }

@@ -57,13 +57,15 @@ private:
 public:
     AnalysisNEB(QWidget* parent = nullptr);
 
-    inline void set_structures(const std::vector<std::vector<std::shared_ptr<Structure>>> _structures) {
+    inline void set_structures(const std::vector<std::vector<std::shared_ptr<Structure>>>& _structures) {
         this->structures = _structures;
-        // this->structures.front()->update();
-        // this->anaglyph_widget->set_structure(this->structures.front());
-        // this->current_structure_id = 0;
-        // this->update_graph();
     }
+
+    /**
+     * @brief load_file
+     * @param filename
+     */
+    void load_file(const QString& filename);
 
 private:
     /**

@@ -28,6 +28,8 @@ MainWindow::MainWindow(const std::shared_ptr<QStringList> _log_messages,
     : QMainWindow(parent),
     log_messages(_log_messages) {
 
+    qDebug() << "Constructing Main Window";
+
     // log window
     this->log_window = std::make_unique<LogWindow>(this->log_messages);
 
@@ -50,7 +52,8 @@ MainWindow::MainWindow(const std::shared_ptr<QStringList> _log_messages,
     QAction *action_select_all = new QAction(menu_select);
     QAction *action_deselect_all = new QAction(menu_select);
     QAction *action_invert_selection = new QAction(menu_select);
-    QAction *action_toggle_frozen = new QAction(menu_select);
+    QAction *action_set_frozen = new QAction(menu_select);
+    QAction *action_set_unfrozen = new QAction(menu_select);
 
     // actions for projection menu
     QMenu *menu_camera = new QMenu(tr("Camera"));
@@ -116,8 +119,10 @@ MainWindow::MainWindow(const std::shared_ptr<QStringList> _log_messages,
     action_deselect_all->setShortcut(Qt::CTRL | Qt::Key_D);
     action_invert_selection->setText(tr("Invert selection"));
     action_invert_selection->setShortcut(Qt::CTRL | Qt::Key_I);
-    action_toggle_frozen->setText(tr("Toggle frozen"));
-    action_toggle_frozen->setShortcut(Qt::CTRL | Qt::Key_F);
+    action_set_frozen->setText(tr("Set frozen"));
+    action_set_frozen->setShortcut(Qt::CTRL | Qt::Key_F);
+    action_set_unfrozen->setText(tr("Set unfrozen"));
+    action_set_unfrozen->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_F);
 
     // create actions for projection menu
     action_camera_default->setText(tr("Default"));
@@ -185,7 +190,8 @@ MainWindow::MainWindow(const std::shared_ptr<QStringList> _log_messages,
     menu_select->addAction(action_deselect_all);
     menu_select->addAction(action_invert_selection);
     menu_select->addSeparator();
-    menu_select->addAction(action_toggle_frozen);
+    menu_select->addAction(action_set_frozen);
+    menu_select->addAction(action_set_unfrozen);
 
     // add actions to projection menu
     menu_view->addMenu(menu_projection);
@@ -251,7 +257,8 @@ MainWindow::MainWindow(const std::shared_ptr<QStringList> _log_messages,
     connect(action_select_all, SIGNAL(triggered()), this->interface_window, SLOT(select_all_atoms()));
     connect(action_deselect_all, SIGNAL(triggered()), this->interface_window, SLOT(deselect_all_atoms()));
     connect(action_invert_selection, SIGNAL(triggered()), this->interface_window, SLOT(invert_selection()));
-    connect(action_toggle_frozen, SIGNAL(triggered()), this->interface_window, SLOT(toggle_frozen()));
+    connect(action_set_frozen, SIGNAL(triggered()), this->interface_window, SLOT(set_frozen()));
+    connect(action_set_unfrozen, SIGNAL(triggered()), this->interface_window, SLOT(set_unfrozen()));
 
     // connect actions camera menu
     connect(menu_camera_align, SIGNAL(triggered(QAction*)), this->interface_window, SLOT(set_camera_align(QAction*)));
@@ -270,15 +277,37 @@ MainWindow::MainWindow(const std::shared_ptr<QStringList> _log_messages,
     // set icon
     setWindowIcon(QIcon(":/assets/icon/atom_architect_256.ico"));
 
-    // allow dropping of media files
+    // allow dropping of data files
     setAcceptDrops(true);
 
+    // load UI theme
     this->load_theme();
 
+    // set Window properties
     this->setWindowTitle(QString(PROGRAM_NAME) + " " + QString(PROGRAM_VERSION));
     this->resize(1280,640);
 
     qDebug() << "Done building MainWindow";
+}
+
+/**
+ * @brief Parse command line arguments
+ */
+void MainWindow::set_cli_parser(const QCommandLineParser& cli_parser) {
+    if(!cli_parser.value("n").isEmpty()) {
+        qDebug() << "Received CLI '-n': " << cli_parser.value("n");
+        auto* neb_widget = new AnalysisNEB();
+        neb_widget->load_file(cli_parser.value("n"));
+        neb_widget->show();
+    }
+
+    if(!cli_parser.value("g").isEmpty()) {
+        qDebug() << "Received CLI '-g': " << cli_parser.value("g");
+        auto* ago_widget = new AnalysisGeometryOptimization();
+        auto sl = StructureLoader();
+        ago_widget->set_structures(sl.load_outcar(cli_parser.value("g").toStdString()));
+        ago_widget->show();
+    }
 }
 
 /**
@@ -288,8 +317,8 @@ void MainWindow::open() {
     QString filename = QFileDialog::getOpenFileName(this,
         tr("Open file"),
         "",
-        tr("All supported files (*.geo *.xyz OUTCAR CONTCAR* POSCAR*);;"
-           "VASP POSCAR/CONTCAR (POSCAR* CONTCAR*);;VASP OUTCAR (OUTCAR);;"
+        tr("All supported files (*.geo *.xyz OUTCAR* CONTCAR* POSCAR*);;"
+           "VASP POSCAR/CONTCAR (POSCAR* CONTCAR*);;VASP OUTCAR (OUTCAR*);;"
            "ADF geometry file (*.geo);;xyz file (*.xyz)")
     );
 
