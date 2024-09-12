@@ -33,6 +33,7 @@
 #include <QDebug>
 #include <QTimer>
 #include <QMenu>
+#include <QtGlobal>
 
 #include <QtCore/qmath.h>
 #include <QtCore/qvariant.h>

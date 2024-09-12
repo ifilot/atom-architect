@@ -208,13 +208,15 @@ void AnalysisNEB::load_file(const QString& filename) {
     this->set_structures(sl.load_neb_bin(filename.toStdString()));
 
     // expand anaglyph widgets
-    unsigned int nr_rows = 4;
+    static const unsigned int nr_cols = 4;
+
+    qDebug() << "Loading " << this->structures.size() << " images.";
     for(unsigned int i=0; i<this->structures.size(); i++) {
         this->anaglyph_widgets.push_back(new AnaglyphWidget());
-        this->anaglyph_hypergrid->addWidget(this->anaglyph_widgets.back(), i / nr_rows * 2, i % nr_rows);
+        this->anaglyph_hypergrid->addWidget(this->anaglyph_widgets.back(), (i / nr_cols) * 2, i % nr_cols);
 
         this->image_labels.push_back(new QLabel(tr("Image %1").arg(i+1)));
-        this->anaglyph_hypergrid->addWidget(this->image_labels.back(), i / nr_rows * 2 + 1, i % nr_rows);
+        this->anaglyph_hypergrid->addWidget(this->image_labels.back(), (i / nr_cols) * 2 + 1, i % nr_cols);
 
         this->structures[i].front()->update();
         this->anaglyph_widgets.back()->set_structure(this->structures[i].front());

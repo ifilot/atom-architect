@@ -251,10 +251,17 @@ void AnaglyphWidget::mousePressEvent(QMouseEvent *event) {
         emit(signal_selection_message(this->structure->get_selection_string()));
     }
 
-    // custom menu
-    if (event->buttons() & Qt::RightButton && event->modifiers() & Qt::ControlModifier) {
-        this->custom_menu_requested(event->globalPosition().toPoint());
-    }
+    #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+        // custom menu
+        if (event->buttons() & Qt::RightButton && event->modifiers() & Qt::ControlModifier) {
+            this->custom_menu_requested(event->globalPosition().toPoint());
+        }
+    #else
+        // custom menu
+        if (event->buttons() & Qt::RightButton && event->modifiers() & Qt::ControlModifier) {
+            this->custom_menu_requested(event->globalPos());
+        }
+    #endif
 }
 
 /**
@@ -287,8 +294,14 @@ void AnaglyphWidget::mouseMoveEvent(QMouseEvent *event) {
     if(this->arcball_rotation_flag) { // drag event
         // implementation adapted from
         // https://en.wikibooks.org/wiki/OpenGL_Programming/Modern_OpenGL_Tutorial_Arcball
+
+        #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
         double ex = event->position().x();
         double ey = event->position().y();
+        #else
+        double ex = event->pos().x();
+        double ey = event->pos().y();
+        #endif
         if(ex != this->m_lastPos.x() || ey != this->m_lastPos.y()) {
 
             // calculate arcball vectors

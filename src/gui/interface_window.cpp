@@ -262,12 +262,12 @@ void InterfaceWindow::update_selection_label(const QString& text) {
     static const unsigned int sz = 120;
 
     if(pieces1[0].length() > sz) {
-        pieces1[0] = pieces1[0].first(sz) + "...";
+        pieces1[0] = pieces1[0].left(sz) + "...";
 
     }
 
     if(pieces2[0].length() > sz) {
-        pieces2[0] = pieces2[0].first(sz) + "...";
+        pieces2[0] = pieces2[0].left(sz) + "...";
 
     }
 
