@@ -57,6 +57,7 @@ StructureInfoBasicTab::StructureInfoBasicTab(QWidget* parent) : StructureInfoTab
  * @brief      Update data in tab based on current structure
  */
 void StructureInfoBasicTab::update_data() {
+    qDebug() << "Updating structure info: " << (size_t)this->structure.get();
     this->get_label("number_of_atoms")->setText(QString::number(this->structure->get_nr_atoms()));
     this->get_label("type_of_elements")->setText(this->structure->get_elements_string().c_str());
 
@@ -95,7 +96,6 @@ void StructureInfoBasicTab::reset() {
 }
 
 void StructureInfoBasicTab::update_table() {
-    // qDebug() << "Update table called";
     this->table_atomic_data->setRowCount(this->structure->get_nr_atoms());
 
     for(unsigned int i=0; i<this->structure->get_nr_atoms(); i++) {

@@ -296,8 +296,9 @@ void InterfaceWindow::push_structure() {
     // increment the structure stack pointer
     this->structure_stack_pointer++;
 
-    this->anaglyph_widget->set_structure_conservative(this->structure_stack.back());
-    qDebug() << this->structure_stack.size() << ": " << (size_t)this->structure_stack.back().get();
+    this->anaglyph_widget->set_structure_conservative(this->structure_stack[this->structure_stack_pointer]);
+    this->structure_info_widget->set_structure(this->structure_stack[this->structure_stack_pointer]);
+    qDebug() << "Stack size: " << this->structure_stack.size() << ": " << (size_t)this->structure_stack.back().get();
 }
 
 /**
@@ -309,6 +310,7 @@ void InterfaceWindow::increment_structure_stack_pointer() {
         qDebug() << "Incrementing stack pointer";
         qDebug() << "New pointer value: " << this->structure_stack_pointer;
         this->anaglyph_widget->set_structure_conservative(this->structure_stack[this->structure_stack_pointer]);
+        this->structure_info_widget->set_structure(this->structure_stack[this->structure_stack_pointer]);
     } else {
         qDebug() << "Ignoring stack pointer request; structure stack exchausted.";
     }
@@ -323,6 +325,7 @@ void InterfaceWindow::decrement_structure_stack_pointer() {
         qDebug() << "Decrementing stack pointer";
         qDebug() << "New pointer value: " << this->structure_stack_pointer;
         this->anaglyph_widget->set_structure_conservative(this->structure_stack[this->structure_stack_pointer]);
+        this->structure_info_widget->set_structure(this->structure_stack[this->structure_stack_pointer]);
     } else {
         qDebug() << "Ignoring stack pointer request; structure stack exchausted.";
     }

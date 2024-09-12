@@ -205,6 +205,9 @@ private slots:
     void decrement_structure_stack_pointer();
 
 signals:
+    /**
+     * @brief A new file is loaded into the window
+     */
     void new_file_loaded();
 
     /**

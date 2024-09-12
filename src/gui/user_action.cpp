@@ -58,12 +58,11 @@ void UserAction::handle_action_movement() {
         emit request_update();
     } else {
         this->movement_action = MovementAction::MOVEMENT_NONE;
-        emit(signal_push_structure());
         this->structure->commit_transposition(this->scene->transposition);
         this->scene->transposition.setToIdentity();
         emit transmit_message("");
+        emit(signal_push_structure());
         emit request_update();
-        emit signal_update_structure_info();
     }
 }
 
@@ -82,12 +81,11 @@ void UserAction::handle_action_rotation() {
         emit request_update();
     } else {
         this->rotation_action = RotationAction::ROTATION_NONE;
-        emit(signal_push_structure());
         this->structure->commit_transposition(this->scene->transposition);
         this->scene->transposition.setToIdentity();
         emit transmit_message("");
+        emit(signal_push_structure());
         emit request_update();
-        emit signal_update_structure_info();
     }
 }
 
@@ -197,12 +195,10 @@ void UserAction::handle_key(int key, Qt::KeyboardModifiers modifiers) {
                 case Qt::Key_Z: // undo action
                     emit signal_decrement_structure_stack_pointer();
                     emit request_update();
-                    emit signal_update_structure_info();
                 break;
                 case Qt::Key_Y: // redo action
                     emit signal_increment_structure_stack_pointer();
                     emit request_update();
-                    emit signal_update_structure_info();
                 break;
                 case Qt::Key_I: // invert selection
                     this->structure->invert_selection();
@@ -211,10 +207,9 @@ void UserAction::handle_key(int key, Qt::KeyboardModifiers modifiers) {
                 break;
                 case Qt::Key_F: // set frozen
                     qDebug() << "Freezing atoms";
-                    emit(signal_push_structure());
                     this->structure->set_frozen();
+                    emit(signal_push_structure());
                     emit request_update();
-                    emit signal_update_structure_info();
                 break;
             }
         }
@@ -224,10 +219,9 @@ void UserAction::handle_key(int key, Qt::KeyboardModifiers modifiers) {
             switch(key) {
                 case Qt::Key_F: // unset frozen
                     qDebug() << "Unfreezing atoms";
-                    emit(signal_push_structure());
                     this->structure->set_unfrozen();
+                    emit(signal_push_structure());
                     emit request_update();
-                    emit signal_update_structure_info();
                 break;
             }
         }
@@ -236,17 +230,15 @@ void UserAction::handle_key(int key, Qt::KeyboardModifiers modifiers) {
         if(key == Qt::Key_A && modifiers == Qt::ShiftModifier) {
             this->add_fragment();
             emit request_update();
-            emit signal_update_structure_info();
             return;
         }
 
         // delete selected atoms in primary buffer
         if(key == Qt::Key_Delete && this->structure->get_nr_atoms_primary_buffer() != 0) {
-            emit(signal_push_structure());
             this->structure->delete_atoms();
             this->structure->clear_selection();
+            emit(signal_push_structure());
             emit request_update();
-            emit signal_update_structure_info();
             return;
         }
     }
@@ -377,8 +369,8 @@ void UserAction::add_fragment() {
 
         // check if a fragment is actually set
         if(this->fragment) {
-            emit(signal_push_structure());
             this->structure_operator.add_fragment(this->structure.get(), *this->fragment.get(), distance);
+            emit(signal_push_structure());
         } else {
             throw std::runtime_error("No fragment is set");
         }

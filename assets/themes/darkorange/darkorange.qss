@@ -499,3 +499,11 @@ QHeaderView::section {
     background-color: #222;
     border: 0px;
 }
+
+QTableWidget QTableCornerButton::section {
+    background-color: #323232;
+}
+
+QTableWidget {
+    gridline-color: #fffff8;
+}
