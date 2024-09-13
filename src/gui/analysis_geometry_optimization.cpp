@@ -220,7 +220,7 @@ void AnalysisGeometryOptimization::update_graph() {
  * @brief      Open new OUTCAR file
  */
 void AnalysisGeometryOptimization::open() {
-    QString filename = QFileDialog::getOpenFileName(this, tr("Open file"), "", tr("VASP OUTCAR (OUTCAR)"));
+    QString filename = QFileDialog::getOpenFileName(this, tr("Open file"), "", tr("VASP OUTCAR (OUTCAR*)"));
 
     if(filename.isEmpty()) {
         return;

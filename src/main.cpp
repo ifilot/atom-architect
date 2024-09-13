@@ -89,6 +89,9 @@ int main(int argc, char *argv[]) {
     QCommandLineOption loadGeoOpt("g", "Load geometry analysis", "file");
     parser.addOption(loadGeoOpt);
 
+    QCommandLineOption openFile("o", "Open structure file", "file");
+    parser.addOption(openFile);
+
     AtomArchitectApplication app(argc, argv);
     qRegisterMetaType<std::vector<uint8_t>>("stdvector_uint8_t");
 
