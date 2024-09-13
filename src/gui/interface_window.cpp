@@ -86,7 +86,6 @@ InterfaceWindow::InterfaceWindow(MainWindow *mw)
     connect(this->anaglyph_widget, SIGNAL(signal_selection_message(const QString&)), this, SLOT(update_selection_label(const QString&)));
     connect(this->anaglyph_widget->get_user_action().get(), SIGNAL(signal_selection_message(const QString&)), this, SLOT(update_selection_label(const QString&)));
     connect(this->anaglyph_widget->get_user_action().get(), SIGNAL(signal_message_statusbar(const QString&)), this, SLOT(propagate_message_statusbar(const QString&)));
-    connect(this->anaglyph_widget->get_user_action().get(), SIGNAL(signal_update_structure_info()), this->structure_info_widget, SLOT(update()));
     connect(this->structure_info_widget->get_fragment_selector(), SIGNAL(signal_new_fragment(const Fragment&)), this->anaglyph_widget->get_user_action().get(), SLOT(set_fragment(const Fragment&)));
 
     // set default fragment
@@ -187,6 +186,11 @@ void InterfaceWindow::set_camera_mode(QAction* action) {
  * @brief      Loads a default structure file.
  */
 void InterfaceWindow::load_default_file() {
+    // do not load default file if a file is already loaded (via CLI)
+    if(this->structure_stack.size() != 0) {
+        return;
+    }
+
     qDebug() << "Opening default file";
     const std::string filename = "OUTCAR";
     QTemporaryDir tmp_dir;

@@ -308,6 +308,14 @@ void MainWindow::set_cli_parser(const QCommandLineParser& cli_parser) {
         ago_widget->set_structures(sl.load_outcar(cli_parser.value("g").toStdString()));
         ago_widget->show();
     }
+
+    if(!cli_parser.value("o").isEmpty()) {
+        QString filename = cli_parser.value("o");
+        qDebug() << "Received CLI '-o': " << filename;
+        this->interface_window->open_file(filename);
+        statusBar()->showMessage("Loaded " + filename + ".");
+        this->setWindowTitle(QFileInfo(filename).fileName() + " - " + QString(PROGRAM_NAME));
+    }
 }
 
 /**
