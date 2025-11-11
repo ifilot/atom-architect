@@ -243,14 +243,24 @@ std::shared_ptr<Structure> StructureLoader::load_poscar(const std::string& filen
     unitcell *= scalar;
     auto structure = std::make_shared<Structure>(unitcell);
 
-    // assume that POSCARS are POSCAR5
+    // assume that POSCARS are VASP5 POSCAR files
+    // TODO add functionality to also allow for VASP4
     std::getline(infile, line);
     static QRegularExpression regex_els("^.*[A-Za-z]+.*$"); // if the line contains even a single non-numeric character, it is a line containing elements
     QRegularExpressionMatch match = regex_els.match(QString(line.c_str()));
     if(!match.hasMatch()) {
-        throw std::runtime_error("This file is probably a VASP4 POSCAR file. You can only load VASP5+ POSCAR files");
+        throw std::runtime_error("This file is probably a VASP4 POSCAR file. You can currently only load VASP5+ POSCAR files");
     }
     QStringList elements = QString(line.c_str()).trimmed().split(whitespace);
+
+    // assess whether the element lines contain any "/"; if so prune the part
+    // after the slash
+    for (QString& el : elements) {
+        int slashPos = el.indexOf('/');
+        if (slashPos != -1) {
+            el = el.left(slashPos);  // keep only part before the '/'
+        }
+    }
 
     // get the number for each element
     std::getline(infile, line);
