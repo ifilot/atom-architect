@@ -21,4 +21,4 @@
 #pragma once
 
 #define PROGRAM_NAME "Atom Architect"
-#define PROGRAM_VERSION "0.2.4"
+#define PROGRAM_VERSION "0.2.5"
