@@ -98,16 +98,6 @@ private slots:
     void about();
 
     /**
-     * @brief      Opens an analysis geometry optimization window.
-     */
-    void open_analysis_geometry_optimization_window();
-
-    /**
-     * @brief      Opens an analysis geometry optimization window.
-     */
-    void open_analysis_neb_window();
-
-    /**
      * @brief      Set stereo projection
      */
     void set_stereo(QString fragment_shader);

@@ -46,6 +46,16 @@ QColor effectiveWindowBg(const QWidget* w) {
 AnaglyphWidget::AnaglyphWidget(QWidget* parent)
     : QOpenGLWidget(parent)
 {
+    QSurfaceFormat fmt;
+    fmt.setRenderableType(QSurfaceFormat::OpenGL);
+    fmt.setProfile(QSurfaceFormat::CoreProfile);
+    fmt.setVersion(3, 3);
+    fmt.setDepthBufferSize(24);
+    fmt.setStencilBufferSize(8);
+    fmt.setAlphaBufferSize(8);
+    fmt.setSamples(4);
+    setFormat(fmt);
+
     shader_manager = std::make_shared<ShaderProgramManager>();
 
     scene = std::make_shared<Scene>();
@@ -58,10 +68,8 @@ AnaglyphWidget::AnaglyphWidget(QWidget* parent)
     user_action = std::make_shared<UserAction>(scene);
 
     // Connect to user actions (new-style connect)
-    connect(user_action.get(), &UserAction::request_update,
-            this, &AnaglyphWidget::call_update);
-    connect(user_action.get(), &UserAction::transmit_message,
-            this, &AnaglyphWidget::transmit_message);
+    connect(user_action.get(), &UserAction::request_update, this, &AnaglyphWidget::call_update);
+    connect(user_action.get(), &UserAction::transmit_message, this, &AnaglyphWidget::transmit_message);
 
     // 60 FPS update timer (was previously started but not connected)
     auto* timer = new QTimer(this);
@@ -73,7 +81,6 @@ AnaglyphWidget::AnaglyphWidget(QWidget* parent)
     // These can help avoid Qt painting a background behind/composited with the GL buffer.
     // (Safe for typical QOpenGLWidget usage.)
     setAutoFillBackground(false);
-    setAttribute(Qt::WA_OpaquePaintEvent);
     setAttribute(Qt::WA_NoSystemBackground);
 }
 
@@ -206,6 +213,7 @@ void AnaglyphWidget::draw_structure()
 void AnaglyphWidget::set_structure(const std::shared_ptr<Structure>& s)
 {
     structure = s;
+    structure->update();
     user_action->set_structure(structure);
 
     VectorPosition z = VectorPosition::Ones(3);
@@ -248,11 +256,11 @@ void AnaglyphWidget::resizeGL(int w, int h)
         glTexImage2D(
             GL_TEXTURE_2D,
             0,
-            GL_RGB8,
+            GL_RGBA8,
             w,
             h,
             0,
-            GL_RGB,
+            GL_RGBA,
             GL_UNSIGNED_BYTE,
             nullptr
         );
@@ -276,7 +284,7 @@ void AnaglyphWidget::resizeGL(int w, int h)
         f->glRenderbufferStorageMultisample(
             GL_RENDERBUFFER,
             MSAA_SAMPLES,
-            GL_RGB8,
+            GL_RGBA8,
             w,
             h
         );
@@ -304,7 +312,7 @@ void AnaglyphWidget::mousePressEvent(QMouseEvent* event)
         m_lastPos = event->pos();
     }
 
-    if (event->buttons() & Qt::RightButton) {
+    if (this->allow_selection && event->buttons() & Qt::RightButton) {
         if (structure) {
             QVector3D ray_origin;
             QVector3D ray_direction;
@@ -496,7 +504,7 @@ void AnaglyphWidget::build_framebuffers()
         glBindFramebuffer(GL_FRAMEBUFFER, framebuffers[i]);
 
         glBindTexture(GL_TEXTURE_2D, texture_color_buffers[i]);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
@@ -527,7 +535,7 @@ void AnaglyphWidget::build_framebuffers()
         f->glRenderbufferStorageMultisample(
             GL_RENDERBUFFER,
             MSAA_SAMPLES,
-            GL_RGB8,
+            GL_RGBA8,
             w, h
         );
         glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
@@ -675,6 +683,7 @@ void AnaglyphWidget::paint_regular()
     glEnable(GL_BLEND);
     glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
     glBlendEquation(GL_FUNC_ADD);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
     // View matrix
     const QVector3D lookat(0.0f, 1.0f, 0.0f);
@@ -686,6 +695,7 @@ void AnaglyphWidget::paint_regular()
     // ============================================================
     glBindFramebuffer(GL_FRAMEBUFFER, msaa_fbo[FrameBuffer::SILHOUETTE_NORMAL]);
     glEnable(GL_DEPTH_TEST);
+    
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     if (structure) {

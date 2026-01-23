@@ -94,70 +94,75 @@ void StructureRenderer::draw_atoms_regular(const Structure* structure) {
 /**
  * @brief      Draws coordinate axes.
  */
-void StructureRenderer::draw_coordinate_axes() {
-    ShaderProgram *model_shader = this->shader_manager->get_shader_program("model_shader");
-    model_shader->bind();
+void StructureRenderer::draw_coordinate_axes()
+{
+    ShaderProgram* shader = shader_manager->get_shader_program("axes_shader");
+    shader->bind();
 
-    const QVector3D red(98.8f/100.0f, 20.8f/100.0f, 32.5f/100.0f);
-    const QVector3D green(54.9f/100.0f, 86.7f/100.0f, 0.0f);
-    const QVector3D blue(15.7f/100.0f, 60.0f/100.0f, 100.0f/100.0f);
+    QOpenGLFunctions* f = QOpenGLContext::currentContext()->functions();
 
-    // set view port, projection and view matrices
-    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
-    //f->glViewport(0.75f * this->scene->canvas_width, 0.0f, this->scene->canvas_width * 0.25f, this->scene->canvas_height * 0.25f);
+    // Save current viewport (so we can restore it)
+    GLint vp[4];
+    f->glGetIntegerv(GL_VIEWPORT, vp);
+
+    // Overlay state
     f->glEnable(GL_DEPTH_TEST);
     f->glEnable(GL_CULL_FACE);
+    f->glCullFace(GL_BACK);
+    f->glFrontFace(GL_CCW); // switch to GL_CW if winding is opposite
 
-    QMatrix4x4 projection_ortho;
-    projection_ortho.setToIdentity();
+    // ------------------------------------------------------------
+    // Ortho projection sized for the axis mesh
+    // ------------------------------------------------------------
+    QMatrix4x4 proj;
+    proj.setToIdentity();
     float ratio = (float)this->scene->canvas_height / (float)this->scene->canvas_width;
     static const float sz = 25.0f;
-    projection_ortho.ortho(-sz, sz, -sz * ratio, sz * ratio, -1000.0f, 1000.0f);
+    proj.ortho(-sz, sz, -sz * ratio, sz * ratio, -1000.0f, 1000.0f);
 
-    QMatrix4x4 model, view, mvp;
-    view.lookAt(QVector3D(0.0, -10.0, 0.0), QVector3D(0.0, 0.0, 0.0), QVector3D(0.0, 0.0, 1.0));
+    // A simple fixed view, like your old working code
+    QMatrix4x4 view;
+    view.setToIdentity();
+    view.lookAt(QVector3D(0.0f, -10.0f, 0.0f),
+                QVector3D(0.0f,  0.0f, 0.0f),
+                QVector3D(0.0f,  0.0f, 1.0f));
+
+    // Rotation follows the scene orientation (no translation)
+    QMatrix4x4 model;
     model.setToIdentity();
+    model = scene->arcball_rotation * scene->rotation_matrix;
 
-    // set general properties
-    model_shader->set_uniform("view", this->scene->view);
-    model_shader->set_uniform("lightpos", QVector3D(0,-1000,1));
+    shader->set_uniform("alpha", 1.0f);
 
-    // *******************
-    // draw the three axes
-    // *******************
+    const QVector3D red   (0.988f, 0.208f, 0.325f);
+    const QVector3D green (0.549f, 0.867f, 0.000f);
+    const QVector3D blue  (0.157f, 0.600f, 1.000f);
 
-    // z-axis
-    QMatrix4x4 axis_rotation;
-    axis_rotation.setToIdentity();
-    model = this->scene->arcball_rotation * this->scene->rotation_matrix * axis_rotation;
-    mvp = projection_ortho * view * model;
-    model_shader->set_uniform("model", model);
-    model_shader->set_uniform("mvp", mvp);
-    model_shader->set_uniform("color", blue);
-    this->axis_model->draw();
+    // Z axis
+    shader->set_uniform("mvp", proj * view * model);
+    shader->set_uniform("color", blue);
+    axis_model->draw();
 
-    // y-axis
-    axis_rotation.setToIdentity();
-    axis_rotation.rotate(-90.0f, QVector3D(1.0, 0.0, 0.0));
-    model = this->scene->arcball_rotation * this->scene->rotation_matrix * axis_rotation;
-    mvp = projection_ortho * view * model;
-    model_shader->set_uniform("model", model);
-    model_shader->set_uniform("mvp", mvp);
-    model_shader->set_uniform("color", green);
-    this->axis_model->draw();
+    // Y axis
+    QMatrix4x4 ry;
+    ry.rotate(-90.0f, QVector3D(1, 0, 0));
+    shader->set_uniform("mvp", proj * view * (model * ry));
+    shader->set_uniform("color", green);
+    axis_model->draw();
 
-    // x-axis
-    axis_rotation.setToIdentity();
-    axis_rotation.rotate(90.0f, QVector3D(0.0, 1.0, 0.0));
-    model = this->scene->arcball_rotation * this->scene->rotation_matrix * axis_rotation;
-    mvp = projection_ortho * view * model;
-    model_shader->set_uniform("model", model);
-    model_shader->set_uniform("mvp", mvp);
-    model_shader->set_uniform("color", red);
-    this->axis_model->draw();
+    // X axis
+    QMatrix4x4 rx;
+    rx.rotate(90.0f, QVector3D(0, 1, 0));
+    shader->set_uniform("mvp", proj * view * (model * rx));
+    shader->set_uniform("color", red);
+    axis_model->draw();
 
-    model_shader->release();
+    shader->release();
+
+    // Restore viewport
+    f->glViewport(vp[0], vp[1], vp[2], vp[3]);
 }
+
 
 /**
  * @brief      Draws the atoms in the periodicity expansions.

@@ -118,9 +118,14 @@ private:
     bool flag_show_periodicity_z = false;           // whether to shwo periodicity in the z direction
 
     std::shared_ptr<UserAction> user_action;        // object that stores current action of the user on a structure
+    bool allow_selection = true;                    // whether selecting atoms is possible
 
 public:
     AnaglyphWidget(QWidget *parent = 0);
+
+    inline void disable_selection() {
+        this->allow_selection = false;
+    }
 
     /**
      * @brief      Paint the models in the models vector to the screen

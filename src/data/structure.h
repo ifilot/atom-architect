@@ -58,6 +58,9 @@ private:
     std::vector<unsigned int> secondary_buffer; // secondary selection buffer
 
 public:
+    Structure(const Structure&) = default;
+    Structure& operator=(const Structure&) = default;
+
     /**
      * @brief      Constructs a new instance.
      */
@@ -246,6 +249,21 @@ public:
         qDebug() << "Deleting structure ("
                  << QString("0x%1").arg((size_t)this, 0, 16)
                  << "; " << this->atoms.size() << " atoms ).";
+    }
+
+    std::shared_ptr<Structure> clone_for_view() const {
+        auto c = std::make_shared<Structure>(*this);
+
+        // HARD RESET of view state
+        c->clear_selection();
+        c->bonds.clear();
+        c->atoms_expansion.clear();
+        c->element_types.clear();
+
+        // rebuild derived state once
+        c->update();
+
+        return c;
     }
 
     //********************************************

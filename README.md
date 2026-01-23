@@ -5,7 +5,7 @@
 [![linux](https://github.com/ifilot/atom-architect/actions/workflows/linux.yml/badge.svg)](https://github.com/ifilot/atom-architect/actions/workflows/linux.yml)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
-![Screenshot of Atom Architect](img/atom-architect-screenshot.JPG)
+![Screenshot of Atom Architect](img/atom-architect-screenshot.png)
 
 ## Purpose
 Atom Architect is a VASP visualization and structure building tool. Its unique

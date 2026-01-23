@@ -40,6 +40,8 @@ add_executable(atom-architect WIN32
     src/gui/user_action.cpp
     src/gui/scene.cpp
     src/gui/analysis_geometry_optimization.cpp
+    src/gui/geometry_optimization_viewer.cpp
+    src/gui/geometry_optimization_graph.cpp
     src/gui/analysis_neb.cpp
     src/gui/logwindow.cpp
     src/data/atom_settings.cpp

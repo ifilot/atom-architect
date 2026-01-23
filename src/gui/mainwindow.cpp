@@ -40,7 +40,6 @@ MainWindow::MainWindow(const std::shared_ptr<QStringList> _log_messages,
     QMenu *menu_file = menuBar->addMenu(tr("&File"));
     QMenu *menu_view = menuBar->addMenu(tr("&View"));
     QMenu *menu_select = menuBar->addMenu(tr("&Select"));
-    QMenu *menu_analysis = menuBar->addMenu(tr("&Analysis"));
     QMenu *menu_help = menuBar->addMenu(tr("&Help"));
 
     // actions for file menu
@@ -86,10 +85,6 @@ MainWindow::MainWindow(const std::shared_ptr<QStringList> _log_messages,
     QAction *action_projection_interlaced_columns_rl = new QAction(menu_projection_interlaced);
     QAction *action_projection_interlaced_checkerboard_lr = new QAction(menu_projection_interlaced);
     QAction *action_projection_interlaced_checkerboard_rl = new QAction(menu_projection_interlaced);
-
-    // actions for analysis menu
-    QAction *action_analysis_optimization = new QAction(menu_analysis);
-    QAction *action_analysis_neb = new QAction(menu_analysis);
 
     // actions for help menu
     QAction *action_about = new QAction(menu_help);
@@ -173,12 +168,6 @@ MainWindow::MainWindow(const std::shared_ptr<QStringList> _log_messages,
     action_projection_interlaced_checkerboard_lr->setIcon(QIcon(":/assets/icon/interlaced_checkerboard_lr_32.png"));
     action_projection_interlaced_checkerboard_rl->setIcon(QIcon(":/assets/icon/interlaced_checkerboard_rl_32.png"));
 
-    // create actions for analysis menu
-    action_analysis_optimization->setText(tr("Geometry optimization analysis"));
-    action_analysis_optimization->setShortcut(Qt::Key_F5);
-    action_analysis_neb->setText(tr("NEB analysis"));
-    action_analysis_neb->setShortcut(Qt::Key_F6);
-
     // create actions for about menu
     action_about->setText(tr("About"));
     // action_about->setIcon(QIcon(":/assets/icon/info.png"));
@@ -220,10 +209,6 @@ MainWindow::MainWindow(const std::shared_ptr<QStringList> _log_messages,
     menu_projection_interlaced->addAction(action_projection_interlaced_checkerboard_lr);
     menu_projection_interlaced->addAction(action_projection_interlaced_checkerboard_rl);
 
-    // add actions for analysis menu
-    menu_analysis->addAction(action_analysis_optimization);
-    menu_analysis->addAction(action_analysis_neb);
-
     // add actions to help menu
     menu_help->addAction(action_about);
 
@@ -241,10 +226,6 @@ MainWindow::MainWindow(const std::shared_ptr<QStringList> _log_messages,
     connect(action_projection_interlaced_columns_rl, &QAction::triggered, this, [this]{ MainWindow::set_stereo("stereo_interlaced_columns_rl"); });
     connect(action_projection_interlaced_checkerboard_lr, &QAction::triggered, this, [this]{ MainWindow::set_stereo("stereo_interlaced_checkerboard_lr"); });
     connect(action_projection_interlaced_checkerboard_rl, &QAction::triggered, this, [this]{ MainWindow::set_stereo("stereo_interlaced_checkerboard_rl"); });
-
-    // connect actions analysis window
-    connect(action_analysis_optimization, &QAction::triggered, this, &MainWindow::open_analysis_geometry_optimization_window);
-    connect(action_analysis_neb, &QAction::triggered, this, &MainWindow::open_analysis_neb_window);
 
     // connect actions about menu
     connect(action_about, &QAction::triggered, this, &MainWindow::about);
@@ -288,7 +269,7 @@ MainWindow::MainWindow(const std::shared_ptr<QStringList> _log_messages,
 
     // set Window properties
     this->setWindowTitle(QString(PROGRAM_NAME) + " " + QString(PROGRAM_VERSION));
-    this->resize(1280,640);
+    this->resize(1280,960);
 
     qDebug() << "Done building MainWindow";
 }
@@ -297,21 +278,6 @@ MainWindow::MainWindow(const std::shared_ptr<QStringList> _log_messages,
  * @brief Parse command line arguments
  */
 void MainWindow::set_cli_parser(const QCommandLineParser& cli_parser) {
-    if(!cli_parser.value("n").isEmpty()) {
-        qDebug() << "Received CLI '-n': " << cli_parser.value("n");
-        auto* neb_widget = new AnalysisNEB();
-        neb_widget->load_file(cli_parser.value("n"));
-        neb_widget->show();
-    }
-
-    if(!cli_parser.value("g").isEmpty()) {
-        qDebug() << "Received CLI '-g': " << cli_parser.value("g");
-        auto* ago_widget = new AnalysisGeometryOptimization();
-        auto sl = StructureLoader();
-        ago_widget->set_structures(sl.load_outcar(cli_parser.value("g").toStdString()));
-        ago_widget->show();
-    }
-
     if(!cli_parser.value("o").isEmpty()) {
         QString filename = cli_parser.value("o");
         qDebug() << "Received CLI '-o': " << filename;
@@ -430,27 +396,6 @@ void MainWindow::about() {
     message_box.setWindowIcon(QIcon(":/assets/icon/atom_architect_256.ico"));
     message_box.setIconPixmap(QPixmap(":/assets/icon/atom_architect_256.ico"));
     message_box.exec();
-}
-
-/**
- * @brief      Opens an analysis geometry optimization window.
- */
-void MainWindow::open_analysis_geometry_optimization_window() {
-    auto* ago_widget = new AnalysisGeometryOptimization();
-    const std::string filename = "OUTCAR";
-    QTemporaryDir tmp_dir;
-    QFile::copy(":/assets/structures/" + tr(filename.c_str()), tmp_dir.path() + "/" + filename.c_str());
-    auto sl = StructureLoader();
-    ago_widget->set_structures(sl.load_outcar((tmp_dir.path() + "/" + filename.c_str()).toStdString()));
-    ago_widget->show();
-}
-
-/**
- * @brief      Opens an analysis geometry optimization window.
- */
-void MainWindow::open_analysis_neb_window() {
-    auto* anw = new AnalysisNEB();
-    anw->show();
 }
 
 /**

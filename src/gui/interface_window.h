@@ -38,6 +38,7 @@
 #include <QInputDialog>
 
 #include "anaglyph_widget.h"
+#include "analysis_geometry_optimization.h"
 #include "mainwindow.h"
 #include "../data/structure_loader.h"
 #include "structure_info_widget.h"
@@ -61,6 +62,7 @@ private:
     QLabel *interaction_label;
     QLabel *selection_label;
     StructureInfoWidget *structure_info_widget;
+    AnalysisGeometryOptimization *geometryOptimization;
 
     ToolBarWidget *toolbar;
 

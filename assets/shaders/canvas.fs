@@ -5,8 +5,7 @@ in vec2 TexCoords;
 
 uniform sampler2D regular_texture;
 uniform sampler2D silhouette_texture;
-
-layout(origin_upper_left, pixel_center_integer) in vec4 gl_FragCoord;
+uniform int outline_radius;
 
 vec4 calculate_border() {
     vec3 pixcol = texture(silhouette_texture, TexCoords).rgb;
@@ -27,10 +26,10 @@ vec4 calculate_border() {
 
                     if(pixcol.b > 0.4f) {
                         // secondary buffer color
-                        return vec4(236.f/255.f, 115.f/255.f, 255.f/255.f, 0.3f);
+                        return vec4(236.f/255.f, 115.f/255.f, 255.f/255.f, 0.8f);
                     } else {
                         // primary buffer color
-                        return vec4(67.f/255.f, 247.f/255.f, 181.f/255.f, 0.3f);
+                        return vec4(67.f/255.f, 247.f/255.f, 181.f/255.f, 0.8f);
                     }
                 }
             }
@@ -43,6 +42,8 @@ vec4 calculate_border() {
 void main()
 {
     vec3 canvas = texture(regular_texture, TexCoords).rgb;
-    vec3 silhouette = texture(silhouette_texture, TexCoords).rgb;
-    FragColor = vec4(canvas, 1.0f) + calculate_border();
+    vec4 border = calculate_border();
+
+    FragColor.rgb = mix(canvas, border.rgb, border.a);
+    FragColor.a   = 1.0;
 }
