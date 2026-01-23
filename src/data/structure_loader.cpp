@@ -33,21 +33,27 @@ StructureLoader::StructureLoader(){}
  * @return     shared ptr to structure object
  */
 std::shared_ptr<Structure> StructureLoader::load_file(const std::string& filename) {
+    qDebug() << "Building structure via StructureLoader";
     QFileInfo qfi(QString(filename.c_str()));
+
     std::shared_ptr<Structure> structure;
-    if(qfi.fileName().startsWith("POSCAR") || qfi.fileName().startsWith("CONTCAR") || qfi.fileName().endsWith(".vasp")) {
+
+    if(qfi.fileName().startsWith("POSCAR") || 
+       qfi.fileName().startsWith("CONTCAR") || 
+       qfi.completeSuffix() == "vasp") {
         structure = this->load_poscar(filename);
     } else if(qfi.fileName().startsWith("OUTCAR")) {
         structure = this->load_outcar(filename).back();
     } else if(qfi.completeSuffix() == "geo") {
         structure = this->load_geo(filename);
-    }  else if(qfi.completeSuffix() == ".xyz") {
+    }  else if(qfi.completeSuffix() == "xyz") {
+        qDebug() << "Opening .xyz file";
         structure = this->load_xyz(filename);
     }
 
     if(!structure) {
         std::string fname = qfi.fileName().toStdString();
-        throw std::runtime_error("Unrecognised filename: " + fname);
+        throw std::runtime_error("Unrecognized filename: " + fname);
     } else {
         structure->update();
         return structure;
