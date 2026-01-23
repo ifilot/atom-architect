@@ -143,7 +143,11 @@ void AnaglyphWidget::paintGL()
         glEnable(GL_DEPTH_TEST);
 
         // Transparent background (will be alpha-blended later)
-        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        QColor bg = parentWidget()
+            ? parentWidget()->palette().color(QPalette::Window)
+            : palette().color(QPalette::Window);
+
+        glClearColor(bg.redF(), bg.greenF(), bg.blueF(), 0.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         structure_renderer->draw_coordinate_axes();
@@ -484,9 +488,6 @@ void AnaglyphWidget::build_framebuffers()
     const int w = geometry().width();
     const int h = geometry().height();
 
-    // ---------------------------------------------------------------------
-    // RESOLVED (texture) framebuffers – what shaders will sample from
-    // ---------------------------------------------------------------------
     glGenFramebuffers(FrameBuffer::NR_FRAMEBUFFERS, framebuffers);
     glGenTextures(FrameBuffer::NR_FRAMEBUFFERS, texture_color_buffers);
     glGenRenderbuffers(FrameBuffer::NR_FRAMEBUFFERS, rbo);
@@ -741,11 +742,9 @@ void AnaglyphWidget::paint_regular()
 
     quad_vao.bind();
     f->glActiveTexture(GL_TEXTURE0);
-    f->glBindTexture(GL_TEXTURE_2D,
-        texture_color_buffers[FrameBuffer::STRUCTURE_NORMAL]);
+    f->glBindTexture(GL_TEXTURE_2D, texture_color_buffers[FrameBuffer::STRUCTURE_NORMAL]);
     f->glActiveTexture(GL_TEXTURE1);
-    f->glBindTexture(GL_TEXTURE_2D,
-        texture_color_buffers[FrameBuffer::SILHOUETTE_NORMAL]);
+    f->glBindTexture(GL_TEXTURE_2D, texture_color_buffers[FrameBuffer::SILHOUETTE_NORMAL]);
     f->glDrawArrays(GL_TRIANGLES, 0, 6);
     quad_vao.release();
 
@@ -846,9 +845,7 @@ void AnaglyphWidget::paint_stereographic()
     glDisable(GL_DEPTH_TEST);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    ShaderProgram* stereo_shader =
-        shader_manager->get_shader_program(stereographic_type_name.toUtf8().constData());
-
+    ShaderProgram* stereo_shader = shader_manager->get_shader_program(stereographic_type_name.toUtf8().constData());
     stereo_shader->bind();
     stereo_shader->set_uniform("left_eye_texture", 0);
     stereo_shader->set_uniform("right_eye_texture", 1);
@@ -857,11 +854,9 @@ void AnaglyphWidget::paint_stereographic()
 
     quad_vao.bind();
     f->glActiveTexture(GL_TEXTURE0);
-    f->glBindTexture(GL_TEXTURE_2D,
-        texture_color_buffers[FrameBuffer::STRUCTURE_LEFT]);
+    f->glBindTexture(GL_TEXTURE_2D, texture_color_buffers[FrameBuffer::STRUCTURE_LEFT]);
     f->glActiveTexture(GL_TEXTURE1);
-    f->glBindTexture(GL_TEXTURE_2D,
-        texture_color_buffers[FrameBuffer::STRUCTURE_RIGHT]);
+    f->glBindTexture(GL_TEXTURE_2D, texture_color_buffers[FrameBuffer::STRUCTURE_RIGHT]);
     f->glDrawArrays(GL_TRIANGLES, 0, 6);
     quad_vao.release();
 
