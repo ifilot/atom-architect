@@ -103,28 +103,20 @@ InterfaceWindow::InterfaceWindow(MainWindow *mw)
  *
  * @param      event  The event
  */
-void InterfaceWindow::keyPressEvent(QKeyEvent *event) {
-    // qDebug() << event->key();
+void InterfaceWindow::keyPressEvent(QKeyEvent* event) {
+    // Only forward when the 3D viewport is active
+    if(this->anaglyph_widget->hasFocus()) {
+        if(this->anaglyph_widget
+               ->get_user_action()
+               ->handle_key(event)) {
 
-    std::vector<unsigned int> key_listing = {
-        Qt::Key_G, // grab atoms
-        Qt::Key_R, // rotate atoms
-        Qt::Key_X, // x-direction
-        Qt::Key_Y, // y-direction
-        Qt::Key_Z, // z-direction
-        Qt::Key_F, // focus-direction
-        Qt::Key_D, // deselect
-        Qt::Key_I, // Invert
-        Qt::Key_A, // add fragment
-        Qt::Key_R, // replace atom
-        Qt::Key_Delete // delete atoms
-    };
-
-
-    if(std::find(key_listing.begin(), key_listing.end(), event->key()) != key_listing.end()) {
-        this->anaglyph_widget->get_user_action()->handle_key(event->key(), event->modifiers());
+            event->accept();
+            return;
+        }
     }
 
+    // Let Qt handle it (menus, shortcuts, text input, etc.)
+    QWidget::keyPressEvent(event);
 }
 
 /**
@@ -202,42 +194,53 @@ void InterfaceWindow::load_default_file() {
  * @brief      Add a fragment to the selection
  */
 void InterfaceWindow::add_fragment() {
-    this->anaglyph_widget->get_user_action()->handle_key(Qt::Key_A, Qt::ShiftModifier);
+    this->anaglyph_widget
+        ->get_user_action()
+        ->cmd_add_fragment();
 }
 
 /**
  * @brief      Select all atoms
  */
 void InterfaceWindow::select_all_atoms() {
-    this->anaglyph_widget->get_user_action()->handle_key(Qt::Key_A, Qt::ControlModifier);
+    this->anaglyph_widget
+        ->get_user_action()
+        ->cmd_select_all();
 }
 
 /**
  * @brief      Deselect all atoms
  */
 void InterfaceWindow::deselect_all_atoms() {
-    this->anaglyph_widget->get_user_action()->handle_key(Qt::Key_D, Qt::ControlModifier);
+    this->anaglyph_widget
+        ->get_user_action()
+        ->cmd_deselect_all();
 }
 
 /**
  * @brief      Invert selection
  */
 void InterfaceWindow::invert_selection() {
-    this->anaglyph_widget->get_user_action()->handle_key(Qt::Key_I, Qt::ControlModifier);
+    this->anaglyph_widget
+        ->get_user_action()
+        ->cmd_invert_selection();
 }
 
 /**
  * @brief      Set selected atoms to frozen state
  */
 void InterfaceWindow::set_frozen() {
-    this->anaglyph_widget->get_user_action()->handle_key(Qt::Key_F, Qt::ControlModifier);
+    this->anaglyph_widget
+        ->get_user_action()
+        ->cmd_set_frozen();
 }
-
 /**
  * @brief      Set selected atoms to unfrozen state
  */
 void InterfaceWindow::set_unfrozen() {
-    this->anaglyph_widget->get_user_action()->handle_key(Qt::Key_F, Qt::ControlModifier | Qt::ShiftModifier);
+    this->anaglyph_widget
+        ->get_user_action()
+        ->cmd_set_unfrozen();
 }
 
 /**
@@ -286,23 +289,23 @@ void InterfaceWindow::update_selection_label(const QString& text) {
  *        create a new copy on the stack
  */
 void InterfaceWindow::push_structure() {
-    qDebug() << "Pushing latest structure to the stack ("
-             << (size_t)this->structure_stack.back().get()
-             << ")";
+    // Current structure as used by the renderer/user action
+    auto current = this->anaglyph_widget->get_structure();
+    if(!current) return;
 
-    // destroy everything "beyond" the stack pointer
-    this->structure_stack.resize(this->structure_stack_pointer+1);
+    // If we undid before, drop redo history
+    this->structure_stack.resize(this->structure_stack_pointer + 1);
 
-    this->structure_stack.push_back(
-        std::make_shared<Structure>(*this->structure_stack.back()) // creates a copy
-    );
-
-    // increment the structure stack pointer
+    // Push a NEW snapshot of the current state
+    this->structure_stack.push_back(std::make_shared<Structure>(*current));
     this->structure_stack_pointer++;
 
+    // Make the newly pushed snapshot the active one everywhere
     this->anaglyph_widget->set_structure_conservative(this->structure_stack[this->structure_stack_pointer]);
     this->structure_info_widget->set_structure(this->structure_stack[this->structure_stack_pointer]);
-    qDebug() << "Stack size: " << this->structure_stack.size() << ": " << (size_t)this->structure_stack.back().get();
+
+    // Also ensure UserAction uses the same shared_ptr (critical!)
+    this->anaglyph_widget->get_user_action()->set_structure(this->structure_stack[this->structure_stack_pointer]);
 }
 
 /**
@@ -311,12 +314,11 @@ void InterfaceWindow::push_structure() {
 void InterfaceWindow::increment_structure_stack_pointer() {
     if(this->structure_stack_pointer < (this->structure_stack.size() - 1)) {
         this->structure_stack_pointer++;
-        qDebug() << "Incrementing stack pointer";
-        qDebug() << "New pointer value: " << this->structure_stack_pointer;
-        this->anaglyph_widget->set_structure_conservative(this->structure_stack[this->structure_stack_pointer]);
-        this->structure_info_widget->set_structure(this->structure_stack[this->structure_stack_pointer]);
-    } else {
-        qDebug() << "Ignoring stack pointer request; structure stack exchausted.";
+
+        auto s = this->structure_stack[this->structure_stack_pointer];
+        this->anaglyph_widget->set_structure_conservative(s);
+        this->structure_info_widget->set_structure(s);
+        this->anaglyph_widget->get_user_action()->set_structure(s);
     }
 }
 
@@ -326,11 +328,10 @@ void InterfaceWindow::increment_structure_stack_pointer() {
 void InterfaceWindow::decrement_structure_stack_pointer() {
     if(this->structure_stack_pointer > 0) {
         this->structure_stack_pointer--;
-        qDebug() << "Decrementing stack pointer";
-        qDebug() << "New pointer value: " << this->structure_stack_pointer;
-        this->anaglyph_widget->set_structure_conservative(this->structure_stack[this->structure_stack_pointer]);
-        this->structure_info_widget->set_structure(this->structure_stack[this->structure_stack_pointer]);
-    } else {
-        qDebug() << "Ignoring stack pointer request; structure stack exchausted.";
+
+        auto s = this->structure_stack[this->structure_stack_pointer];
+        this->anaglyph_widget->set_structure_conservative(s);
+        this->structure_info_widget->set_structure(s);
+        this->anaglyph_widget->get_user_action()->set_structure(s);
     }
 }
