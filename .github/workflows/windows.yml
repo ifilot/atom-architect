@@ -35,109 +35,75 @@ jobs:
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
 
-  #
-  # Windows
-  #
-  build-windows:
+  # ==========================================================
+  # Windows build + installer (MSYS2 MinGW64)
+  # ==========================================================
+  windows-mingw:
+    name: Windows (MSYS2 MinGW64)
     runs-on: windows-latest
-    steps:
-    - uses: actions/checkout@v3
-    - name: Install Qt
-      uses: jurplel/install-qt-action@v3
-      with:
-        version: '6.7.0'
-        target: 'desktop'
-        arch: 'win64_msvc2019_64'
-        modules: 'qtcharts'
-        cache: true
-    - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -S ${{github.workspace}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
-    - name: Build
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
-    - name: Upload executable
-      uses: actions/upload-artifact@v4
-      with:
-        name: ${{env.EXEC}}
-        path: ${{github.workspace}}/build/Release/${{env.EXEC}}
-  
-  # create packaging metadata
-  prepare-installer-windows:
-    runs-on: ubuntu-latest
-    needs: build-windows
-    permissions: write-all
-    steps:
-    - uses: actions/checkout@v3
-    - name: install dependencies
-      run: sudo apt-get update && sudo apt-get install -y python3 python3-jinja2
-    - name: run packaging script
-      run: python3 packaging/package.py
-    - name: Upload packaging scripts
-      uses: actions/upload-artifact@v4
-      with:
-        name: package-metadata
-        path: |
-          ${{github.workspace}}/packaging/config/config.xml
-          ${{github.workspace}}/packaging/packages/com.vendor.product/meta/installscript.qs
-          ${{github.workspace}}/packaging/packages/com.vendor.product/meta/package.xml
 
-  # create Windows installer
-  create-installer-windows:
-    runs-on: windows-latest
-    needs: prepare-installer-windows
-    permissions: write-all
-    steps:
-    - uses: actions/checkout@v3
-    - name: Install Qt
-      uses: jurplel/install-qt-action@v3
-      with:
-        version: '6.7.0'
-        target: 'desktop'
-        arch: 'win64_msvc2019_64'
-        modules: 'qtcharts'
-        tools: 'tools_ifw'
-        cache: true
-    - name: Download artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: ${{env.EXEC}}
-        path: packaging/packages/com.vendor.product/data/
-    - name: Download installer metadata
-      uses: actions/download-artifact@v4
-      with:
-        name: package-metadata
-        path: ${{github.workspace}}/packaging
-    - name: Get dependencies
-      run: windeployqt.exe packaging\packages\com.vendor.product\data\${{env.EXEC}} --release --force
-    - name: Copy assets
-      run: copy assets\icon\atom_architect_256.ico packaging\packages\com.vendor.product\data\atom_architect_256.ico
-    - name: Create installer
-      run: ${{github.workspace}}\..\Qt\Tools\QtInstallerFramework\4.7\bin\binarycreator.exe -c config\config.xml -p packages ${{env.PROGNAME}}-installer-win64.exe
-      working-directory: packaging
-    - name: Upload installer
-      uses: actions/upload-artifact@v4
-      with:
-        name: ${{env.PROGNAME}}-installer-win64.exe
-        path: packaging/${{env.PROGNAME}}-installer-win64.exe
+    defaults:
+      run:
+        shell: msys2 {0}
 
-  # deploy Windows installer
-  deploy-installer-windows:
-    runs-on: ubuntu-latest
-    needs: [create-installer-windows, create-release]
-    permissions: write-all
-    if: startsWith(github.ref, 'refs/tags/v')
     steps:
-    - name: Download artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: ${{env.PROGNAME}}-installer-win64.exe
-        path: ./
-    - name: Upload Release Asset
-      id: upload-release-asset 
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: ${{env.PROGNAME}}-installer-win64.exe
-        asset_name: ${{env.PROGNAME}}-installer-win64.exe
-        asset_content_type: application/vnd.microsoft.portable-executable
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # --------------------------------------------------------
+      # MSYS2 + MinGW toolchain
+      # --------------------------------------------------------
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          path-type: inherit
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-qt5-base
+            mingw-w64-x86_64-qt5-tools
+            mingw-w64-x86_64-qt5-charts
+            mingw-w64-x86_64-boost
+            mingw-w64-x86_64-eigen3
+            mingw-w64-x86_64-glm
+            mingw-w64-x86_64-mesa
+            mingw-w64-x86_64-nsis
+
+      # --------------------------------------------------------
+      # Debug: ensure windeployqt exists
+      # --------------------------------------------------------
+      - name: List Qt deploy tools
+        run: |
+          ls /mingw64/bin/windeployqt*
+
+      # --------------------------------------------------------
+      # Build & package (delegated to script)
+      # --------------------------------------------------------
+      - name: Build & Package (Windows)
+        run: |
+          chmod +x ./package-windows.sh
+          ./package-windows.sh
+
+      # --------------------------------------------------------
+      # Always keep installer as artifact
+      # --------------------------------------------------------
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: |
+            *.exe
+
+      # ========================================================
+      # 🚀 Create GitHub Release and upload installer
+      # ========================================================
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+            files: |
+              *.exe
+            generate_release_notes: true

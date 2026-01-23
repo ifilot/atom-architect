@@ -4,6 +4,9 @@
         <file>assets/fragments/adsorbates.json</file>
         <file>assets/fragments/hydrocarbons.json</file>
         <file>assets/icon/atom_architect_256.ico</file>
+        <file>assets/icon/add_fragment.png</file>
+        <file>assets/icon/expand_xy.png</file>
+        <file>assets/icon/expand_z.png</file>
         <file>assets/icon/atom_architect_256.png</file>
         <file>assets/icon/atom_architect_logo.png</file>
         <file>assets/icon/two_dimensional_32.png</file>
@@ -52,10 +55,6 @@
         <file>assets/shaders/stereo.vs</file>
         <file>assets/structures/POSCAR</file>
         <file>assets/structures/OUTCAR</file>
-        <file>assets/themes/darkorange/darkorange.qss</file>
-        <file>assets/themes/darkorange/icons/checkbox.png</file>
-        <file>assets/themes/darkorange/icons/down_arrow.png</file>
-        <file>assets/themes/darkorange/icons/handle.png</file>
         <file>assets/shaders/simplecanvas.fs</file>
         <file>assets/shaders/simplecanvas.vs</file>
     </qresource>

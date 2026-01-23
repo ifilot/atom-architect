@@ -20,9 +20,11 @@
 
 #pragma once
 
+#include <QApplication>
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions>
 #include <QOpenGLVertexArrayObject>
+#include <QOpenGLExtraFunctions>
 #include <QOpenGLBuffer>
 #include <QMouseEvent>
 #include <QCoreApplication>
@@ -76,8 +78,14 @@ private:
 
     QPoint top_left;
 
+    // anti-aliasing
+    static constexpr int MSAA_SAMPLES = 4;
+    GLuint msaa_fbo[FrameBuffer::NR_FRAMEBUFFERS];
+    GLuint msaa_color_rbo[FrameBuffer::NR_FRAMEBUFFERS];
+    GLuint msaa_depth_rbo[FrameBuffer::NR_FRAMEBUFFERS];
+
     // default background color
-    static constexpr float tint = 21.0f / 255.0f;
+    static constexpr float tint = 255.0f / 255.0f;
 
     unsigned int framebuffers[FrameBuffer::NR_FRAMEBUFFERS];
     unsigned int texture_color_buffers[FrameBuffer::NR_FRAMEBUFFERS];

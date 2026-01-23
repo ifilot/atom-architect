@@ -104,14 +104,14 @@ MainWindow::MainWindow(const std::shared_ptr<QStringList> _log_messages,
     // create actions for file menu
     action_open->setText(tr("Open"));
     action_open->setShortcuts(QKeySequence::Open);
-    action_open->setIcon(QIcon(":/assets/icon/open.png"));
+    // action_open->setIcon(QIcon(":/assets/icon/open.png"));
     action_save->setText(tr("Save"));
     action_save->setShortcuts(QKeySequence::Save);
-    action_save->setIcon(QIcon(":/assets/icon/save.png"));
+    // action_save->setIcon(QIcon(":/assets/icon/save.png"));
     action_quit->setText(tr("Quit"));
     action_quit->setShortcuts(QKeySequence::Quit);
     action_quit->setShortcut(Qt::CTRL | Qt::Key_Q);
-    action_quit->setIcon(QIcon(":/assets/icon/close.png"));
+    // action_quit->setIcon(QIcon(":/assets/icon/close.png"));
 
     action_select_all->setText(tr("Select all atoms"));
     action_select_all->setShortcut(Qt::CTRL | Qt::Key_A);
@@ -178,7 +178,7 @@ MainWindow::MainWindow(const std::shared_ptr<QStringList> _log_messages,
 
     // create actions for about menu
     action_about->setText(tr("About"));
-    action_about->setIcon(QIcon(":/assets/icon/info.png"));
+    // action_about->setIcon(QIcon(":/assets/icon/info.png"));
 
     // add actions to file menu
     menu_file->addAction(action_open);
@@ -281,7 +281,7 @@ MainWindow::MainWindow(const std::shared_ptr<QStringList> _log_messages,
     setAcceptDrops(true);
 
     // load UI theme
-    this->load_theme();
+    // this->load_theme();
 
     // set Window properties
     this->setWindowTitle(QString(PROGRAM_NAME) + " " + QString(PROGRAM_VERSION));

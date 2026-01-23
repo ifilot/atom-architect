@@ -47,7 +47,7 @@ InterfaceWindow::InterfaceWindow(MainWindow *mw)
     splitter->addWidget(container2);
     QVBoxLayout* layout = new QVBoxLayout();
     container2->setLayout(layout);
-    this->anaglyph_widget = new AnaglyphWidget();
+    this->anaglyph_widget = new AnaglyphWidget(this);
     this->interaction_label = new QLabel("");
     this->selection_label = new QLabel("<br>");
     layout->addWidget(this->anaglyph_widget);
