@@ -109,8 +109,11 @@ MainWindow::MainWindow(const std::shared_ptr<QStringList> _log_messages,
     action_save->setShortcuts(QKeySequence::Save);
     // action_save->setIcon(QIcon(":/assets/icon/save.png"));
     action_quit->setText(tr("Quit"));
-    action_quit->setShortcuts(QKeySequence::Quit);
-    action_quit->setShortcut(Qt::CTRL | Qt::Key_Q);
+    action_quit->setShortcuts({
+        QKeySequence::Quit,                     // platform default (Alt+F4 on Windows)
+        QKeySequence(Qt::CTRL | Qt::Key_Q),     // common on Linux / terminals
+        QKeySequence(Qt::CTRL | Qt::Key_W)      // Windows-friendly close
+    });
     // action_quit->setIcon(QIcon(":/assets/icon/close.png"));
 
     action_select_all->setText(tr("Select all atoms"));
