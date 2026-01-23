@@ -25,10 +25,12 @@
 #include <QMenu>
 #include <QMessageBox>
 #include <QFileDialog>
+#include <QFileInfo>
+#include <QSettings>
+#include <QStandardPaths>
 #include <QStatusBar>
 #include <QString>
 #include <QtWidgets/QApplication>
-#include <QFileInfo>
 #include <QMimeData>
 #include <QTimer>
 #include <QStringList>

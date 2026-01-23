@@ -25,7 +25,7 @@ RequestExecutionLevel admin
 ; -----------------------------------------
 ; Installer icon
 ; -----------------------------------------
-Icon "assets/icons/atom_architect_256.ico"
+Icon "assets/icon/atom_architect_256.ico"
 
 ; -----------------------------------------
 ; UI pages

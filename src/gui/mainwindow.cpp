@@ -321,25 +321,53 @@ void MainWindow::set_cli_parser(const QCommandLineParser& cli_parser) {
 /**
  * @brief      Open a new object file
  */
-void MainWindow::open() {
-    QString filename = QFileDialog::getOpenFileName(this,
+/**
+ * @brief      Open a new object file
+ */
+void MainWindow::open()
+{
+    QSettings settings;
+
+    // Default to last directory, or user's home directory
+    const QString startDir = settings.value(
+        "ui/lastOpenDir",
+        QStandardPaths::writableLocation(QStandardPaths::HomeLocation)
+    ).toString();
+
+    const QString filters =
+        tr("All supported files (*.geo *.xyz *.vasp OUTCAR* CONTCAR* POSCAR*);;"
+           "VASP files (*.vasp POSCAR* CONTCAR* OUTCAR*);;"
+           "ADF geometry files (*.geo);;"
+           "XYZ files (*.xyz)");
+
+    const QString filename = QFileDialog::getOpenFileName(
+        this,
         tr("Open file"),
-        "",
-        tr("All supported files (*.geo *.xyz OUTCAR* CONTCAR* POSCAR*);;"
-           "VASP POSCAR/CONTCAR (POSCAR* CONTCAR*);;VASP OUTCAR (OUTCAR*);;"
-           "ADF geometry file (*.geo);;xyz file (*.xyz)")
+        startDir,
+        filters
     );
 
-    if(filename.isEmpty()) {
+    if (filename.isEmpty()) {
         return;
     }
 
-    // display load time
-    this->interface_window->open_file(filename);
-    statusBar()->showMessage("Loaded " + filename + ".");
+    // Remember directory for next time
+    settings.setValue(
+        "ui/lastOpenDir",
+        QFileInfo(filename).absolutePath()
+    );
 
-    // set main window title
-    this->setWindowTitle(QFileInfo(filename).fileName() + " - " + QString(PROGRAM_NAME));
+    interface_window->open_file(filename);
+
+    statusBar()->showMessage(
+        tr("Loaded %1.").arg(QFileInfo(filename).fileName())
+    );
+
+    setWindowTitle(
+        QString("%1 - %2")
+            .arg(QFileInfo(filename).fileName())
+            .arg(PROGRAM_NAME)
+    );
 }
 
 /**

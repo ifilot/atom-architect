@@ -72,9 +72,9 @@ target_link_libraries(atom-architect PRIVATE
 )
 
 if (MINGW)
-    target_link_libraries(slabrender PRIVATE ws2_32 bcrypt)
+    target_link_libraries(atom-architect PRIVATE ws2_32 bcrypt)
 endif()
 
 if (WIN32)
-    target_sources(slabrender PRIVATE slabrender.rc)
+    target_sources(atom-architect PRIVATE atom-architect.rc)
 endif()

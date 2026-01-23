@@ -35,7 +35,7 @@ StructureLoader::StructureLoader(){}
 std::shared_ptr<Structure> StructureLoader::load_file(const std::string& filename) {
     QFileInfo qfi(QString(filename.c_str()));
     std::shared_ptr<Structure> structure;
-    if(qfi.fileName().startsWith("POSCAR") || qfi.fileName().startsWith("CONTCAR")) {
+    if(qfi.fileName().startsWith("POSCAR") || qfi.fileName().startsWith("CONTCAR") || qfi.fileName().endsWith(".vasp")) {
         structure = this->load_poscar(filename);
     } else if(qfi.fileName().startsWith("OUTCAR")) {
         structure = this->load_outcar(filename).back();

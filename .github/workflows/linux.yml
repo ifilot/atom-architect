@@ -14,8 +14,6 @@ jobs:
     - name: Install packages
       run: |
         sudo apt update && sudo apt install -y qtbase5-dev libqt5charts5-dev libgl1-mesa-dev libglm-dev libeigen3-dev build-essential cmake
-    - name: Apply patch
-      run: patch -p1 CMakeLists.txt < qt5.patch
     - name: Configure CMake
       run: |
         mkdir build

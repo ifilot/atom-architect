@@ -76,6 +76,8 @@ int main(int argc, char *argv[]) {
     QCoreApplication::setOrganizationDomain("IMC");
     QCoreApplication::setApplicationName(PROGRAM_NAME);
     QCoreApplication::setApplicationVersion(PROGRAM_VERSION);
+    QCoreApplication::setOrganizationName("Inorganic Materials & Catalysis");
+    QCoreApplication::setApplicationName("AtomArchitect");
 
     // set command line options
     QCommandLineParser parser;
