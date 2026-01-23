@@ -78,6 +78,8 @@ int main(int argc, char *argv[]) {
     QCoreApplication::setApplicationVersion(PROGRAM_VERSION);
     QCoreApplication::setOrganizationName("Inorganic Materials & Catalysis");
     QCoreApplication::setApplicationName("AtomArchitect");
+    QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+    QCoreApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
 
     // set command line options
     QCommandLineParser parser;

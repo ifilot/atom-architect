@@ -32,12 +32,15 @@ UserAction::UserAction(const std::shared_ptr<Scene>& _scene):
  *
  * @param[in]  cursor_position  The cursor position
  */
-void UserAction::update(QPoint _cursor_position) {
-    this->cursor_position_now = _cursor_position;
-    // qDebug() << this->cursor_position_now;
+void UserAction::update(const QPointF& cursor_pos_logical, qreal dpr)
+{
+    this->cursor_position_now = QPointF(
+        cursor_pos_logical.x() * dpr,
+        cursor_pos_logical.y() * dpr
+    );
 
-    if(this->movement_action != MovementAction::MOVEMENT_NONE ||
-       this->rotation_action != RotationAction::ROTATION_NONE) {
+    if (this->movement_action != MovementAction::MOVEMENT_NONE ||
+        this->rotation_action != RotationAction::ROTATION_NONE) {
         this->calculate_transposition_matrix();
         emit request_update();
     }

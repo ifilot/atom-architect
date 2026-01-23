@@ -339,7 +339,15 @@ void AnaglyphWidget::mouseReleaseEvent(QMouseEvent* event)
 
 void AnaglyphWidget::mouseMoveEvent(QMouseEvent* event)
 {
-    user_action->update(mapFromGlobal(QCursor::pos()));
+    // Qt 5: widget-local logical coordinates
+    const QPointF logicalPos = event->localPos();
+
+    // Device pixel ratio of the OpenGL widget
+    const qreal dpr = this->devicePixelRatioF();
+
+    // Pass logical coords + DPR
+    user_action->update(logicalPos, dpr);
+
     setFocus(Qt::MouseFocusReason);
 
     if (!arcball_rotation_flag) {

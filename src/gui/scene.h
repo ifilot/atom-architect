@@ -69,7 +69,7 @@ public:
      * @param       pointer to vector holding ray direction
      * @return      void
      */
-    void calculate_ray(const QPoint& mouse_position, QVector3D* ray_origin, QVector3D* ray_direction);
+    void calculate_ray(const QPointF& mouse_position_fb, QVector3D* ray_origin, QVector3D* ray_direction);
 
     /**
      * @brief      Calculates the point of intersection of a ray with a plane

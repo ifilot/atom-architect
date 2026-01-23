@@ -31,7 +31,7 @@ Scene::Scene() {
  * @param       pointer to vector holding ray direction
  * @return      void
  */
-void Scene::calculate_ray(const QPoint& mouse_position, QVector3D* ray_origin, QVector3D* ray_direction) {
+void Scene::calculate_ray(const QPointF& mouse_position, QVector3D* ray_origin, QVector3D* ray_direction) {
     const float screen_width = (float)this->canvas_width;
     const float screen_height = (float)this->canvas_height;
 

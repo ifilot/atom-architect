@@ -62,8 +62,8 @@ class UserAction : public QObject {
     Q_OBJECT
 
 private:
-    QPoint cursor_position_start;
-    QPoint cursor_position_now;
+    QPointF cursor_position_start;
+    QPointF cursor_position_now;
     MovementAction movement_action = MovementAction::MOVEMENT_NONE;
     RotationAction rotation_action = RotationAction::ROTATION_NONE;
     std::shared_ptr<Structure> structure;
@@ -85,7 +85,7 @@ public:
      *
      * @param[in]  cursor_position  The cursor position
      */
-    void update(QPoint _cursor_position);
+    void update(const QPointF& cursor_pos_logical, qreal dpr);
 
     /**
      * @brief      Handle a translation action
