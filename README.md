@@ -16,7 +16,7 @@ fourfold sites.
 
 ## Downloads
 
-Latest installer for Window: [here](https://github.com/ifilot/atom-architect/releases/latest/download/atom-architect-installer-win64.exe)
+👉 [Download the latest release](https://github.com/ifilot/atom-architect/releases/latest)
 
 ## Compilation
 
