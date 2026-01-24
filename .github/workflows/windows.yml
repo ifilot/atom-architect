@@ -39,8 +39,10 @@ jobs:
   # Windows build + installer (MSYS2 MinGW64)
   # ==========================================================
   windows-mingw:
-    name: Windows (MSYS2 MinGW64)
+    name: Windows Installer
     runs-on: windows-latest
+    permissions:
+      contents: write
 
     defaults:
       run:
@@ -106,4 +108,4 @@ jobs:
         with:
             files: |
               *.exe
-            generate_release_notes: true
+            generate_release_notes: false
