@@ -63,17 +63,20 @@ sudo cp -v ./atom_architect /usr/local/bin/atom_architect
 
 ### Snellius
 
-To compile for the Snellius infrastructure, it is recommended to use the Qt5
-toolchain. 
+To compile for the Snellius infrastructure, we need to apply a small patch and
+load the modules that contains the libraries.
 
 ```bash
-module load 2023 Qt5/5.15.10-GCCcore-12.3.0
+module load 2023 \
+Qt5/5.15.10-GCCcore-12.3.0 \
+GLM/0.9.9.8-GCCcore-12.3.0 \
+Eigen/3.4.0-GCCcore-12.3.0
 ```
 
 and apply the patch
 
 ```bash
-patch -p1 CMakeLists.txt < qt5.patch
+patch -p1 < snellius.patch
 ```
 
 Next, compilation is fairly straightforward.

@@ -1,0 +1,37 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 4e287b1..f64c3ac 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -22,7 +22,24 @@ add_compile_definitions(GIT_HASH="${GIT_HASH}")
+ 
+ find_package(Qt5 REQUIRED COMPONENTS Widgets Charts)
+ find_package(Eigen3 REQUIRED)
+-find_package(glm REQUIRED)
++
++find_path(GLM_INCLUDE_DIR
++  NAMES glm/glm.hpp
++  PATHS
++    ENV EBROOTGLM
++    ENV GLM_ROOT
++  PATH_SUFFIXES include
++)
++
++include(FindPackageHandleStandardArgs)
++find_package_handle_standard_args(glm DEFAULT_MSG GLM_INCLUDE_DIR)
++
++if(glm_FOUND AND NOT TARGET glm::glm)
++  add_library(glm::glm INTERFACE IMPORTED)
++  set_target_properties(glm::glm PROPERTIES
++    INTERFACE_INCLUDE_DIRECTORIES "${GLM_INCLUDE_DIR}"
++  )
++endif()
+ 
+ add_executable(atom-architect WIN32
+     src/main.cpp
+@@ -79,4 +96,4 @@ endif()
+ 
+ if (WIN32)
+     target_sources(atom-architect PRIVATE atom-architect.rc)
+-endif()
+\ No newline at end of file
++endif()
