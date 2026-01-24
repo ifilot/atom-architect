@@ -33,21 +33,27 @@ StructureLoader::StructureLoader(){}
  * @return     shared ptr to structure object
  */
 std::shared_ptr<Structure> StructureLoader::load_file(const std::string& filename) {
+    qDebug() << "Building structure via StructureLoader";
     QFileInfo qfi(QString(filename.c_str()));
+
     std::shared_ptr<Structure> structure;
-    if(qfi.fileName().startsWith("POSCAR") || qfi.fileName().startsWith("CONTCAR")) {
+
+    if(qfi.fileName().startsWith("POSCAR") || 
+       qfi.fileName().startsWith("CONTCAR") || 
+       qfi.completeSuffix() == "vasp") {
         structure = this->load_poscar(filename);
     } else if(qfi.fileName().startsWith("OUTCAR")) {
         structure = this->load_outcar(filename).back();
     } else if(qfi.completeSuffix() == "geo") {
         structure = this->load_geo(filename);
-    }  else if(qfi.completeSuffix() == ".xyz") {
+    }  else if(qfi.completeSuffix() == "xyz") {
+        qDebug() << "Opening .xyz file";
         structure = this->load_xyz(filename);
     }
 
     if(!structure) {
         std::string fname = qfi.fileName().toStdString();
-        throw std::runtime_error("Unrecognised filename: " + fname);
+        throw std::runtime_error("Unrecognized filename: " + fname);
     } else {
         structure->update();
         return structure;
@@ -215,125 +221,159 @@ std::shared_ptr<Structure> StructureLoader::load_xyz(const std::string& filename
  */
 std::shared_ptr<Structure> StructureLoader::load_poscar(const std::string& filename) {
     std::ifstream infile(filename);
-
-    static QRegularExpression whitespace("\\s+");
-
-    if(!infile.is_open()) {
+    if (!infile) {
         throw std::runtime_error("Could not open " + filename);
     }
 
+    static const QRegularExpression whitespace("\\s+");
+
     std::string line;
 
-    // skip first line (name of system)
-    std::getline(infile, line);
+    // ─────────────────────────────────────────────
+    // 1. Header & scaling
+    // ─────────────────────────────────────────────
+    std::getline(infile, line); // system name (ignored)
 
-    // read scaling factor
     std::getline(infile, line);
-    double scalar = QString(line.c_str()).toDouble();
+    const double scale = QString::fromStdString(line).toDouble();
 
-    // read matrix
-    MatrixUnitcell unitcell = MatrixUnitcell::Zero(3,3);
-    for(unsigned int j=0; j<3; j++) {
+    // ─────────────────────────────────────────────
+    // 2. Lattice vectors
+    // ─────────────────────────────────────────────
+    MatrixUnitcell unitcell = MatrixUnitcell::Zero(3, 3);
+
+    for (int row = 0; row < 3; ++row) {
         std::getline(infile, line);
-        QStringList pieces = QString(line.c_str()).trimmed().split(whitespace);
-        for(unsigned int i=0; i<3; i++) {
-            unitcell(j,i) = pieces[i].toDouble();
+        const QStringList parts =
+            QString::fromStdString(line).trimmed().split(whitespace);
+
+        if (parts.size() != 3) {
+            throw std::runtime_error("Invalid lattice vector in POSCAR");
+        }
+
+        for (int col = 0; col < 3; ++col) {
+            unitcell(row, col) = parts[col].toDouble();
         }
     }
-    unitcell *= scalar;
+
+    unitcell *= scale;
     auto structure = std::make_shared<Structure>(unitcell);
 
-    // assume that POSCARS are VASP5 POSCAR files
-    // TODO add functionality to also allow for VASP4
+    // ─────────────────────────────────────────────
+    // 3. Element labels (VASP 5 / 6.4+)
+    // ─────────────────────────────────────────────
     std::getline(infile, line);
-    static QRegularExpression regex_els("^.*[A-Za-z]+.*$"); // if the line contains even a single non-numeric character, it is a line containing elements
-    QRegularExpressionMatch match = regex_els.match(QString(line.c_str()));
-    if(!match.hasMatch()) {
-        throw std::runtime_error("This file is probably a VASP4 POSCAR file. You can currently only load VASP5+ POSCAR files");
-    }
-    QStringList elements = QString(line.c_str()).trimmed().split(whitespace);
+    const QStringList rawLabels =
+        QString::fromStdString(line).trimmed().split(whitespace);
 
-    // assess whether the element lines contain any "/"; if so prune the part
-    // after the slash
-    for (QString& el : elements) {
-        int slashPos = el.indexOf('/');
-        if (slashPos != -1) {
-            el = el.left(slashPos);  // keep only part before the '/'
+    // Detect VASP4-style POSCAR (no element symbols)
+    bool looksLikeVasp5 = false;
+    for (const QString& tok : rawLabels) {
+        bool ok;
+        tok.toDouble(&ok);
+        if (!ok) {
+            looksLikeVasp5 = true;
+            break;
         }
     }
 
-    // get the number for each element
-    std::getline(infile, line);
-    std::vector<unsigned int> nr_elements;
-    QStringList pieces = QString(line.c_str()).trimmed().split(whitespace);
-    for(unsigned int i=0; i<pieces.size(); i++) {
-        nr_elements.push_back(pieces[i].toUInt());
-    }
-    if(nr_elements.size() != (size_t)elements.size()) {
-        throw std::runtime_error("Array size for element types does not match array size for number for each element type.");
+    if (!looksLikeVasp5) {
+        throw std::runtime_error(
+            "VASP4 POSCAR detected. Only VASP5+ POSCAR files are supported.");
     }
 
-    // check if next line is selective dynamics, if so, skip
-    bool selective_dynamics = false;
+    // Strip everything after '/' (VASP 6.4 labels)
+    QStringList elements;
+    elements.reserve(rawLabels.size());
+
+    for (const QString& label : rawLabels) {
+        const int slash = label.indexOf('/');
+        elements.push_back(slash >= 0 ? label.left(slash) : label);
+    }
+
+    // ─────────────────────────────────────────────
+    // 4. Element counts
+    // ─────────────────────────────────────────────
     std::getline(infile, line);
-    static QRegularExpression regex_sd("^\\s*[Ss].*$");
-    QRegularExpressionMatch match2 = regex_sd.match(QString(line.c_str()));
-    if(match2.hasMatch()) {
-        selective_dynamics = true;
+    const QStringList countTokens =
+        QString::fromStdString(line).trimmed().split(whitespace);
+
+    if (countTokens.size() != elements.size()) {
+        throw std::runtime_error(
+            "Mismatch between number of elements and atom counts");
+    }
+
+    std::vector<unsigned int> counts;
+    counts.reserve(countTokens.size());
+
+    for (const QString& tok : countTokens) {
+        counts.push_back(tok.toUInt());
+    }
+
+    // ─────────────────────────────────────────────
+    // 5. Selective dynamics & coordinate mode
+    // ─────────────────────────────────────────────
+    std::getline(infile, line);
+
+    bool selectiveDynamics = false;
+    if (!line.empty() && (line[0] == 'S' || line[0] == 's')) {
+        selectiveDynamics = true;
         std::getline(infile, line);
     }
 
-    // direct or cartesian
-    bool direct = (line[0] == 'D' || line[0] == 'd') ? true : false;
+    const bool direct =
+        (!line.empty() && (line[0] == 'D' || line[0] == 'd'));
 
-    // collect atoms
-    static QRegularExpression regex_double3("^\\s*([0-9e.-]+)\\s+([0-9e.-]+)\\s+([0-9e.-]+)\\s*(.*)$");
-    static QRegularExpression regex_double3_bool3("^\\s*([0-9e.-]+)\\s+([0-9e.-]+)\\s+([0-9e.-]+)\\s+([TF])\\s+([TF])\\s+([TF])\\s*(.*)$");
+    // ─────────────────────────────────────────────
+    // 6. Atom positions
+    // ─────────────────────────────────────────────
+    static const QRegularExpression xyz(
+        "^\\s*([0-9eE.+-]+)\\s+([0-9eE.+-]+)\\s+([0-9eE.+-]+)\\s*(.*)$");
 
-    for(unsigned int i=0; i<elements.size(); i++) {
-        unsigned int elid = AtomSettings::get().get_atom_elnr(elements[i].toStdString());
-        for(unsigned int j=0; j<nr_elements[i]; j++) {
+    static const QRegularExpression xyzTF(
+        "^\\s*([0-9eE.+-]+)\\s+([0-9eE.+-]+)\\s+([0-9eE.+-]+)"
+        "\\s+([TF])\\s+([TF])\\s+([TF]).*$");
+
+    for (int i = 0; i < elements.size(); ++i) {
+        const unsigned int elid =
+            AtomSettings::get().get_atom_elnr(elements[i].toStdString());
+
+        for (unsigned int n = 0; n < counts[i]; ++n) {
             std::getline(infile, line);
+            const QString qline = QString::fromStdString(line);
 
-            if(selective_dynamics) {
-                QRegularExpressionMatch match3 = regex_double3_bool3.match(QString(line.c_str()));
-                if(match3.hasMatch()) {
-                    double x = match3.captured(1).toDouble();
-                    double y = match3.captured(2).toDouble();
-                    double z = match3.captured(3).toDouble();
+            double x, y, z;
+            bool sx = true, sy = true, sz = true;
 
-                    bool sx = (match3.captured(4) == "F" ? false : true);
-                    bool sy = (match3.captured(5) == "F" ? false : true);
-                    bool sz = (match3.captured(6) == "F" ? false : true);
-
-                    VectorPosition position(x,y,z);
-
-                    // build coordinates
-                    if(direct) {
-                        VectorPosition cartesian = unitcell.transpose() * position;
-                        structure->add_atom(elid, cartesian(0), cartesian(1), cartesian(2), sx, sy, sz);
-                    } else {
-                        structure->add_atom(elid, position(0), position(1), position(2), sx, sy, sz);
-                    }
+            if (selectiveDynamics) {
+                const auto m = xyzTF.match(qline);
+                if (!m.hasMatch()) {
+                    throw std::runtime_error("Invalid atomic position line");
                 }
+
+                x = m.captured(1).toDouble();
+                y = m.captured(2).toDouble();
+                z = m.captured(3).toDouble();
+                sx = (m.captured(4) == "T");
+                sy = (m.captured(5) == "T");
+                sz = (m.captured(6) == "T");
             } else {
-                QRegularExpressionMatch match3 = regex_double3.match(QString(line.c_str()));
-                if(match3.hasMatch()) {
-                    double x = match3.captured(1).toDouble();
-                    double y = match3.captured(2).toDouble();
-                    double z = match3.captured(3).toDouble();
-
-                    VectorPosition position(x,y,z);
-
-                    // build coordinates
-                    if(direct) {
-                        VectorPosition cartesian = unitcell.transpose() * position;
-                        structure->add_atom(elid, cartesian(0), cartesian(1), cartesian(2));
-                    } else {
-                        structure->add_atom(elid, position(0), position(1), position(2));
-                    }
+                const auto m = xyz.match(qline);
+                if (!m.hasMatch()) {
+                    throw std::runtime_error("Invalid atomic position line");
                 }
+
+                x = m.captured(1).toDouble();
+                y = m.captured(2).toDouble();
+                z = m.captured(3).toDouble();
             }
+
+            VectorPosition pos(x, y, z);
+            if (direct) {
+                pos = unitcell.transpose() * pos;
+            }
+
+            structure->add_atom(elid, pos(0), pos(1), pos(2), sx, sy, sz);
         }
     }
 

@@ -20,10 +20,11 @@ execute_process(
 )
 add_compile_definitions(GIT_HASH="${GIT_HASH}")
 
-# Find Qt6 packages
-find_package(Qt6 REQUIRED COMPONENTS Widgets Charts)
+find_package(Qt5 REQUIRED COMPONENTS Widgets Charts)
+find_package(Eigen3 REQUIRED)
+find_package(glm REQUIRED)
 
-add_executable(atom-architect
+add_executable(atom-architect WIN32
     src/main.cpp
     src/gui/anaglyph_widget.cpp
     src/gui/interface_window.cpp
@@ -39,6 +40,8 @@ add_executable(atom-architect
     src/gui/user_action.cpp
     src/gui/scene.cpp
     src/gui/analysis_geometry_optimization.cpp
+    src/gui/geometry_optimization_viewer.cpp
+    src/gui/geometry_optimization_graph.cpp
     src/gui/analysis_neb.cpp
     src/gui/logwindow.cpp
     src/data/atom_settings.cpp
@@ -62,12 +65,18 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     )
 endif()
 
-include_directories("src/vendor/eigen-3.4.0"
-                    "src/vendor/glm-1.0.1")
-
-target_link_libraries(atom-architect PRIVATE Qt6::Core Qt6::Widgets Qt6::Charts)
-
-set_target_properties(atom-architect PROPERTIES
-    WIN32_EXECUTABLE ON
-    MACOSX_BUNDLE ON
+target_link_libraries(atom-architect PRIVATE 
+    Qt5::Core 
+    Qt5::Widgets 
+    Qt5::Charts
+    Eigen3::Eigen
+    glm::glm
 )
+
+if (MINGW)
+    target_link_libraries(atom-architect PRIVATE ws2_32 bcrypt)
+endif()
+
+if (WIN32)
+    target_sources(atom-architect PRIVATE atom-architect.rc)
+endif()

@@ -25,77 +25,167 @@
  * @param      mw    pointer to MainWindow object
  */
 InterfaceWindow::InterfaceWindow(MainWindow *mw)
-    : mainWindow(mw) {
+    : mainWindow(mw)
+{
+    // ============================================================
+    // Root layout
+    // ============================================================
+    QHBoxLayout *rootLayout = new QHBoxLayout(this);
+    setLayout(rootLayout);
 
-    // set layout
-    QVBoxLayout *mainLayout = new QVBoxLayout;
-    QHBoxLayout *container = new QHBoxLayout;
+    // ============================================================
+    // Toolbar
+    // ============================================================
+    toolbar = new ToolBarWidget(this);
+    toolbar->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
+    rootLayout->addWidget(toolbar);
 
-    // add toolbar
-    this->toolbar = new ToolBarWidget();
-    container->addWidget(this->toolbar);
-    this->toolbar->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+    // ============================================================
+    // Main horizontal splitter
+    // ============================================================
+    QSplitter *hSplitter = new QSplitter(Qt::Horizontal, this);
+    rootLayout->addWidget(hSplitter);
 
-    // add Splitter
-    qDebug() << "Add splitter";
-    QSplitter *splitter = new QSplitter();
-    container->addWidget(splitter);
+    // ============================================================
+    // LEFT COLUMN (Editor + Geometry Optimization Viewer)
+    // ============================================================
+    QSplitter *leftSplitter = new QSplitter(Qt::Vertical, this);
+    hSplitter->addWidget(leftSplitter);
 
-    // add anaglyph widget
-    qDebug() << "Add Anaglyph widget";
-    QWidget *container2 = new QWidget();
-    splitter->addWidget(container2);
-    QVBoxLayout* layout = new QVBoxLayout();
-    container2->setLayout(layout);
-    this->anaglyph_widget = new AnaglyphWidget();
-    this->interaction_label = new QLabel("");
-    this->selection_label = new QLabel("<br>");
-    layout->addWidget(this->anaglyph_widget);
-    QWidget* labelwidget = new QWidget(this);
-    layout->addWidget(labelwidget);
-    QHBoxLayout* labelwidgetlayout = new QHBoxLayout(labelwidget);
-    labelwidget->setLayout(labelwidgetlayout);
-    labelwidgetlayout->addWidget(this->selection_label);
-    labelwidgetlayout->addWidget(this->interaction_label);
-    this->anaglyph_widget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    // ------------------------------------------------------------
+    // Editor panel (TOP-LEFT)
+    // ------------------------------------------------------------
+    QWidget *editorPanel = new QWidget(this);
+    QVBoxLayout *editorLayout = new QVBoxLayout(editorPanel);
 
-    // add structure info widget
-    qDebug() << "Add Structure Info widget";
-    this->structure_info_widget = new StructureInfoWidget();
-    this->structure_info_widget->set_anaglyph_widget(this->anaglyph_widget);
-    this->structure_info_widget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-    splitter->addWidget(this->structure_info_widget);
+    QLabel *editorLabel = new QLabel("EDITOR", editorPanel);
+    editorLabel->setStyleSheet("font-weight: bold; font-size: 14px;");
+    editorLayout->addWidget(editorLabel);
 
-    // put everything as central widget
-    qDebug() << "Put everything as central widget";
-    QWidget *w = new QWidget;
-    w->setLayout(container);
-    mainLayout->addWidget(w);
-    this->setLayout(mainLayout);
+    anaglyph_widget = new AnaglyphWidget(this);
+    anaglyph_widget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    editorLayout->addWidget(anaglyph_widget);
 
-    // connect functions
-    connect(this, SIGNAL(new_file_loaded()), this->structure_info_widget, SLOT(reset()));
-    connect(this->anaglyph_widget, SIGNAL(opengl_ready()), this, SLOT(load_default_file()));
+    // Interaction / selection labels
+    QWidget *labelWidget = new QWidget(this);
+    QHBoxLayout *labelLayout = new QHBoxLayout(labelWidget);
 
-    // connect toolbar
-    qDebug() << "Connect toolbar";
-    connect(this->toolbar->get_action("toggle_periodicity_xy"), SIGNAL(triggered()), this->anaglyph_widget, SLOT(toggle_periodicity_xy()));
-    connect(this->toolbar->get_action("toggle_periodicity_z"), SIGNAL(triggered()), this->anaglyph_widget, SLOT(toggle_periodicity_z()));
-    connect(this->toolbar->get_action("add_fragment"), SIGNAL(triggered()), this, SLOT(add_fragment()));
-    connect(this->anaglyph_widget, SIGNAL(signal_interaction_message(const QString&)), this, SLOT(update_interaction_label(const QString&)));
-    connect(this->anaglyph_widget, SIGNAL(signal_selection_message(const QString&)), this, SLOT(update_selection_label(const QString&)));
-    connect(this->anaglyph_widget->get_user_action().get(), SIGNAL(signal_selection_message(const QString&)), this, SLOT(update_selection_label(const QString&)));
-    connect(this->anaglyph_widget->get_user_action().get(), SIGNAL(signal_message_statusbar(const QString&)), this, SLOT(propagate_message_statusbar(const QString&)));
-    connect(this->structure_info_widget->get_fragment_selector(), SIGNAL(signal_new_fragment(const Fragment&)), this->anaglyph_widget->get_user_action().get(), SLOT(set_fragment(const Fragment&)));
+    selection_label = new QLabel("<br>", labelWidget);
+    interaction_label = new QLabel("", labelWidget);
 
-    // set default fragment
-    qDebug() << "Set default fragment";
-    this->anaglyph_widget->get_user_action()->set_fragment(this->structure_info_widget->get_fragment_selector()->get_current_fragment());
+    labelLayout->addWidget(selection_label);
+    labelLayout->addWidget(interaction_label);
+    labelLayout->addStretch();
 
-    // connect structure stack functions
-    connect(this->anaglyph_widget->get_user_action().get(), SIGNAL(signal_push_structure()), this, SLOT(push_structure()));
-    connect(this->anaglyph_widget->get_user_action().get(), SIGNAL(signal_increment_structure_stack_pointer()), this, SLOT(increment_structure_stack_pointer()));
-    connect(this->anaglyph_widget->get_user_action().get(), SIGNAL(signal_decrement_structure_stack_pointer()), this, SLOT(decrement_structure_stack_pointer()));
+    editorLayout->addWidget(labelWidget);
+
+    leftSplitter->addWidget(editorPanel);
+
+    // ------------------------------------------------------------
+    // Geometry optimization viewer (BOTTOM-LEFT)
+    // ------------------------------------------------------------
+    geometryOptimization = new AnalysisGeometryOptimization(this);
+
+    leftSplitter->addWidget(geometryOptimization->viewer());
+
+    // ============================================================
+    // RIGHT COLUMN (Structure info + Optimization graph)
+    // ============================================================
+    QSplitter *rightSplitter = new QSplitter(Qt::Vertical, this);
+    hSplitter->addWidget(rightSplitter);
+
+    // ------------------------------------------------------------
+    // Structure info (TOP-RIGHT)
+    // ------------------------------------------------------------
+    structure_info_widget = new StructureInfoWidget(this);
+    structure_info_widget->set_anaglyph_widget(anaglyph_widget);
+    structure_info_widget->setSizePolicy(QSizePolicy::Expanding,
+                                         QSizePolicy::Expanding);
+
+    rightSplitter->addWidget(structure_info_widget);
+
+    // ------------------------------------------------------------
+    // Optimization graph (BOTTOM-RIGHT)
+    // ------------------------------------------------------------
+    rightSplitter->addWidget(geometryOptimization->graph());
+
+    // ============================================================
+    // Initial 50/50/50/50 layout (relative to MainWindow size)
+    // ============================================================
+
+    const int totalWidth  = width();
+    const int totalHeight = height();
+
+    // Left / Right
+    hSplitter->setSizes({ totalWidth / 2, totalWidth / 2 });
+
+    // Top / Bottom (both columns)
+    leftSplitter->setSizes({ totalHeight / 2, totalHeight / 2 });
+    rightSplitter->setSizes({ totalHeight / 2, totalHeight / 2 });
+
+    // ============================================================
+    // Connections (unchanged behavior)
+    // ============================================================
+    connect(this, SIGNAL(new_file_loaded()),
+            structure_info_widget, SLOT(reset()));
+
+    connect(anaglyph_widget, SIGNAL(opengl_ready()),
+            this, SLOT(load_default_file()));
+
+    connect(toolbar->get_action("toggle_periodicity_xy"),
+            SIGNAL(triggered()),
+            anaglyph_widget, SLOT(toggle_periodicity_xy()));
+
+    connect(toolbar->get_action("toggle_periodicity_z"),
+            SIGNAL(triggered()),
+            anaglyph_widget, SLOT(toggle_periodicity_z()));
+
+    connect(toolbar->get_action("add_fragment"),
+            SIGNAL(triggered()),
+            this, SLOT(add_fragment()));
+
+    connect(anaglyph_widget, SIGNAL(signal_interaction_message(const QString&)),
+            this, SLOT(update_interaction_label(const QString&)));
+
+    connect(anaglyph_widget, SIGNAL(signal_selection_message(const QString&)),
+            this, SLOT(update_selection_label(const QString&)));
+
+    connect(anaglyph_widget->get_user_action().get(),
+            SIGNAL(signal_selection_message(const QString&)),
+            this, SLOT(update_selection_label(const QString&)));
+
+    connect(anaglyph_widget->get_user_action().get(),
+            SIGNAL(signal_message_statusbar(const QString&)),
+            this, SLOT(propagate_message_statusbar(const QString&)));
+
+    connect(structure_info_widget->get_fragment_selector(),
+            SIGNAL(signal_new_fragment(const Fragment&)),
+            anaglyph_widget->get_user_action().get(),
+            SLOT(set_fragment(const Fragment&)));
+
+    connect(geometryOptimization->viewer(), SIGNAL(edit_requested()),
+            this, SLOT(load_structure_from_geometry_analysis()));
+
+    // ============================================================
+    // Default fragment
+    // ============================================================
+    anaglyph_widget->get_user_action()->set_fragment(
+        structure_info_widget->get_fragment_selector()->get_current_fragment());
+
+    // ============================================================
+    // Structure stack
+    // ============================================================
+    connect(anaglyph_widget->get_user_action().get(),
+            SIGNAL(signal_push_structure()),
+            this, SLOT(push_structure()));
+
+    connect(anaglyph_widget->get_user_action().get(),
+            SIGNAL(signal_increment_structure_stack_pointer()),
+            this, SLOT(increment_structure_stack_pointer()));
+
+    connect(anaglyph_widget->get_user_action().get(),
+            SIGNAL(signal_decrement_structure_stack_pointer()),
+            this, SLOT(decrement_structure_stack_pointer()));
 }
 
 /**
@@ -103,28 +193,20 @@ InterfaceWindow::InterfaceWindow(MainWindow *mw)
  *
  * @param      event  The event
  */
-void InterfaceWindow::keyPressEvent(QKeyEvent *event) {
-    // qDebug() << event->key();
+void InterfaceWindow::keyPressEvent(QKeyEvent* event) {
+    // Only forward when the 3D viewport is active
+    if(this->anaglyph_widget->hasFocus()) {
+        if(this->anaglyph_widget
+               ->get_user_action()
+               ->handle_key(event)) {
 
-    std::vector<unsigned int> key_listing = {
-        Qt::Key_G, // grab atoms
-        Qt::Key_R, // rotate atoms
-        Qt::Key_X, // x-direction
-        Qt::Key_Y, // y-direction
-        Qt::Key_Z, // z-direction
-        Qt::Key_F, // focus-direction
-        Qt::Key_D, // deselect
-        Qt::Key_I, // Invert
-        Qt::Key_A, // add fragment
-        Qt::Key_R, // replace atom
-        Qt::Key_Delete // delete atoms
-    };
-
-
-    if(std::find(key_listing.begin(), key_listing.end(), event->key()) != key_listing.end()) {
-        this->anaglyph_widget->get_user_action()->handle_key(event->key(), event->modifiers());
+            event->accept();
+            return;
+        }
     }
 
+    // Let Qt handle it (menus, shortcuts, text input, etc.)
+    QWidget::keyPressEvent(event);
 }
 
 /**
@@ -134,25 +216,79 @@ void InterfaceWindow::keyPressEvent(QKeyEvent *event) {
  *
  * @return     loading time of object in seconds
  */
-void InterfaceWindow::open_file(const QString& filename) {
-    qDebug() << "Opening file: " << filename;
+void InterfaceWindow::open_file(const QString& filename)
+{
+    qDebug() << "Opening file:" << filename;
 
-    std::shared_ptr<Structure> structure;
-    try {
-        structure = structure_loader.load_file(filename.toStdString());
-    } catch(const std::exception& e) {
-        QMessageBox::critical(this, tr("Exception encountered"), tr(e.what()) );
+    // ------------------------------------------------------------
+    // Case 1: Geometry optimization (OUTCAR)
+    // ------------------------------------------------------------
+    if (filename.contains("OUTCAR", Qt::CaseInsensitive)) {
+
+        StructureLoader sl;
+        std::vector<std::shared_ptr<Structure>> structures;
+
+        try {
+            structures = sl.load_outcar(filename.toStdString());
+        } catch (const std::exception& e) {
+            QMessageBox::critical(this,
+                tr("Exception encountered"),
+                tr(e.what()));
+            return;
+        }
+
+        if (structures.empty()) {
+            QMessageBox::warning(this,
+                tr("Empty optimization"),
+                tr("No structures found in OUTCAR."));
+            return;
+        }
+
+        // ---- Update geometry optimization panels ----
+        std::vector<std::shared_ptr<Structure>> geometry_structures;
+        geometry_structures.reserve(structures.size());
+
+        for (const auto& s : structures) {
+            geometry_structures.push_back(s->clone_for_view());
+        }
+
+        geometryOptimization->set_structures(geometry_structures);
+
+        // ---- Also sync editor + info to first structure ----
+        structure_stack.clear();
+        structure_stack.push_back(structures.front());
+        structure_stack_pointer = 0;
+
+        emit new_file_loaded();
+
+        anaglyph_widget->set_structure(structures.front());
+        structure_info_widget->set_structure(structures.front());
+
         return;
     }
 
-    // clean the structure stack and set a new structure
-    this->structure_stack.clear();
-    this->structure_stack.push_back(structure);
-    this->structure_stack_pointer = 0;
+    // ------------------------------------------------------------
+    // Case 2: Single structure file (original behavior)
+    // ------------------------------------------------------------
+    std::shared_ptr<Structure> structure;
 
-    emit(new_file_loaded());
-    this->anaglyph_widget->set_structure(structure);
-    this->structure_info_widget->set_structure(structure);
+    try {
+        structure = structure_loader.load_file(filename.toStdString());
+    } catch (const std::exception& e) {
+        QMessageBox::critical(this,
+            tr("Exception encountered"),
+            tr(e.what()));
+        return;
+    }
+
+    structure_stack.clear();
+    structure_stack.push_back(structure);
+    structure_stack_pointer = 0;
+
+    emit new_file_loaded();
+
+    anaglyph_widget->set_structure(structure);
+    structure_info_widget->set_structure(structure);
 }
 
 /**
@@ -202,42 +338,53 @@ void InterfaceWindow::load_default_file() {
  * @brief      Add a fragment to the selection
  */
 void InterfaceWindow::add_fragment() {
-    this->anaglyph_widget->get_user_action()->handle_key(Qt::Key_A, Qt::ShiftModifier);
+    this->anaglyph_widget
+        ->get_user_action()
+        ->cmd_add_fragment();
 }
 
 /**
  * @brief      Select all atoms
  */
 void InterfaceWindow::select_all_atoms() {
-    this->anaglyph_widget->get_user_action()->handle_key(Qt::Key_A, Qt::ControlModifier);
+    this->anaglyph_widget
+        ->get_user_action()
+        ->cmd_select_all();
 }
 
 /**
  * @brief      Deselect all atoms
  */
 void InterfaceWindow::deselect_all_atoms() {
-    this->anaglyph_widget->get_user_action()->handle_key(Qt::Key_D, Qt::ControlModifier);
+    this->anaglyph_widget
+        ->get_user_action()
+        ->cmd_deselect_all();
 }
 
 /**
  * @brief      Invert selection
  */
 void InterfaceWindow::invert_selection() {
-    this->anaglyph_widget->get_user_action()->handle_key(Qt::Key_I, Qt::ControlModifier);
+    this->anaglyph_widget
+        ->get_user_action()
+        ->cmd_invert_selection();
 }
 
 /**
  * @brief      Set selected atoms to frozen state
  */
 void InterfaceWindow::set_frozen() {
-    this->anaglyph_widget->get_user_action()->handle_key(Qt::Key_F, Qt::ControlModifier);
+    this->anaglyph_widget
+        ->get_user_action()
+        ->cmd_set_frozen();
 }
-
 /**
  * @brief      Set selected atoms to unfrozen state
  */
 void InterfaceWindow::set_unfrozen() {
-    this->anaglyph_widget->get_user_action()->handle_key(Qt::Key_F, Qt::ControlModifier | Qt::ShiftModifier);
+    this->anaglyph_widget
+        ->get_user_action()
+        ->cmd_set_unfrozen();
 }
 
 /**
@@ -286,23 +433,23 @@ void InterfaceWindow::update_selection_label(const QString& text) {
  *        create a new copy on the stack
  */
 void InterfaceWindow::push_structure() {
-    qDebug() << "Pushing latest structure to the stack ("
-             << (size_t)this->structure_stack.back().get()
-             << ")";
+    // Current structure as used by the renderer/user action
+    auto current = this->anaglyph_widget->get_structure();
+    if(!current) return;
 
-    // destroy everything "beyond" the stack pointer
-    this->structure_stack.resize(this->structure_stack_pointer+1);
+    // If we undid before, drop redo history
+    this->structure_stack.resize(this->structure_stack_pointer + 1);
 
-    this->structure_stack.push_back(
-        std::make_shared<Structure>(*this->structure_stack.back()) // creates a copy
-    );
-
-    // increment the structure stack pointer
+    // Push a NEW snapshot of the current state
+    this->structure_stack.push_back(std::make_shared<Structure>(*current));
     this->structure_stack_pointer++;
 
+    // Make the newly pushed snapshot the active one everywhere
     this->anaglyph_widget->set_structure_conservative(this->structure_stack[this->structure_stack_pointer]);
     this->structure_info_widget->set_structure(this->structure_stack[this->structure_stack_pointer]);
-    qDebug() << "Stack size: " << this->structure_stack.size() << ": " << (size_t)this->structure_stack.back().get();
+
+    // Also ensure UserAction uses the same shared_ptr (critical!)
+    this->anaglyph_widget->get_user_action()->set_structure(this->structure_stack[this->structure_stack_pointer]);
 }
 
 /**
@@ -311,12 +458,11 @@ void InterfaceWindow::push_structure() {
 void InterfaceWindow::increment_structure_stack_pointer() {
     if(this->structure_stack_pointer < (this->structure_stack.size() - 1)) {
         this->structure_stack_pointer++;
-        qDebug() << "Incrementing stack pointer";
-        qDebug() << "New pointer value: " << this->structure_stack_pointer;
-        this->anaglyph_widget->set_structure_conservative(this->structure_stack[this->structure_stack_pointer]);
-        this->structure_info_widget->set_structure(this->structure_stack[this->structure_stack_pointer]);
-    } else {
-        qDebug() << "Ignoring stack pointer request; structure stack exchausted.";
+
+        auto s = this->structure_stack[this->structure_stack_pointer];
+        this->anaglyph_widget->set_structure_conservative(s);
+        this->structure_info_widget->set_structure(s);
+        this->anaglyph_widget->get_user_action()->set_structure(s);
     }
 }
 
@@ -326,11 +472,19 @@ void InterfaceWindow::increment_structure_stack_pointer() {
 void InterfaceWindow::decrement_structure_stack_pointer() {
     if(this->structure_stack_pointer > 0) {
         this->structure_stack_pointer--;
-        qDebug() << "Decrementing stack pointer";
-        qDebug() << "New pointer value: " << this->structure_stack_pointer;
-        this->anaglyph_widget->set_structure_conservative(this->structure_stack[this->structure_stack_pointer]);
-        this->structure_info_widget->set_structure(this->structure_stack[this->structure_stack_pointer]);
-    } else {
-        qDebug() << "Ignoring stack pointer request; structure stack exchausted.";
+
+        auto s = this->structure_stack[this->structure_stack_pointer];
+        this->anaglyph_widget->set_structure_conservative(s);
+        this->structure_info_widget->set_structure(s);
+        this->anaglyph_widget->get_user_action()->set_structure(s);
     }
+}
+
+/**
+ * @brief Copy structure from GeometryAnalysis window to Editor
+ */
+void InterfaceWindow::load_structure_from_geometry_analysis() {
+    this->anaglyph_widget->set_structure(
+        this->geometryOptimization->viewer()->get_anaglyph_widget()->get_structure()->clone_for_view()
+    );
 }

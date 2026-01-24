@@ -84,10 +84,9 @@ void ShaderProgram::add_uniforms() {
     }
 
     if (this->type == ShaderProgramType::AxesShader) {
-        this->uniforms.emplace("mvp", this->m_program->uniformLocation("mvp"));
-        this->uniforms.emplace("model", this->m_program->uniformLocation("model"));
-        this->uniforms.emplace("view", this->m_program->uniformLocation("view"));
-        this->uniforms.emplace("color", this->m_program->uniformLocation("color"));
+        this->uniforms.emplace("mvp",   m_program->uniformLocation("mvp"));
+        this->uniforms.emplace("color", m_program->uniformLocation("color"));
+        this->uniforms.emplace("alpha", m_program->uniformLocation("alpha"));
     }
 
     if (this->type == ShaderProgramType::UnitcellShader) {
@@ -108,6 +107,7 @@ void ShaderProgram::add_uniforms() {
     if (this->type == ShaderProgramType::CanvasShader) {
         this->uniforms.emplace("regular_texture", this->m_program->uniformLocation("regular_texture"));
         this->uniforms.emplace("silhouette_texture", this->m_program->uniformLocation("silhouette_texture"));
+        this->uniforms.emplace("outline_radius", this->m_program->uniformLocation("outline_radius"));
     }
 
     if (this->type == ShaderProgramType::SimpleCanvasShader) {

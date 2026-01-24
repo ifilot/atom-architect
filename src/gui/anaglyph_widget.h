@@ -20,9 +20,11 @@
 
 #pragma once
 
+#include <QApplication>
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions>
 #include <QOpenGLVertexArrayObject>
+#include <QOpenGLExtraFunctions>
 #include <QOpenGLBuffer>
 #include <QMouseEvent>
 #include <QCoreApplication>
@@ -76,8 +78,14 @@ private:
 
     QPoint top_left;
 
+    // anti-aliasing
+    static constexpr int MSAA_SAMPLES = 4;
+    GLuint msaa_fbo[FrameBuffer::NR_FRAMEBUFFERS];
+    GLuint msaa_color_rbo[FrameBuffer::NR_FRAMEBUFFERS];
+    GLuint msaa_depth_rbo[FrameBuffer::NR_FRAMEBUFFERS];
+
     // default background color
-    static constexpr float tint = 21.0f / 255.0f;
+    static constexpr float tint = 255.0f / 255.0f;
 
     unsigned int framebuffers[FrameBuffer::NR_FRAMEBUFFERS];
     unsigned int texture_color_buffers[FrameBuffer::NR_FRAMEBUFFERS];
@@ -110,9 +118,14 @@ private:
     bool flag_show_periodicity_z = false;           // whether to shwo periodicity in the z direction
 
     std::shared_ptr<UserAction> user_action;        // object that stores current action of the user on a structure
+    bool allow_selection = true;                    // whether selecting atoms is possible
 
 public:
     AnaglyphWidget(QWidget *parent = 0);
+
+    inline void disable_selection() {
+        this->allow_selection = false;
+    }
 
     /**
      * @brief      Paint the models in the models vector to the screen

@@ -31,10 +31,11 @@ QToolBar(parent) {
     this->setOrientation(Qt::Vertical);
 
     // add actions to toolbar
-    this->add_action("toggle_periodicity_xy", "arrow_all");
-    this->add_action("toggle_periodicity_z", "arrow_left_right");
-    this->add_action("---");
-    this->add_action("add_fragment", "plus");
+    setIconSize(QSize(32, 32));
+    this->add_action("toggle_periodicity_xy", "expand_xy");
+    this->add_action("toggle_periodicity_z", "expand_z");
+    // this->add_action("---");
+    this->add_action("add_fragment", "add_fragment");
 }
 
 /**

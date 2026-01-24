@@ -192,7 +192,7 @@ void Structure::center() {
  */
 QVector3D Structure::get_largest_distance() const {
     unsigned int idx = 0;
-    float dist;
+    float dist = -1.0f;
 
     #pragma omp parallel for
     for(unsigned int i=0; i<this->atoms.size(); i++) {
@@ -223,8 +223,10 @@ std::string Structure::get_elements_string() const {
     }
 
     // remove last two characters
-    result.pop_back();
-    result.pop_back();
+    if(result.size() > 2) {
+        result.pop_back();
+        result.pop_back();
+    }
 
     return result;
 }

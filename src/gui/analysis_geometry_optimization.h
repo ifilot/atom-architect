@@ -1,106 +1,40 @@
-/****************************************************************************
- *                                                                          *
- *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
- *                                                                          *
- *   This program is free software: you can redistribute it and/or modify   *
- *   it under the terms of the GNU Lesser General Public License as         *
- *   published by the Free Software Foundation, either version 3 of the     *
- *   License, or (at your option) any later version.                        *
- *                                                                          *
- *   This program is distributed in the hope that it will be useful,        *
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of         *
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the          *
- *   GNU General Public License for more details.                           *
- *                                                                          *
- *   You should have received a copy of the GNU General Public license      *
- *   along with this program.  If not, see <https://www.gnu.org/licenses/>. *
- *                                                                          *
- ****************************************************************************/
-
 #pragma once
 
-#include <QWidget>
-#include <QIcon>
-#include <QtCharts>
-#include <QSplitter>
+#include <QObject>
+#include <memory>
+#include <vector>
 
-#include "anaglyph_widget.h"
+#include "geometry_optimization_viewer.h"
+#include "geometry_optimization_graph.h"
 #include "../data/structure_loader.h"
 
-class AnalysisGeometryOptimization : public QWidget {
+class AnalysisGeometryOptimization : public QObject {
     Q_OBJECT
 
-private:
-    AnaglyphWidget *anaglyph_widget;
-    QChartView *chartview;
-
-    std::vector<std::shared_ptr<Structure>> structures;
-
-    QPushButton* button_previous;
-    QPushButton* button_next;
-
-    QLabel* label_structure_id;
-    QLabel* label_current_energy;
-
-    size_t current_structure_id = 0;
-
-    QChart* chart;
-    QValueAxis *axisX;
-    QValueAxis *axisY;
-    QValueAxis *axisY2;
-
 public:
-    AnalysisGeometryOptimization(QWidget* parent = nullptr);
+    explicit AnalysisGeometryOptimization(QObject *parent = nullptr);
 
-    inline void set_structures(const std::vector<std::shared_ptr<Structure>>& _structures) {
-        this->structures = _structures;
-        this->structures.front()->update();
-        this->anaglyph_widget->set_structure(this->structures.front());
-        this->current_structure_id = 0;
-        this->update_graph();
-    }
+    GeometryOptimizationViewer* viewer() const { return viewer_; }
+    GeometryOptimizationGraph* graph() const { return graph_; }
 
-private:
-    /**
-     * @brief      Update the graph
-     */
-    void update_graph();
+    void set_structures(const std::vector<std::shared_ptr<Structure>>& structures);
 
-    /**
-     * @brief      Update labels based on current structure
-     */
-    void update_labels();
-
-    /**
-     * @brief      Highlight point of interest on chart
-     */
-    void update_chart_highlight();
+public slots:
+    void load_file(const QString& filename);
 
 private slots:
-    /**
-     * @brief      Open new OUTCAR file
-     */
-    void open();
-
-    /**
-     * @brief      Close window
-     */
-    void exit();
-
-    /**
-     * @brief      Cycle to previous structure
-     */
+    void first();
     void prev();
-
-    /**
-     * @brief      Cycle to next structure
-     */
     void next();
+    void last();
 
-    // drag and drop events
-    void dragEnterEvent(QDragEnterEvent *event);
-    void dragMoveEvent(QDragMoveEvent *event);
-    void dragLeaveEvent(QDragLeaveEvent *event);
-    void dropEvent(QDropEvent *event);
+private:
+    void update_current();
+
+private:
+    GeometryOptimizationViewer *viewer_;
+    GeometryOptimizationGraph *graph_;
+
+    std::vector<std::shared_ptr<Structure>> structures_;
+    size_t current_index_ = 0;
 };

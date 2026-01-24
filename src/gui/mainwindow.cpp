@@ -40,7 +40,6 @@ MainWindow::MainWindow(const std::shared_ptr<QStringList> _log_messages,
     QMenu *menu_file = menuBar->addMenu(tr("&File"));
     QMenu *menu_view = menuBar->addMenu(tr("&View"));
     QMenu *menu_select = menuBar->addMenu(tr("&Select"));
-    QMenu *menu_analysis = menuBar->addMenu(tr("&Analysis"));
     QMenu *menu_help = menuBar->addMenu(tr("&Help"));
 
     // actions for file menu
@@ -87,10 +86,6 @@ MainWindow::MainWindow(const std::shared_ptr<QStringList> _log_messages,
     QAction *action_projection_interlaced_checkerboard_lr = new QAction(menu_projection_interlaced);
     QAction *action_projection_interlaced_checkerboard_rl = new QAction(menu_projection_interlaced);
 
-    // actions for analysis menu
-    QAction *action_analysis_optimization = new QAction(menu_analysis);
-    QAction *action_analysis_neb = new QAction(menu_analysis);
-
     // actions for help menu
     QAction *action_about = new QAction(menu_help);
 
@@ -104,14 +99,17 @@ MainWindow::MainWindow(const std::shared_ptr<QStringList> _log_messages,
     // create actions for file menu
     action_open->setText(tr("Open"));
     action_open->setShortcuts(QKeySequence::Open);
-    action_open->setIcon(QIcon(":/assets/icon/open.png"));
+    // action_open->setIcon(QIcon(":/assets/icon/open.png"));
     action_save->setText(tr("Save"));
     action_save->setShortcuts(QKeySequence::Save);
-    action_save->setIcon(QIcon(":/assets/icon/save.png"));
+    // action_save->setIcon(QIcon(":/assets/icon/save.png"));
     action_quit->setText(tr("Quit"));
-    action_quit->setShortcuts(QKeySequence::Quit);
-    action_quit->setShortcut(Qt::CTRL | Qt::Key_Q);
-    action_quit->setIcon(QIcon(":/assets/icon/close.png"));
+    action_quit->setShortcuts({
+        QKeySequence::Quit,                     // platform default (Alt+F4 on Windows)
+        QKeySequence(Qt::CTRL | Qt::Key_Q),     // common on Linux / terminals
+        QKeySequence(Qt::CTRL | Qt::Key_W)      // Windows-friendly close
+    });
+    // action_quit->setIcon(QIcon(":/assets/icon/close.png"));
 
     action_select_all->setText(tr("Select all atoms"));
     action_select_all->setShortcut(Qt::CTRL | Qt::Key_A);
@@ -170,15 +168,9 @@ MainWindow::MainWindow(const std::shared_ptr<QStringList> _log_messages,
     action_projection_interlaced_checkerboard_lr->setIcon(QIcon(":/assets/icon/interlaced_checkerboard_lr_32.png"));
     action_projection_interlaced_checkerboard_rl->setIcon(QIcon(":/assets/icon/interlaced_checkerboard_rl_32.png"));
 
-    // create actions for analysis menu
-    action_analysis_optimization->setText(tr("Geometry optimization analysis"));
-    action_analysis_optimization->setShortcut(Qt::Key_F5);
-    action_analysis_neb->setText(tr("NEB analysis"));
-    action_analysis_neb->setShortcut(Qt::Key_F6);
-
     // create actions for about menu
     action_about->setText(tr("About"));
-    action_about->setIcon(QIcon(":/assets/icon/info.png"));
+    // action_about->setIcon(QIcon(":/assets/icon/info.png"));
 
     // add actions to file menu
     menu_file->addAction(action_open);
@@ -217,10 +209,6 @@ MainWindow::MainWindow(const std::shared_ptr<QStringList> _log_messages,
     menu_projection_interlaced->addAction(action_projection_interlaced_checkerboard_lr);
     menu_projection_interlaced->addAction(action_projection_interlaced_checkerboard_rl);
 
-    // add actions for analysis menu
-    menu_analysis->addAction(action_analysis_optimization);
-    menu_analysis->addAction(action_analysis_neb);
-
     // add actions to help menu
     menu_help->addAction(action_about);
 
@@ -238,10 +226,6 @@ MainWindow::MainWindow(const std::shared_ptr<QStringList> _log_messages,
     connect(action_projection_interlaced_columns_rl, &QAction::triggered, this, [this]{ MainWindow::set_stereo("stereo_interlaced_columns_rl"); });
     connect(action_projection_interlaced_checkerboard_lr, &QAction::triggered, this, [this]{ MainWindow::set_stereo("stereo_interlaced_checkerboard_lr"); });
     connect(action_projection_interlaced_checkerboard_rl, &QAction::triggered, this, [this]{ MainWindow::set_stereo("stereo_interlaced_checkerboard_rl"); });
-
-    // connect actions analysis window
-    connect(action_analysis_optimization, &QAction::triggered, this, &MainWindow::open_analysis_geometry_optimization_window);
-    connect(action_analysis_neb, &QAction::triggered, this, &MainWindow::open_analysis_neb_window);
 
     // connect actions about menu
     connect(action_about, &QAction::triggered, this, &MainWindow::about);
@@ -281,11 +265,11 @@ MainWindow::MainWindow(const std::shared_ptr<QStringList> _log_messages,
     setAcceptDrops(true);
 
     // load UI theme
-    this->load_theme();
+    // this->load_theme();
 
     // set Window properties
     this->setWindowTitle(QString(PROGRAM_NAME) + " " + QString(PROGRAM_VERSION));
-    this->resize(1280,640);
+    this->resize(1280,960);
 
     qDebug() << "Done building MainWindow";
 }
@@ -294,21 +278,6 @@ MainWindow::MainWindow(const std::shared_ptr<QStringList> _log_messages,
  * @brief Parse command line arguments
  */
 void MainWindow::set_cli_parser(const QCommandLineParser& cli_parser) {
-    if(!cli_parser.value("n").isEmpty()) {
-        qDebug() << "Received CLI '-n': " << cli_parser.value("n");
-        auto* neb_widget = new AnalysisNEB();
-        neb_widget->load_file(cli_parser.value("n"));
-        neb_widget->show();
-    }
-
-    if(!cli_parser.value("g").isEmpty()) {
-        qDebug() << "Received CLI '-g': " << cli_parser.value("g");
-        auto* ago_widget = new AnalysisGeometryOptimization();
-        auto sl = StructureLoader();
-        ago_widget->set_structures(sl.load_outcar(cli_parser.value("g").toStdString()));
-        ago_widget->show();
-    }
-
     if(!cli_parser.value("o").isEmpty()) {
         QString filename = cli_parser.value("o");
         qDebug() << "Received CLI '-o': " << filename;
@@ -321,25 +290,53 @@ void MainWindow::set_cli_parser(const QCommandLineParser& cli_parser) {
 /**
  * @brief      Open a new object file
  */
-void MainWindow::open() {
-    QString filename = QFileDialog::getOpenFileName(this,
+/**
+ * @brief      Open a new object file
+ */
+void MainWindow::open()
+{
+    QSettings settings;
+
+    // Default to last directory, or user's home directory
+    const QString startDir = settings.value(
+        "ui/lastOpenDir",
+        QStandardPaths::writableLocation(QStandardPaths::HomeLocation)
+    ).toString();
+
+    const QString filters =
+        tr("All supported files (*.geo *.xyz *.vasp OUTCAR* CONTCAR* POSCAR*);;"
+           "VASP files (*.vasp POSCAR* CONTCAR* OUTCAR*);;"
+           "ADF geometry files (*.geo);;"
+           "XYZ files (*.xyz)");
+
+    const QString filename = QFileDialog::getOpenFileName(
+        this,
         tr("Open file"),
-        "",
-        tr("All supported files (*.geo *.xyz OUTCAR* CONTCAR* POSCAR*);;"
-           "VASP POSCAR/CONTCAR (POSCAR* CONTCAR*);;VASP OUTCAR (OUTCAR*);;"
-           "ADF geometry file (*.geo);;xyz file (*.xyz)")
+        startDir,
+        filters
     );
 
-    if(filename.isEmpty()) {
+    if (filename.isEmpty()) {
         return;
     }
 
-    // display load time
-    this->interface_window->open_file(filename);
-    statusBar()->showMessage("Loaded " + filename + ".");
+    // Remember directory for next time
+    settings.setValue(
+        "ui/lastOpenDir",
+        QFileInfo(filename).absolutePath()
+    );
 
-    // set main window title
-    this->setWindowTitle(QFileInfo(filename).fileName() + " - " + QString(PROGRAM_NAME));
+    interface_window->open_file(filename);
+
+    statusBar()->showMessage(
+        tr("Loaded %1.").arg(QFileInfo(filename).fileName())
+    );
+
+    setWindowTitle(
+        QString("%1 - %2")
+            .arg(QFileInfo(filename).fileName())
+            .arg(PROGRAM_NAME)
+    );
 }
 
 /**
@@ -399,27 +396,6 @@ void MainWindow::about() {
     message_box.setWindowIcon(QIcon(":/assets/icon/atom_architect_256.ico"));
     message_box.setIconPixmap(QPixmap(":/assets/icon/atom_architect_256.ico"));
     message_box.exec();
-}
-
-/**
- * @brief      Opens an analysis geometry optimization window.
- */
-void MainWindow::open_analysis_geometry_optimization_window() {
-    auto* ago_widget = new AnalysisGeometryOptimization();
-    const std::string filename = "OUTCAR";
-    QTemporaryDir tmp_dir;
-    QFile::copy(":/assets/structures/" + tr(filename.c_str()), tmp_dir.path() + "/" + filename.c_str());
-    auto sl = StructureLoader();
-    ago_widget->set_structures(sl.load_outcar((tmp_dir.path() + "/" + filename.c_str()).toStdString()));
-    ago_widget->show();
-}
-
-/**
- * @brief      Opens an analysis geometry optimization window.
- */
-void MainWindow::open_analysis_neb_window() {
-    auto* anw = new AnalysisNEB();
-    anw->show();
 }
 
 /**

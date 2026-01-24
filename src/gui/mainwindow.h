@@ -25,10 +25,12 @@
 #include <QMenu>
 #include <QMessageBox>
 #include <QFileDialog>
+#include <QFileInfo>
+#include <QSettings>
+#include <QStandardPaths>
 #include <QStatusBar>
 #include <QString>
 #include <QtWidgets/QApplication>
-#include <QFileInfo>
 #include <QMimeData>
 #include <QTimer>
 #include <QStringList>
@@ -94,16 +96,6 @@ private slots:
      * @brief      Display about menu
      */
     void about();
-
-    /**
-     * @brief      Opens an analysis geometry optimization window.
-     */
-    void open_analysis_geometry_optimization_window();
-
-    /**
-     * @brief      Opens an analysis geometry optimization window.
-     */
-    void open_analysis_neb_window();
 
     /**
      * @brief      Set stereo projection

@@ -7,60 +7,13 @@ on:
     branches: [ "master", "develop" ]
 
 jobs:
-  #
-  # Ubuntu
-  #
-  build-ubuntu:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    - name: Install packages
-      run: |
-        sudo apt update && sudo apt install -y qt6-tools-dev qt6-base-dev libqt6charts6-dev libqt6widgets6 libqt6gui6 libqt6opengl6-dev libgl1-mesa-dev build-essential cmake
-    - name: Configure CMake
-      run: |
-        mkdir build
-        cd build
-        cmake ..
-    - name: Build
-      run: |
-        cd build
-        make -j
-
-  #
-  # Ubuntu 12-Qt5
-  #
   build-ubuntu-qt5:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
     - name: Install packages
       run: |
-        sudo apt update && sudo apt install -y qtbase5-dev libqt5charts5-dev libgl1-mesa-dev build-essential cmake
-    - name: Apply patch
-      run: patch -p1 CMakeLists.txt < qt5.patch
-    - name: Configure CMake
-      run: |
-        mkdir build
-        cd build
-        cmake ..
-    - name: Build
-      run: |
-        cd build
-        make -j
-
-  #
-  # Debian 12
-  #
-  build-debian12:
-    runs-on: ubuntu-latest
-    container:
-      image: debian:12
-    steps:
-    - uses: actions/checkout@v3
-    - name: Install packages
-      run: |
-        apt update && apt install -y qt6-tools-dev qt6-base-dev libqt6charts6-dev libqt6widgets6 libqt6gui6 libqt6opengl6-dev libgl1-mesa-dev build-essential cmake
+        sudo apt update && sudo apt install -y qtbase5-dev libqt5charts5-dev libgl1-mesa-dev libglm-dev libeigen3-dev build-essential cmake
     - name: Configure CMake
       run: |
         mkdir build
