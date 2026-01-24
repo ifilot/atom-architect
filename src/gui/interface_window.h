@@ -206,6 +206,11 @@ private slots:
      */
     void decrement_structure_stack_pointer();
 
+    /**
+     * @brief Copy structure from GeometryAnalysis window to Editor
+     */
+    void load_structure_from_geometry_analysis();
+
 signals:
     /**
      * @brief A new file is loaded into the window

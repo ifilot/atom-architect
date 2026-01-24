@@ -6,12 +6,11 @@ AnalysisGeometryOptimization::AnalysisGeometryOptimization(QObject *parent)
     viewer_ = new GeometryOptimizationViewer();
     graph_  = new GeometryOptimizationGraph();
 
-    connect(viewer_, &GeometryOptimizationViewer::prev_requested,
-            this, &AnalysisGeometryOptimization::prev);
-    connect(viewer_, &GeometryOptimizationViewer::next_requested,
-            this, &AnalysisGeometryOptimization::next);
-    connect(viewer_, &GeometryOptimizationViewer::file_dropped,
-            this, &AnalysisGeometryOptimization::load_file);
+    connect(viewer_, &GeometryOptimizationViewer::first_requested, this, &AnalysisGeometryOptimization::first);
+    connect(viewer_, &GeometryOptimizationViewer::prev_requested, this, &AnalysisGeometryOptimization::prev);
+    connect(viewer_, &GeometryOptimizationViewer::next_requested, this, &AnalysisGeometryOptimization::next);
+    connect(viewer_, &GeometryOptimizationViewer::last_requested, this, &AnalysisGeometryOptimization::last);
+    connect(viewer_, &GeometryOptimizationViewer::file_dropped, this, &AnalysisGeometryOptimization::load_file);
 }
 
 void AnalysisGeometryOptimization::set_structures(
@@ -32,16 +31,27 @@ void AnalysisGeometryOptimization::update_current()
     graph_->set_current_index(current_index_);
 }
 
+void AnalysisGeometryOptimization::first()
+{
+    current_index_ = 0;
+    update_current();
+}
+
 void AnalysisGeometryOptimization::prev()
 {
-    current_index_ =
-        (current_index_ == 0) ? structures_.size() - 1 : current_index_ - 1;
+    current_index_ = (current_index_ == 0) ? structures_.size() - 1 : current_index_ - 1;
     update_current();
 }
 
 void AnalysisGeometryOptimization::next()
 {
     current_index_ = (current_index_ + 1) % structures_.size();
+    update_current();
+}
+
+void AnalysisGeometryOptimization::last()
+{
+    current_index_ = structures_.size() - 1;
     update_current();
 }
 

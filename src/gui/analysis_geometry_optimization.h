@@ -23,8 +23,10 @@ public slots:
     void load_file(const QString& filename);
 
 private slots:
+    void first();
     void prev();
     void next();
+    void last();
 
 private:
     void update_current();

@@ -163,6 +163,9 @@ InterfaceWindow::InterfaceWindow(MainWindow *mw)
             anaglyph_widget->get_user_action().get(),
             SLOT(set_fragment(const Fragment&)));
 
+    connect(geometryOptimization->viewer(), SIGNAL(edit_requested()),
+            this, SLOT(load_structure_from_geometry_analysis()));
+
     // ============================================================
     // Default fragment
     // ============================================================
@@ -475,4 +478,13 @@ void InterfaceWindow::decrement_structure_stack_pointer() {
         this->structure_info_widget->set_structure(s);
         this->anaglyph_widget->get_user_action()->set_structure(s);
     }
+}
+
+/**
+ * @brief Copy structure from GeometryAnalysis window to Editor
+ */
+void InterfaceWindow::load_structure_from_geometry_analysis() {
+    this->anaglyph_widget->set_structure(
+        this->geometryOptimization->viewer()->get_anaglyph_widget()->get_structure()->clone_for_view()
+    );
 }
