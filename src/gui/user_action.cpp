@@ -29,6 +29,9 @@ void UserAction::update(const QPointF& cursor_pos_logical, qreal dpr) {
     if(this->movement_action != MovementAction::MOVEMENT_NONE ||
        this->rotation_action != RotationAction::ROTATION_NONE) {
         this->calculate_transposition_matrix();
+        if(this->structure) {
+            this->structure->preview_bonds_for_transposition(this->scene->transposition);
+        }
         emit request_update();
     }
 }

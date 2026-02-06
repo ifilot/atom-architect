@@ -20,9 +20,11 @@
 
 #include "bond.h"
 
-Bond::Bond(const Atom& _atom1, const Atom& _atom2) :
+Bond::Bond(const Atom& _atom1, const Atom& _atom2, unsigned int _atom1_idx, unsigned int _atom2_idx) :
 atom1(_atom1),
-atom2(_atom2) {
+atom2(_atom2),
+atom1_idx(_atom1_idx),
+atom2_idx(_atom2_idx) {
     auto v = this->atom2.get_pos_qtvec() - this->atom1.get_pos_qtvec();
 
     this->direction = v.normalized();

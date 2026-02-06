@@ -27,6 +27,8 @@ public:
     // atom 1
     Atom atom1;
     Atom atom2;
+    unsigned int atom1_idx;
+    unsigned int atom2_idx;
 
     // length of the bond
     double length;
@@ -36,7 +38,7 @@ public:
     QVector3D axis;
     double angle;
 
-    Bond(const Atom& _atom1, const Atom& _atom2);
+    Bond(const Atom& _atom1, const Atom& _atom2, unsigned int _atom1_idx, unsigned int _atom2_idx);
 
 private:
 };

@@ -19,6 +19,8 @@
  ****************************************************************************/
 
 #include "structure.h"
+#include <algorithm>
+#include <unordered_set>
 
 /**
  * @brief      Constructs a new instance.
@@ -138,14 +140,43 @@ void Structure::delete_atoms() {
  * @param[in]  transposition  The transposition
  */
 void Structure::commit_transposition(const QMatrix4x4& transposition) {
+    std::vector<unsigned int> moved_indices;
+    moved_indices.reserve(this->primary_buffer.size());
     for(unsigned int idx : this->primary_buffer) {
         if(idx < this->get_nr_atoms()) {
             this->transpose_atom(idx, transposition);
+            moved_indices.push_back(idx);
         }
     }
 
     // update contents
-    this->update();
+    if(!moved_indices.empty()) {
+        this->update_bonds_for_atoms(moved_indices, nullptr);
+        this->build_expansion();
+    }
+}
+
+/**
+ * @brief      Preview bond updates for a transposition without committing atom positions.
+ *
+ * @param[in]  transposition  The transposition
+ */
+void Structure::preview_bonds_for_transposition(const QMatrix4x4& transposition) {
+    if(this->primary_buffer.empty()) {
+        return;
+    }
+
+    std::vector<unsigned int> moved_indices;
+    moved_indices.reserve(this->primary_buffer.size());
+    for(unsigned int idx : this->primary_buffer) {
+        if(idx < this->get_nr_atoms()) {
+            moved_indices.push_back(idx);
+        }
+    }
+
+    if(!moved_indices.empty()) {
+        this->update_bonds_for_atoms(moved_indices, &transposition);
+    }
 }
 
 /**
@@ -477,11 +508,76 @@ void Structure::construct_bonds() {
 
             // check if atoms are bonded
             if(dist2 < maxdist2) {
-                this->bonds.emplace_back(atom1, atom2);
+                this->bonds.emplace_back(atom1, atom2, i, j);
             }
         }
     }
     qDebug() << bonds.size() << " bonds were found.";
+}
+
+/**
+ * @brief      Update bonds for a subset of atoms.
+ *
+ * @param[in]  atom_indices  Indices of atoms that moved
+ */
+void Structure::update_bonds_for_atoms(const std::vector<unsigned int>& atom_indices,
+                                       const QMatrix4x4* transposition) {
+    if(atom_indices.empty() || this->atoms.empty()) {
+        return;
+    }
+
+    std::unordered_set<unsigned int> moved;
+    moved.reserve(atom_indices.size());
+    for(unsigned int idx : atom_indices) {
+        if(idx < this->atoms.size()) {
+            moved.insert(idx);
+        }
+    }
+
+    if(moved.empty()) {
+        return;
+    }
+
+    this->bonds.erase(
+        std::remove_if(this->bonds.begin(), this->bonds.end(),
+                       [&moved](const Bond& bond) {
+                           return moved.count(bond.atom1_idx) > 0 ||
+                                  moved.count(bond.atom2_idx) > 0;
+                       }),
+        this->bonds.end()
+    );
+
+    auto build_atom = [&](unsigned int idx) {
+        Atom atom = this->atoms[idx];
+        if(transposition && moved.count(idx) > 0) {
+            auto newpos = transposition->map(atom.get_pos_qtvec());
+            atom.x = newpos.x();
+            atom.y = newpos.y();
+            atom.z = newpos.z();
+        }
+        return atom;
+    };
+
+    for(unsigned int i : moved) {
+        const auto atom1 = build_atom(i);
+        for(unsigned int j=0; j<this->atoms.size(); j++) {
+            if(i == j) {
+                continue;
+            }
+
+            if(moved.count(j) > 0 && j < i) {
+                continue;
+            }
+
+            const auto atom2 = build_atom(j);
+            double maxdist2 = AtomSettings::get().get_bond_distance(atom1.atnr, atom2.atnr);
+            double dist2 = atom1.dist(atom2);
+
+            if(dist2 < maxdist2) {
+                this->bonds.emplace_back(atom1, atom2, i, j);
+            }
+        }
+    }
 }
 
 /**

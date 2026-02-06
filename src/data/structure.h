@@ -228,6 +228,13 @@ public:
     void commit_transposition(const QMatrix4x4& transposition);
 
     /**
+     * @brief      Preview bond updates for a transposition without committing atom positions.
+     *
+     * @param[in]  transposition  The transposition
+     */
+    void preview_bonds_for_transposition(const QMatrix4x4& transposition);
+
+    /**
      * @brief      Gets the total number of atoms.
      *
      * @return     The number of atoms
@@ -382,6 +389,8 @@ private:
      * @brief      Construct the bonds
      */
     void construct_bonds();
+    void update_bonds_for_atoms(const std::vector<unsigned int>& atom_indices,
+                                const QMatrix4x4* transposition);
 
     /**
      * @brief      Expand unit cell
