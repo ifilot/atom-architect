@@ -62,7 +62,7 @@ void StructureRenderer::draw(const Structure *structure, bool periodicity_xy, bo
         this->draw_atoms_expansion(structure, periodicity_xy, periodicity_z);
     }
 
-    if(structure->get_nr_atoms() < 2000) {
+    if(structure->get_nr_bonds() < 5000) {
         this->draw_bonds(structure);
     }
 

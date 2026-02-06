@@ -883,6 +883,11 @@ void AnaglyphWidget::custom_menu_requested(QPoint pos)
 
 void AnaglyphWidget::call_update()
 {
+    if (structure && user_action &&
+        (user_action->get_movement_action() != MovementAction::MOVEMENT_NONE ||
+         user_action->get_rotation_action() != RotationAction::ROTATION_NONE)) {
+        structure->preview_bonds_for_transposition(scene->transposition);
+    }
     update();
 }
 
