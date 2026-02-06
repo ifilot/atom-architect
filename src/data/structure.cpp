@@ -464,6 +464,7 @@ void Structure::count_elements() {
  * @brief      Construct the bonds
  */
 void Structure::construct_bonds() {
+    qDebug() << "Building bonds";
     this->bonds.clear();
 
     for(unsigned int i=0; i<this->atoms.size(); i++) {
@@ -480,6 +481,7 @@ void Structure::construct_bonds() {
             }
         }
     }
+    qDebug() << bonds.size() << " bonds were found.";
 }
 
 /**

@@ -466,9 +466,9 @@ void UserAction::calculate_transposition_matrix() {
             ray_origin, ray_direction, pos, -this->scene->camera_position);
 
         this->scene->transposition.setToIdentity();
-        this->scene->transposition.translate(
-            this->scene->rotation_matrix.inverted().map(
-                project_movement_vector(target - source)));
+        const QVector3D delta_model =
+            this->scene->rotation_matrix.inverted().map(target - source);
+        this->scene->transposition.translate(project_movement_vector(delta_model));
         return;
     }
 
