@@ -212,7 +212,16 @@ void AnalysisGeometryOptimization::select_frequency_mode(size_t index)
 void AnalysisGeometryOptimization::load_file(const QString &filename)
 {
     StructureLoader sl;
-    auto loaded = sl.load_outcar(filename.toStdString());
+    std::vector<std::shared_ptr<Structure>> loaded;
+
+    if(filename.contains("OUTCAR", Qt::CaseInsensitive)) {
+        loaded = sl.load_outcar(filename.toStdString());
+    } else if(filename.endsWith(".yaml", Qt::CaseInsensitive) ||
+              filename.endsWith(".yml", Qt::CaseInsensitive)) {
+        loaded = sl.load_yaml(filename.toStdString());
+    } else {
+        return;
+    }
 
     if(loaded.empty()) {
         return;

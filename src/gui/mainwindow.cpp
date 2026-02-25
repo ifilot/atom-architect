@@ -304,8 +304,9 @@ void MainWindow::open()
     ).toString();
 
     const QString filters =
-        tr("All supported files (*.geo *.xyz *.vasp OUTCAR* CONTCAR* POSCAR*);;"
+        tr("All supported files (*.geo *.xyz *.yaml *.yml *.vasp OUTCAR* CONTCAR* POSCAR*);;"
            "VASP files (*.vasp POSCAR* CONTCAR* OUTCAR*);;"
+           "YAML frequency files (*.yaml *.yml);;"
            "ADF geometry files (*.geo);;"
            "XYZ files (*.xyz)");
 
@@ -448,25 +449,38 @@ void MainWindow::dropEvent(QDropEvent *event) {
     const QMimeData *mimeData = event->mimeData();
 
     if (mimeData->hasUrls()) {
-        QList<QUrl> urlList = mimeData->urls();
-        QString text;
+        const QList<QUrl> urlList = mimeData->urls();
+
         for (int i = 0; i < urlList.size() && i < 32; ++i) {
-            QString url = urlList.at(i).path();
+            QString filepath = urlList.at(i).toLocalFile();
+
+            // Fallback for malformed URL payloads that do not expose local file directly.
+            if(filepath.isEmpty()) {
+                filepath = urlList.at(i).path();
+            }
 
             #ifdef Q_OS_WIN
             // remove leading / on Windows path; this sometimes causes problems
-            QFileInfo check_file_win(url);
+            QFileInfo check_file_win(filepath);
             if(!check_file_win.exists()) {
-                if(url[0] == '/') {
-                    url = url.remove(0,1);
+                if(!filepath.isEmpty() && filepath[0] == '/') {
+                    filepath = filepath.remove(0,1);
                 }
             }
             #endif
 
             // check if file exists, else show error message
-            QFileInfo check_file(url);
+            QFileInfo check_file(filepath);
             if(check_file.exists() && check_file.isFile()) {
-                this->interface_window->open_file(url);
+                this->interface_window->open_file(filepath);
+
+                if(i == 0) {
+                    this->setWindowTitle(
+                        QString("%1 - %2")
+                            .arg(check_file.fileName())
+                            .arg(PROGRAM_NAME)
+                    );
+                }
             } else {
                 QMessageBox::critical(this, tr("Failed to load file"), tr("Could not load file. Did you try to load this file from a network drive? This is not supported.") );
                 statusBar()->showMessage("Error loading file.");
@@ -476,7 +490,10 @@ void MainWindow::dropEvent(QDropEvent *event) {
 
         // show message after loading
         if(urlList.size() == 1) {
-            statusBar()->showMessage("Loaded " + urlList.at(0).path() + ".");
+            const QString loaded_file = !urlList.at(0).toLocalFile().isEmpty()
+                ? QFileInfo(urlList.at(0).toLocalFile()).fileName()
+                : urlList.at(0).path();
+            statusBar()->showMessage("Loaded " + loaded_file + ".");
         } else {
             statusBar()->showMessage("Loaded files.");
         }

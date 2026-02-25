@@ -50,6 +50,7 @@ private:
 
     std::vector<std::vector<double>> bond_distances;
     std::vector<float> radii;
+    std::vector<double> masses;
 
 public:
 
@@ -109,6 +110,24 @@ public:
      * @return     The atom elnr.
      */
     unsigned int get_atom_elnr(const std::string& elname);
+
+    /**
+     * @brief      Get atomic mass of an element (amu)
+     *
+     * @param[in]  elname  Element name
+     *
+     * @return     Atomic mass in amu
+     */
+    double get_atom_mass(const std::string& elname);
+
+    /**
+     * @brief      Get atomic mass from element number (amu)
+     *
+     * @param[in]  elnr  Element number
+     *
+     * @return     Atomic mass in amu
+     */
+    double get_atom_mass_from_elnr(unsigned int elnr);
 
     /**
      * @brief      Get the maximum bond distance between two atoms

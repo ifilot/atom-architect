@@ -221,15 +221,21 @@ void InterfaceWindow::open_file(const QString& filename)
     qDebug() << "Opening file:" << filename;
 
     // ------------------------------------------------------------
-    // Case 1: Geometry optimization (OUTCAR)
+    // Case 1: Multi-structure trajectory or vibrational file (OUTCAR / YAML)
     // ------------------------------------------------------------
-    if (filename.contains("OUTCAR", Qt::CaseInsensitive)) {
+    if (filename.contains("OUTCAR", Qt::CaseInsensitive) ||
+        filename.endsWith(".yaml", Qt::CaseInsensitive) ||
+        filename.endsWith(".yml", Qt::CaseInsensitive)) {
 
         StructureLoader sl;
         std::vector<std::shared_ptr<Structure>> structures;
 
         try {
-            structures = sl.load_outcar(filename.toStdString());
+            if(filename.contains("OUTCAR", Qt::CaseInsensitive)) {
+                structures = sl.load_outcar(filename.toStdString());
+            } else {
+                structures = sl.load_yaml(filename.toStdString());
+            }
         } catch (const std::exception& e) {
             QMessageBox::critical(this,
                 tr("Exception encountered"),
@@ -240,7 +246,7 @@ void InterfaceWindow::open_file(const QString& filename)
         if (structures.empty()) {
             QMessageBox::warning(this,
                 tr("Empty optimization"),
-                tr("No structures found in OUTCAR."));
+                tr("No structures found in selected file."));
             return;
         }
 

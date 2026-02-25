@@ -65,6 +65,15 @@ public:
     std::vector<std::shared_ptr<Structure>> load_outcar(const std::string& filename);
 
     /**
+     * @brief      Load structure + vibrational data from pymkmkit YAML file
+     *
+     * @param[in]  filename  The filename
+     *
+     * @return     Structures
+     */
+    std::vector<std::shared_ptr<Structure>> load_yaml(const std::string& filename);
+
+    /**
      * @brief      Load NEB binary
      *
      * @param[in]  filename  The filename

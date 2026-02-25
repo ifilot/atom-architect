@@ -20,6 +20,44 @@
 
 #include "structure_loader.h"
 
+#include <Eigen/Eigenvalues>
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <limits>
+
+namespace {
+int leading_spaces(const std::string& value) {
+    int count = 0;
+    while(count < (int)value.size() && value[(size_t)count] == ' ') {
+        count++;
+    }
+    return count;
+}
+
+double sorted_mae(const std::vector<double>& lhs,
+                  const std::vector<double>& rhs) {
+    const size_t n = std::min(lhs.size(), rhs.size());
+    if(n == 0) {
+        return std::numeric_limits<double>::infinity();
+    }
+
+    std::vector<double> a(lhs.begin(), lhs.begin() + n);
+    std::vector<double> b(rhs.begin(), rhs.begin() + n);
+    std::sort(a.begin(), a.end());
+    std::sort(b.begin(), b.end());
+
+    double mae = 0.0;
+    for(size_t i=0; i<n; i++) {
+        mae += std::abs(a[i] - b[i]);
+    }
+
+    return mae / (double)n;
+}
+
+}
+
 /**
  * @brief      Constructs a new instance.
  */
@@ -49,6 +87,8 @@ std::shared_ptr<Structure> StructureLoader::load_file(const std::string& filenam
     }  else if(qfi.completeSuffix() == "xyz") {
         qDebug() << "Opening .xyz file";
         structure = this->load_xyz(filename);
+    } else if(qfi.completeSuffix() == "yaml" || qfi.completeSuffix() == "yml") {
+        structure = this->load_yaml(filename).back();
     }
 
     if(!structure) {
@@ -58,6 +98,350 @@ std::shared_ptr<Structure> StructureLoader::load_file(const std::string& filenam
         structure->update();
         return structure;
     }
+}
+
+std::vector<std::shared_ptr<Structure>> StructureLoader::load_yaml(const std::string& filename) {
+    qDebug() << "Loading PyMKMKit YAML file: " << QString(filename.c_str());
+
+    std::ifstream infile(filename);
+    if(!infile.is_open()) {
+        throw std::runtime_error("Could not open " + filename);
+    }
+
+    enum class ParseMode {
+        None,
+        Lattice,
+        Coordinates,
+        Frequencies,
+        DofLabels,
+        Hessian
+    };
+
+    ParseMode mode = ParseMode::None;
+
+    std::vector<std::array<double, 3>> lattice_vectors;
+    struct ParsedAtom {
+        std::string element;
+        double x = 0.0;
+        double y = 0.0;
+        double z = 0.0;
+    };
+    std::vector<ParsedAtom> coordinates_direct;
+    std::vector<double> frequencies_cm1;
+    std::vector<std::string> dof_labels;
+    std::vector<std::vector<double>> hessian_rows;
+    std::vector<double> current_hessian_row;
+
+    bool has_energy = false;
+    double electronic_energy = 0.0;
+    bool has_pymkmkit_token = false;
+
+    static const QRegularExpression regex_number("[-+]?(?:[0-9]*\\.[0-9]+|[0-9]+)(?:[eE][-+]?[0-9]+)?");
+    static const QRegularExpression regex_dof("^([0-9]+)([XYZ])$");
+
+    std::string line;
+    while(std::getline(infile, line)) {
+        const QString qline = QString::fromStdString(line);
+        const QString trimmed = qline.trimmed();
+        const int indent = leading_spaces(line);
+
+        if(trimmed.isEmpty()) {
+            continue;
+        }
+
+        if(trimmed == "pymkmkit:") {
+            has_pymkmkit_token = true;
+            continue;
+        }
+
+        if(trimmed == "lattice_vectors:") {
+            mode = ParseMode::Lattice;
+            continue;
+        }
+        if(trimmed == "coordinates_direct:") {
+            mode = ParseMode::Coordinates;
+            continue;
+        }
+        if(trimmed == "frequencies_cm-1:") {
+            mode = ParseMode::Frequencies;
+            continue;
+        }
+        if(trimmed == "dof_labels:") {
+            mode = ParseMode::DofLabels;
+            continue;
+        }
+        if(trimmed == "matrix:") {
+            mode = ParseMode::Hessian;
+            continue;
+        }
+
+        if(trimmed.startsWith("electronic:")) {
+            const QString value = trimmed.section(':', 1).trimmed();
+            electronic_energy = value.toDouble();
+            has_energy = true;
+            continue;
+        }
+
+        if(trimmed.endsWith(":") &&
+           trimmed != "lattice_vectors:" &&
+           trimmed != "coordinates_direct:" &&
+           trimmed != "frequencies_cm-1:" &&
+           trimmed != "dof_labels:" &&
+           trimmed != "matrix:") {
+            mode = ParseMode::None;
+            continue;
+        }
+
+        switch(mode) {
+            case ParseMode::Lattice: {
+                if(!trimmed.startsWith("-")) {
+                    break;
+                }
+
+                auto it = regex_number.globalMatch(trimmed);
+                std::array<double, 3> parsed_values = {0.0, 0.0, 0.0};
+                size_t parsed_count = 0;
+                while(it.hasNext() && parsed_count < 3) {
+                    parsed_values[parsed_count++] = it.next().captured(0).toDouble();
+                }
+
+                if(parsed_count != 3) {
+                    throw std::runtime_error("Invalid lattice vector encountered in YAML file.");
+                }
+
+                lattice_vectors.push_back(parsed_values);
+                break;
+            }
+
+            case ParseMode::Coordinates: {
+                if(!trimmed.startsWith("- ")) {
+                    break;
+                }
+
+                const QString data = trimmed.mid(2).trimmed();
+                const QStringList parts = data.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
+                if(parts.size() < 4) {
+                    throw std::runtime_error("Invalid coordinates_direct line in YAML file.");
+                }
+
+                coordinates_direct.push_back({
+                    parts[0].toStdString(),
+                    parts[1].toDouble(),
+                    parts[2].toDouble(),
+                    parts[3].toDouble()
+                });
+                break;
+            }
+
+            case ParseMode::Frequencies: {
+                if(trimmed.startsWith("- ")) {
+                    frequencies_cm1.push_back(trimmed.mid(2).trimmed().toDouble());
+                }
+                break;
+            }
+
+            case ParseMode::DofLabels: {
+                if(trimmed.startsWith("- ")) {
+                    dof_labels.push_back(trimmed.mid(2).trimmed().toStdString());
+                }
+                break;
+            }
+
+            case ParseMode::Hessian: {
+                if(!trimmed.startsWith("-")) {
+                    break;
+                }
+
+                auto it = regex_number.globalMatch(trimmed);
+                if(!it.hasNext()) {
+                    break;
+                }
+
+                const double value = it.next().captured(0).toDouble();
+
+                // New Hessian row starts with the outer sequence item at 4 spaces indentation.
+                if(indent <= 4 && !current_hessian_row.empty()) {
+                    hessian_rows.push_back(current_hessian_row);
+                    current_hessian_row.clear();
+                }
+
+                current_hessian_row.push_back(value);
+                break;
+            }
+
+            case ParseMode::None:
+            default:
+                break;
+        }
+    }
+
+    if(!current_hessian_row.empty()) {
+        hessian_rows.push_back(current_hessian_row);
+    }
+
+    if(!has_pymkmkit_token) {
+        throw std::runtime_error("Invalid PyMKMKit YAML file: missing 'pymkmkit' token.");
+    }
+
+    if(lattice_vectors.size() != 3) {
+        throw std::runtime_error("YAML file does not contain exactly 3 lattice vectors.");
+    }
+
+    if(coordinates_direct.empty()) {
+        throw std::runtime_error("YAML file does not contain any coordinates_direct atoms.");
+    }
+
+    MatrixUnitcell unitcell = MatrixUnitcell::Zero(3,3);
+    for(int row=0; row<3; row++) {
+        // Keep the same row-wise lattice convention as OUTCAR/POSCAR loaders.
+        // Each YAML lattice_vectors entry is one direct-lattice vector [x, y, z].
+        unitcell(row, 0) = lattice_vectors[(size_t)row][0];
+        unitcell(row, 1) = lattice_vectors[(size_t)row][1];
+        unitcell(row, 2) = lattice_vectors[(size_t)row][2];
+    }
+
+    auto structure = std::make_shared<Structure>(unitcell);
+    for(const auto& atom : coordinates_direct) {
+        const unsigned int atnr = AtomSettings::get().get_atom_elnr(atom.element);
+        VectorPosition direct(atom.x, atom.y, atom.z);
+        // lattice vectors are stored row-wise (POSCAR convention in this codebase),
+        // hence direct->Cartesian uses unitcell.transpose() * fractional_vector.
+        VectorPosition cart = unitcell.transpose() * direct;
+        structure->add_atom(atnr, cart(0), cart(1), cart(2));
+    }
+
+    if(has_energy) {
+        structure->set_energy(electronic_energy);
+    }
+
+    if(!dof_labels.empty() && !hessian_rows.empty()) {
+        const size_t n = dof_labels.size();
+        if(hessian_rows.size() != n) {
+            throw std::runtime_error("YAML Hessian matrix row count does not match number of DOF labels.");
+        }
+
+        std::vector<int> dof_atom_indices;
+        std::vector<QChar> dof_axes;
+        std::vector<double> dof_masses_amu;
+        dof_atom_indices.reserve(n);
+        dof_axes.reserve(n);
+        dof_masses_amu.reserve(n);
+
+        for(size_t dof_idx=0; dof_idx<n; dof_idx++) {
+            QRegularExpressionMatch label_match = regex_dof.match(QString::fromStdString(dof_labels[dof_idx]));
+            if(!label_match.hasMatch()) {
+                throw std::runtime_error("Could not parse DOF label: " + dof_labels[dof_idx]);
+            }
+
+            const int atom_index = label_match.captured(1).toInt() - 1; // YAML labels are 1-based
+            if(atom_index < 0 || atom_index >= (int)coordinates_direct.size()) {
+                throw std::runtime_error("DOF label atom index out of bounds: " + dof_labels[dof_idx]);
+            }
+
+            const std::string& element = coordinates_direct[(size_t)atom_index].element;
+            dof_atom_indices.push_back(atom_index);
+            dof_axes.push_back(label_match.captured(2)[0]);
+            dof_masses_amu.push_back(AtomSettings::get().get_atom_mass(element));
+        }
+
+        // YAML Hessian values are expected in eV/Å^2. Convert to a mass-weighted dynamical matrix.
+        Eigen::MatrixXd dynmat((int)n, (int)n);
+        for(size_t i=0; i<n; i++) {
+            if(hessian_rows[i].size() != n) {
+                throw std::runtime_error("YAML Hessian matrix is not square.");
+            }
+
+            for(size_t j=0; j<n; j++) {
+                const double h_ij = hessian_rows[i][j];
+                dynmat((int)i, (int)j) = h_ij / std::sqrt(dof_masses_amu[i] * dof_masses_amu[j]);
+            }
+        }
+
+        Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> solver(dynmat);
+        if(solver.info() != Eigen::Success) {
+            throw std::runtime_error("Eigen decomposition failed for YAML Hessian matrix.");
+        }
+
+        // sqrt(eV/Å^2/amu) -> THz
+        constexpr double EV_TO_J = 1.602176634e-19;
+        constexpr double ANGSTROM_TO_M = 1.0e-10;
+        constexpr double AMU_TO_KG = 1.66053906660e-27;
+        constexpr double TWO_PI = 2.0 * M_PI;
+        constexpr double SQRT_UNIT_TO_HZ =
+            std::sqrt(EV_TO_J / (ANGSTROM_TO_M * ANGSTROM_TO_M * AMU_TO_KG)) / TWO_PI;
+        constexpr double HZ_TO_THZ = 1.0e-12;
+
+        std::vector<double> computed_freq_cm1;
+        std::vector<double> computed_freq_cm1_flipped;
+        computed_freq_cm1.reserve(n);
+        computed_freq_cm1_flipped.reserve(n);
+
+        size_t negative_count_normal = 0;
+        size_t negative_count_flipped = 0;
+
+        for(size_t mode_idx=0; mode_idx<n; mode_idx++) {
+            const double eig = solver.eigenvalues()((int)mode_idx);
+            const double signed_cm1 = (eig >= 0.0 ? 1.0 : -1.0) * std::sqrt(std::abs(eig)) * SQRT_UNIT_TO_HZ * HZ_TO_THZ * 33.35640951981521;
+            const double signed_cm1_flipped = -signed_cm1;
+
+            computed_freq_cm1.push_back(signed_cm1);
+            computed_freq_cm1_flipped.push_back(signed_cm1_flipped);
+
+            if(signed_cm1 < -1e-8) {
+                negative_count_normal++;
+            }
+            if(signed_cm1_flipped < -1e-8) {
+                negative_count_flipped++;
+            }
+        }
+
+        bool flip_frequency_sign = false;
+        if(!frequencies_cm1.empty()) {
+            const double mae_normal = sorted_mae(computed_freq_cm1, frequencies_cm1);
+            const double mae_flipped = sorted_mae(computed_freq_cm1_flipped, frequencies_cm1);
+            flip_frequency_sign = (mae_flipped + 1e-12 < mae_normal);
+
+            qDebug() << "PyMKMKit YAML reconstructed frequency MAE (cm^-1), normal sign:" << mae_normal
+                     << ", flipped sign:" << mae_flipped
+                     << ", selected:" << (flip_frequency_sign ? "flipped" : "normal");
+        } else {
+            flip_frequency_sign = (negative_count_flipped < negative_count_normal);
+            qDebug() << "PyMKMKit YAML sign heuristic based on negative-mode count, normal/flipped:"
+                     << negative_count_normal << "/" << negative_count_flipped
+                     << ", selected:" << (flip_frequency_sign ? "flipped" : "normal");
+        }
+
+        structure->clear_eigenmodes();
+
+        for(size_t mode_idx=0; mode_idx<n; mode_idx++) {
+            std::vector<QVector3D> mode_vectors(coordinates_direct.size(), QVector3D(0.0, 0.0, 0.0));
+
+            for(size_t dof_idx=0; dof_idx<n; dof_idx++) {
+                const int atom_index = dof_atom_indices[dof_idx];
+                const QChar axis = dof_axes[dof_idx];
+
+                // Convert from mass-weighted eigenvector component to Cartesian displacement.
+                const double amplitude = solver.eigenvectors()((int)dof_idx, (int)mode_idx) /
+                                         std::sqrt(dof_masses_amu[dof_idx]);
+
+                if(axis == 'X') {
+                    mode_vectors[(size_t)atom_index].setX(amplitude);
+                } else if(axis == 'Y') {
+                    mode_vectors[(size_t)atom_index].setY(amplitude);
+                } else if(axis == 'Z') {
+                    mode_vectors[(size_t)atom_index].setZ(amplitude);
+                }
+            }
+
+            const double freq_cm1 = flip_frequency_sign ? computed_freq_cm1_flipped[mode_idx]
+                                                        : computed_freq_cm1[mode_idx];
+            const double freq_thz = freq_cm1 / 33.35640951981521;
+
+            structure->add_eigenmode(freq_thz, mode_vectors);
+        }
+    }
+
+    return {structure};
 }
 
 /**

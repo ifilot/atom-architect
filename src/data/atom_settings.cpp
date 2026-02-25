@@ -62,8 +62,11 @@ AtomSettings::AtomSettings() {
     this->bond_distances[13][6] = 3.5;
 
     this->radii.resize(119);
+    this->masses.resize(119);
     for(unsigned int i=1; i<=118; i++) {
-        this->radii[i] = this->get_atom_radius(this->get_name_from_elnr(i));
+        const std::string elname = this->get_name_from_elnr(i);
+        this->radii[i] = this->get_atom_radius(elname);
+        this->masses[i] = this->get_atom_mass(elname);
     }
 }
 
@@ -149,6 +152,28 @@ float AtomSettings::get_atom_radius_from_elnr(unsigned int elnr) {
  */
 unsigned int AtomSettings::get_atom_elnr(const std::string& elname){
     return this->root["atoms"]["elnr"][QString(elname.c_str())].toString().toUInt();
+}
+
+/**
+ * @brief      Get atomic mass of an element
+ *
+ * @param[in]  elname  Element name
+ *
+ * @return     Atomic mass in amu
+ */
+double AtomSettings::get_atom_mass(const std::string& elname){
+    return this->root["atoms"]["masses"][QString(elname.c_str())].toString().toDouble();
+}
+
+/**
+ * @brief      Get atomic mass from element number
+ *
+ * @param[in]  elnr  Element number
+ *
+ * @return     Atomic mass in amu
+ */
+double AtomSettings::get_atom_mass_from_elnr(unsigned int elnr) {
+    return this->masses[elnr];
 }
 
 /**
