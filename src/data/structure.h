@@ -38,12 +38,19 @@
  */
 class Structure {
 
+public:
+    struct Eigenmode {
+        double eigenvalue = 0.0;
+        std::vector<QVector3D> eigenvectors;
+    };
+
 private:
     std::vector<Atom> atoms;            // atoms in the structure
     std::vector<Bond> bonds;            // bonds between the atoms
 
     double energy = 0.0;                // energy of the structure (if known, zero otherwise)
     std::vector<QVector3D> forces;      // forces on the atoms (if known, empty array otherwise)
+    std::vector<Eigenmode> eigenmodes;  // vibrational eigenmodes (if known, empty array otherwise)
 
     std::vector<Atom> atoms_expansion;  // atoms in the unit cell expansion
     std::vector<Bond> bonds_expansion;  // bonds in the unit cell expansion
@@ -57,7 +64,17 @@ private:
     std::vector<unsigned int> primary_buffer;   // primary selection buffer
     std::vector<unsigned int> secondary_buffer; // secondary selection buffer
 
+    static bool debug_logging_enabled;
+
 public:
+    static void set_debug_logging_enabled(bool enabled) {
+        Structure::debug_logging_enabled = enabled;
+    }
+
+    static bool is_debug_logging_enabled() {
+        return Structure::debug_logging_enabled;
+    }
+
     Structure(const Structure&) = default;
     Structure& operator=(const Structure&) = default;
 
@@ -92,6 +109,39 @@ public:
      */
     double get_energy() const {
         return this->energy;
+    }
+
+    /**
+     * @brief      Clear all eigenmodes.
+     */
+    inline void clear_eigenmodes() {
+        this->eigenmodes.clear();
+    }
+
+    /**
+     * @brief      Add an eigenmode.
+     *
+     * @param[in]  eigenvalue    Eigenvalue/frequency of the mode.
+     * @param[in]  eigenvectors  Per-atom displacement vectors.
+     */
+    void add_eigenmode(double eigenvalue, const std::vector<QVector3D>& eigenvectors);
+
+    /**
+     * @brief      Get all eigenmodes.
+     *
+     * @return     The eigenmodes.
+     */
+    inline const auto& get_eigenmodes() const {
+        return this->eigenmodes;
+    }
+
+    /**
+     * @brief      Get number of stored eigenmodes.
+     *
+     * @return     Number of eigenmodes.
+     */
+    inline size_t get_nr_eigenmodes() const {
+        return this->eigenmodes.size();
     }
 
     /**
@@ -253,9 +303,11 @@ public:
     }
 
     ~Structure() {
-        qDebug() << "Deleting structure ("
-                 << QString("0x%1").arg((size_t)this, 0, 16)
-                 << "; " << this->atoms.size() << " atoms ).";
+        if(Structure::debug_logging_enabled) {
+            qDebug() << "Deleting structure ("
+                     << QString("0x%1").arg((size_t)this, 0, 16)
+                     << "; " << this->atoms.size() << " atoms ).";
+        }
     }
 
     std::shared_ptr<Structure> clone_for_view() const {

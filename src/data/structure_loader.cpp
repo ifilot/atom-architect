@@ -146,7 +146,10 @@ std::shared_ptr<Structure> StructureLoader::load_xyz(const std::string& filename
 
     std::ifstream infile(filename);
 
-    // grab number of atoms
+    if(!infile.is_open()) {
+        throw std::runtime_error("Could not open " + filename);
+    }
+
     std::string line;
     std::getline(infile, line);
     unsigned int nr_atoms = QString(line.c_str()).toUInt();
@@ -395,6 +398,11 @@ std::vector<std::shared_ptr<Structure>> StructureLoader::load_outcar(const std::
         throw std::runtime_error("Could not open " + filename);
     }
 
+    struct ParsedEigenmode {
+        double eigenvalue = 0.0;
+        std::vector<QVector3D> eigenvectors;
+    };
+
     // vasp version
     unsigned int vasp_version = 0;
 
@@ -412,6 +420,9 @@ std::vector<std::shared_ptr<Structure>> StructureLoader::load_outcar(const std::
     std::vector<double> energies;
     std::vector<std::string> elements;
     std::vector<unsigned int> nr_atoms_per_elm;
+    std::vector<ParsedEigenmode> parsed_eigenmodes;
+
+    bool reading_mode_eigenvectors = false;
 
     /*
     * Define all the regex patterns
@@ -424,18 +435,61 @@ std::vector<std::shared_ptr<Structure>> StructureLoader::load_outcar(const std::
     static QRegularExpression regex_atoms("^\\s*POSITION.*$");
     static QRegularExpression regex_grab_numbers("^\\s+([0-9.-]+)\\s+([0-9.-]+)\\s+([0-9.-]+)\\s+([0-9.-]+)\\s+([0-9.-]+)\\s+([0-9.-]+).*$");
     static QRegularExpression regex_grab_energy("^\\s+energy  without entropy=\\s+([0-9.-]+)\\s+energy\\(sigma->0\\) =\\s+([0-9.-]+).*$");
+    static QRegularExpression regex_frequency_mode("^\\s*[0-9]+\\s+f(/i)?\\s*=\\s*([0-9eE.+-]+)\\s+THz.*$");
+    static QRegularExpression regex_frequency_eigenvector(
+        "^\\s*(?:[0-9]+\\s+)?([0-9eE.+-]+)\\s+([0-9eE.+-]+)\\s+([0-9eE.+-]+)\\s+([0-9eE.+-]+)\\s+([0-9eE.+-]+)\\s+([0-9eE.+-]+)\\s*$");
 
     std::string line;
 
     std::vector<std::shared_ptr<Structure>> structures;
 
     while(std::getline(infile, line)) { // loop over all the lines in the file
+        const QString qline(line.c_str());
+
+        if(reading_mode_eigenvectors) {
+            QRegularExpressionMatch mode_vector_match = regex_frequency_eigenvector.match(qline);
+            if(mode_vector_match.hasMatch()) {
+                parsed_eigenmodes.back().eigenvectors.emplace_back(
+                    mode_vector_match.captured(4).toDouble(),
+                    mode_vector_match.captured(5).toDouble(),
+                    mode_vector_match.captured(6).toDouble()
+                );
+
+                if(parsed_eigenmodes.back().eigenvectors.size() == nr_atoms) {
+                    reading_mode_eigenvectors = false;
+                    qDebug() << "Completed eigenmode" << parsed_eigenmodes.size()
+                             << "with" << nr_atoms << "eigenvectors.";
+                }
+
+                continue;
+            }
+
+            if(!parsed_eigenmodes.back().eigenvectors.empty()) {
+                reading_mode_eigenvectors = false;
+            }
+        }
+
+        QRegularExpressionMatch frequency_mode_match = regex_frequency_mode.match(qline);
+        if(frequency_mode_match.hasMatch()) {
+            double eigenvalue = frequency_mode_match.captured(2).toDouble();
+            if(frequency_mode_match.captured(1) == "/i") {
+                eigenvalue *= -1.0;
+            }
+
+            parsed_eigenmodes.push_back({eigenvalue, {}});
+            reading_mode_eigenvectors = true;
+
+            qDebug() << "Detected frequency mode" << parsed_eigenmodes.size()
+                     << "(THz):" << eigenvalue;
+            continue;
+        }
+
         /*
          * Collect the vasp version (4 or 5)
          */
         if(readstate & (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_ELEMENTS) ) {
             // get the elements and put these in an array
-            QRegularExpressionMatch match = regex_vasp_version.match(QString(line.c_str()));
+            QRegularExpressionMatch match = regex_vasp_version.match(qline);
             if (match.hasMatch()) {
 
                 vasp_version = match.captured(1).toUInt();
@@ -452,7 +506,7 @@ std::vector<std::shared_ptr<Structure>> StructureLoader::load_outcar(const std::
          * Collect the elements
          */
         if(readstate & (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_ELEMENTS) ) {
-            QRegularExpressionMatch match = regex_element.match(QString(line.c_str()));
+            QRegularExpressionMatch match = regex_element.match(qline);
             if (match.hasMatch()) {
                 elements.push_back(match.captured(2).toStdString());
 
@@ -467,7 +521,7 @@ std::vector<std::shared_ptr<Structure>> StructureLoader::load_outcar(const std::
          */
         if(readstate & (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_IONS_PER_ELEMENT) ) {
 
-            QRegularExpressionMatch match = regex_ions_per_element.match(QString(line.c_str()));
+            QRegularExpressionMatch match = regex_ions_per_element.match(qline);
             if (match.hasMatch()) {
                 QString subline = match.captured(2);
                 QStringList pieces = subline.split(whitespace);
@@ -497,7 +551,7 @@ std::vector<std::shared_ptr<Structure>> StructureLoader::load_outcar(const std::
          */
         if(readstate & (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_LATTICE_VECTORS) ) {
             // get the dimensionality of the unit cell
-            QRegularExpressionMatch match = regex_lattice_vectors.match(QString(line.c_str()));
+            QRegularExpressionMatch match = regex_lattice_vectors.match(qline);
             if (match.hasMatch()) {
 
                 // grab next tree lines
@@ -522,7 +576,7 @@ std::vector<std::shared_ptr<Structure>> StructureLoader::load_outcar(const std::
          * Collect the energy of the state
          */
         if(readstate & (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_ATOMS) ) {
-            QRegularExpressionMatch match = regex_grab_energy.match(QString(line.c_str()));
+            QRegularExpressionMatch match = regex_grab_energy.match(qline);
             if (match.hasMatch()) {
 
                 energies.push_back(match.captured(2).toDouble());
@@ -540,12 +594,13 @@ std::vector<std::shared_ptr<Structure>> StructureLoader::load_outcar(const std::
          */
         if(readstate & (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_ATOMS) ) {
 
-            QRegularExpressionMatch match = regex_atoms.match(QString(line.c_str()));
+            QRegularExpressionMatch match = regex_atoms.match(qline);
             if (match.hasMatch()) {
                 std::getline(infile, line); // skip dashed line
 
                 // create a new structure
                 structures.push_back(std::make_shared<Structure>(unitcell));
+                qDebug() << "Parsed ionic structure" << structures.size() << "from OUTCAR.";
 
                 for(unsigned i=0; i<nr_atoms_per_elm.size(); i++) {
                     for(unsigned int j=0; j<nr_atoms_per_elm[i]; j++) {
@@ -582,6 +637,39 @@ std::vector<std::shared_ptr<Structure>> StructureLoader::load_outcar(const std::
 
     for(unsigned int i=0; i<energies.size(); i++) {
         structures[i]->set_energy(energies[i]);
+    }
+
+    if(!parsed_eigenmodes.empty()) {
+        if(structures.empty()) {
+            throw std::runtime_error("Encountered eigenmodes in OUTCAR without atomic structures.");
+        }
+
+        qDebug() << "Frequency calculation detected. Ionic structures parsed:" << structures.size()
+                 << "; eigenmodes parsed:" << parsed_eigenmodes.size();
+
+        // For frequency calculations, keep only the first ionic structure as reference geometry.
+        auto reference_structure = structures.front();
+        reference_structure->clear_eigenmodes();
+
+        unsigned int nr_added_modes = 0;
+        for(const auto& mode : parsed_eigenmodes) {
+            if(mode.eigenvectors.size() != nr_atoms) {
+                qDebug() << "Skipping incomplete eigenmode, expected" << nr_atoms
+                         << "vectors but found" << mode.eigenvectors.size();
+                continue;
+            }
+
+            reference_structure->add_eigenmode(mode.eigenvalue, mode.eigenvectors);
+            nr_added_modes++;
+        }
+
+        qDebug() << "Stored" << nr_added_modes << "eigenmodes on first ionic structure.";
+
+        structures = {reference_structure};
+
+        if(!energies.empty()) {
+            structures.front()->set_energy(energies.front());
+        }
     }
 
     return structures;

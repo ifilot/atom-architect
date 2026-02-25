@@ -22,6 +22,8 @@
 #include <algorithm>
 #include <unordered_set>
 
+bool Structure::debug_logging_enabled = true;
+
 /**
  * @brief      Constructs a new instance.
  */
@@ -61,6 +63,20 @@ double Structure::get_rms_force() const {
     }
 
     return sum / (float)this->forces.size();
+}
+
+/**
+ * @brief      Add an eigenmode.
+ *
+ * @param[in]  eigenvalue    Eigenvalue/frequency of the mode.
+ * @param[in]  eigenvectors  Per-atom displacement vectors.
+ */
+void Structure::add_eigenmode(double eigenvalue, const std::vector<QVector3D>& eigenvectors) {
+    if(!this->atoms.empty() && eigenvectors.size() != this->atoms.size()) {
+        throw std::runtime_error("Eigenmode vector size does not match number of atoms.");
+    }
+
+    this->eigenmodes.push_back({eigenvalue, eigenvectors});
 }
 
 /**
@@ -495,7 +511,9 @@ void Structure::count_elements() {
  * @brief      Construct the bonds
  */
 void Structure::construct_bonds() {
-    qDebug() << "Building bonds";
+    if(Structure::debug_logging_enabled) {
+        qDebug() << "Building bonds";
+    }
     this->bonds.clear();
 
     for(unsigned int i=0; i<this->atoms.size(); i++) {
@@ -512,7 +530,9 @@ void Structure::construct_bonds() {
             }
         }
     }
-    qDebug() << bonds.size() << " bonds were found.";
+    if(Structure::debug_logging_enabled) {
+        qDebug() << bonds.size() << " bonds were found.";
+    }
 }
 
 /**

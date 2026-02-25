@@ -244,15 +244,19 @@ void InterfaceWindow::open_file(const QString& filename)
             return;
         }
 
-        // ---- Update geometry optimization panels ----
-        std::vector<std::shared_ptr<Structure>> geometry_structures;
-        geometry_structures.reserve(structures.size());
+        // ---- Update analysis panels ----
+        if (structures.size() == 1 && structures.front()->get_nr_eigenmodes() > 0) {
+            geometryOptimization->set_frequency_structure(structures.front()->clone_for_view());
+        } else {
+            std::vector<std::shared_ptr<Structure>> geometry_structures;
+            geometry_structures.reserve(structures.size());
 
-        for (const auto& s : structures) {
-            geometry_structures.push_back(s->clone_for_view());
+            for (const auto& s : structures) {
+                geometry_structures.push_back(s->clone_for_view());
+            }
+
+            geometryOptimization->set_structures(geometry_structures);
         }
-
-        geometryOptimization->set_structures(geometry_structures);
 
         // ---- Also sync editor + info to first structure ----
         structure_stack.clear();

@@ -11,11 +11,17 @@ class GeometryOptimizationViewer : public QWidget {
     Q_OBJECT
 
 public:
+    enum class ViewerMode {
+        GEOMETRY_OPTIMIZATION,
+        FREQUENCY
+    };
+
     explicit GeometryOptimizationViewer(QWidget *parent = nullptr);
 
     void set_structure(const std::shared_ptr<Structure>& structure);
     void set_structure_conservative(const std::shared_ptr<Structure>& structure);
     void set_index(size_t index, size_t total);
+    void set_mode(ViewerMode mode);
     inline const auto* get_anaglyph_widget() const {
         return this->anaglyph_widget;
     }
@@ -44,6 +50,9 @@ private:
     QPushButton *button_last;
     QPushButton *button_edit;
 
+    QLabel *label_title;
     QLabel *label_structure_id;
     QLabel *label_current_energy;
+
+    ViewerMode viewer_mode = ViewerMode::GEOMETRY_OPTIMIZATION;
 };

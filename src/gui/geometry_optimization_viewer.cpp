@@ -7,6 +7,10 @@
 #include <QDropEvent>
 #include <QFileInfo>
 
+namespace {
+constexpr double THZ_TO_WAVENUMBER = 33.35640951981521;
+}
+
 GeometryOptimizationViewer::GeometryOptimizationViewer(QWidget *parent)
     : QWidget(parent)
 {
@@ -16,9 +20,9 @@ GeometryOptimizationViewer::GeometryOptimizationViewer(QWidget *parent)
     setLayout(layout);
 
     // ---- Header ----
-    QLabel *title = new QLabel("GEOMETRY OPTIMIZATION", this);
-    title->setStyleSheet("font-weight: bold;");
-    layout->addWidget(title);
+    label_title = new QLabel("GEOMETRY OPTIMIZATION", this);
+    label_title->setStyleSheet("font-weight: bold;");
+    layout->addWidget(label_title);
 
     // ---- Anaglyph ----
     anaglyph_widget = new AnaglyphWidget(this);
@@ -69,13 +73,32 @@ void GeometryOptimizationViewer::set_structure(
     anaglyph_widget->set_structure(structure);
 }
 
+void GeometryOptimizationViewer::set_mode(ViewerMode mode)
+{
+    viewer_mode = mode;
+
+    if(viewer_mode == ViewerMode::GEOMETRY_OPTIMIZATION) {
+        label_title->setText("GEOMETRY OPTIMIZATION");
+    } else {
+        label_title->setText("FREQUENCY ANALYSIS");
+    }
+}
+
 void GeometryOptimizationViewer::set_index(size_t index, size_t total)
 {
-    label_structure_id->setText(
-        tr("<b>Image:</b> %1 / %2").arg(index + 1).arg(total));
-    label_current_energy->setText(
-        tr("<b>Energy:</b> %1").arg(
-            anaglyph_widget->get_structure()->get_energy(), 0, 'f', 6));
+    if(viewer_mode == ViewerMode::GEOMETRY_OPTIMIZATION) {
+        label_structure_id->setText(
+            tr("<b>Image:</b> %1 / %2").arg(index + 1).arg(total));
+        label_current_energy->setText(
+            tr("<b>Energy:</b> %1").arg(
+                anaglyph_widget->get_structure()->get_energy(), 0, 'f', 6));
+    } else {
+        label_structure_id->setText(
+            tr("<b>Mode:</b> %1 / %2").arg(index + 1).arg(total));
+        const double cm1 = anaglyph_widget->get_structure()->get_energy() * THZ_TO_WAVENUMBER;
+        label_current_energy->setText(
+            tr("<b>Frequency (cm<sup>-1</sup>):</b> %1").arg(cm1, 0, 'f', 2));
+    }
 }
 
 // -------------------- Drag & Drop --------------------
