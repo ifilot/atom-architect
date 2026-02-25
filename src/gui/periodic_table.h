@@ -23,6 +23,8 @@
 #include <QObject>
 #include <QDialog>
 #include <QGridLayout>
+#include <QIcon>
+#include <QLabel>
 #include <QPushButton>
 
 #include <unordered_map>
@@ -35,6 +37,13 @@ class DialogPeriodicTable : public QDialog {
 private:
     QGridLayout* layout;
     std::unordered_map<std::string, QPushButton*> buttons;
+
+private:
+    void add_element_button(unsigned int elnr, int row, int column, const QString& block_color);
+    QIcon create_element_tile(unsigned int elnr, const QString& symbol, const QString& block_color) const;
+    QString get_full_name(unsigned int elnr) const;
+    void add_table_labels();
+    void add_block_legend();
 
 public:
     DialogPeriodicTable(QWidget *parent = nullptr);
