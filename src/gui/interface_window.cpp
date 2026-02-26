@@ -19,6 +19,8 @@
  ****************************************************************************/
 #include "interface_window.h"
 
+#include <QCursor>
+
 /**
  * @brief      Constructs the object.
  *
@@ -32,13 +34,6 @@ InterfaceWindow::InterfaceWindow(MainWindow *mw)
     // ============================================================
     QHBoxLayout *rootLayout = new QHBoxLayout(this);
     setLayout(rootLayout);
-
-    // ============================================================
-    // Toolbar
-    // ============================================================
-    toolbar = new ToolBarWidget(this);
-    toolbar->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
-    rootLayout->addWidget(toolbar);
 
     // ============================================================
     // Main horizontal splitter
@@ -56,15 +51,173 @@ InterfaceWindow::InterfaceWindow(MainWindow *mw)
     // Editor panel (TOP-LEFT)
     // ------------------------------------------------------------
     QWidget *editorPanel = new QWidget(this);
+    this->editor_panel_ = editorPanel;
     QVBoxLayout *editorLayout = new QVBoxLayout(editorPanel);
+
+    QMenuBar *editorMenuBar = new QMenuBar(editorPanel);
+    QMenu *editorMenuFile = editorMenuBar->addMenu(tr("&File"));
+    QMenu *editorMenuView = editorMenuBar->addMenu(tr("&View"));
+    QMenu *editorMenuSelect = editorMenuBar->addMenu(tr("&Select"));
+    editorMenuBar->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Fixed);
+    editorMenuBar->setStyleSheet(
+        "QMenuBar::item { border: 1px solid #7a7a7a; border-radius: 4px; margin: 2px; padding: 3px 10px; background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #fbfbfb, stop:1 #d5d5d5); }"
+        "QMenuBar::item:selected { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #ffffff, stop:1 #c7ddff); }"
+        "QMenu::item { border: 1px solid transparent; border-radius: 3px; padding: 4px 20px 4px 20px; margin: 1px; }"
+        "QMenu::item:selected { border: 1px solid #6f95cc; background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #ffffff, stop:1 #cfe1ff); }"
+    );
 
     QLabel *editorLabel = new QLabel("EDITOR", editorPanel);
     editorLabel->setStyleSheet("font-weight: bold; font-size: 14px;");
-    editorLayout->addWidget(editorLabel);
+    QWidget *editorHeader = new QWidget(editorPanel);
+    QHBoxLayout *editorHeaderLayout = new QHBoxLayout(editorHeader);
+    editorHeaderLayout->setContentsMargins(0, 0, 0, 0);
+    editorHeaderLayout->setSpacing(6);
+    editorHeaderLayout->addWidget(editorMenuBar, 0, Qt::AlignLeft);
+    editorHeaderLayout->addWidget(editorLabel);
+    editorHeaderLayout->addStretch();
+    editorLayout->addWidget(editorHeader);
 
-    anaglyph_widget = new AnaglyphWidget(this);
+    QAction *editorActionSelectAll = editorMenuSelect->addAction(tr("Select all atoms"));
+    editorActionSelectAll->setShortcut(Qt::CTRL | Qt::Key_A);
+    QAction *editorActionDeselectAll = editorMenuSelect->addAction(tr("Deselect all atoms"));
+    editorActionDeselectAll->setShortcut(Qt::CTRL | Qt::Key_D);
+    QAction *editorActionInvertSelection = editorMenuSelect->addAction(tr("Invert selection"));
+    editorActionInvertSelection->setShortcut(Qt::CTRL | Qt::Key_I);
+    editorMenuSelect->addSeparator();
+    QAction *editorActionSetFrozen = editorMenuSelect->addAction(tr("Set frozen"));
+    editorActionSetFrozen->setShortcut(Qt::CTRL | Qt::Key_F);
+    QAction *editorActionSetUnfrozen = editorMenuSelect->addAction(tr("Set unfrozen"));
+    editorActionSetUnfrozen->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_F);
+
+    QAction *editorActionOpen = editorMenuFile->addAction(tr("Open"));
+    editorActionOpen->setShortcuts(QKeySequence::Open);
+    QAction *editorActionSave = editorMenuFile->addAction(tr("Save"));
+    editorActionSave->setShortcuts(QKeySequence::Save);
+
+    const auto scopedShortcutContext = Qt::WindowShortcut;
+
+    QMenu *editorMenuCamera = new QMenu(tr("Camera"), editorMenuView);
+    QMenu *editorMenuCameraAlign = new QMenu(tr("Align"), editorMenuCamera);
+    QAction *editorActionCameraDefault = new QAction(editorMenuCameraAlign);
+    QAction *editorActionCameraTop = new QAction(editorMenuCameraAlign);
+    QAction *editorActionCameraBottom = new QAction(editorMenuCameraAlign);
+    QAction *editorActionCameraLeft = new QAction(editorMenuCameraAlign);
+    QAction *editorActionCameraRight = new QAction(editorMenuCameraAlign);
+    QAction *editorActionCameraFront = new QAction(editorMenuCameraAlign);
+    QAction *editorActionCameraBack = new QAction(editorMenuCameraAlign);
+
+    QMenu *editorMenuCameraMode = new QMenu(tr("Mode"), editorMenuCamera);
+    QAction *editorActionCameraPerspective = new QAction(editorMenuCameraMode);
+    QAction *editorActionCameraOrthographic = new QAction(editorMenuCameraMode);
+
+    QMenu *editorMenuProjection = new QMenu(tr("Projection"), editorMenuView);
+    QAction *editorActionProjectionTwoDimensional = new QAction(editorMenuProjection);
+    QAction *editorActionProjectionAnaglyphRedCyan = new QAction(editorMenuProjection);
+    QMenu *editorMenuProjectionInterlaced = new QMenu(tr("Interlaced"), editorMenuProjection);
+    QAction *editorActionProjectionInterlacedRowsLr = new QAction(editorMenuProjectionInterlaced);
+    QAction *editorActionProjectionInterlacedRowsRl = new QAction(editorMenuProjectionInterlaced);
+    QAction *editorActionProjectionInterlacedColumnsLr = new QAction(editorMenuProjectionInterlaced);
+    QAction *editorActionProjectionInterlacedColumnsRl = new QAction(editorMenuProjectionInterlaced);
+    QAction *editorActionProjectionInterlacedCheckerboardLr = new QAction(editorMenuProjectionInterlaced);
+    QAction *editorActionProjectionInterlacedCheckerboardRl = new QAction(editorMenuProjectionInterlaced);
+
+    editorActionCameraDefault->setText(tr("Default"));
+    editorActionCameraDefault->setData(QVariant((int)CameraAlignment::DEFAULT));
+    editorActionCameraDefault->setShortcut(Qt::Key_0);
+    editorActionCameraTop->setText(tr("Top"));
+    editorActionCameraTop->setData(QVariant((int)CameraAlignment::TOP));
+    editorActionCameraTop->setShortcut(Qt::Key_7);
+    editorActionCameraBottom->setText(tr("Bottom"));
+    editorActionCameraBottom->setData(QVariant((int)CameraAlignment::BOTTOM));
+    editorActionCameraBottom->setShortcut(Qt::CTRL | Qt::Key_7);
+    editorActionCameraLeft->setText(tr("Left"));
+    editorActionCameraLeft->setData(QVariant((int)CameraAlignment::LEFT));
+    editorActionCameraLeft->setShortcut(Qt::Key_3);
+    editorActionCameraRight->setText(tr("Right"));
+    editorActionCameraRight->setData(QVariant((int)CameraAlignment::RIGHT));
+    editorActionCameraRight->setShortcut(Qt::CTRL | Qt::Key_3);
+    editorActionCameraFront->setText(tr("Front"));
+    editorActionCameraFront->setData(QVariant((int)CameraAlignment::FRONT));
+    editorActionCameraFront->setShortcut(Qt::Key_1);
+    editorActionCameraBack->setText(tr("Back"));
+    editorActionCameraBack->setData(QVariant((int)CameraAlignment::BACK));
+    editorActionCameraBack->setShortcut(Qt::CTRL | Qt::Key_1);
+    editorActionCameraPerspective->setText(tr("Perspective"));
+    editorActionCameraPerspective->setData(QVariant((int)CameraMode::PERSPECTIVE));
+    editorActionCameraPerspective->setShortcut(Qt::Key_5);
+    editorActionCameraOrthographic->setText(tr("Orthographic"));
+    editorActionCameraOrthographic->setData(QVariant((int)CameraMode::ORTHOGRAPHIC));
+    editorActionCameraOrthographic->setShortcut(Qt::CTRL | Qt::Key_5);
+
+    editorActionProjectionTwoDimensional->setText(tr("Two-dimensional"));
+    editorActionProjectionAnaglyphRedCyan->setText(tr("Anaglyph (red/cyan)"));
+    editorActionProjectionInterlacedRowsLr->setText(tr("Interlaced rows (left first)"));
+    editorActionProjectionInterlacedRowsRl->setText(tr("Interlaced rows (right first)"));
+    editorActionProjectionInterlacedColumnsLr->setText(tr("Interlaced columns (left first)"));
+    editorActionProjectionInterlacedColumnsRl->setText(tr("Interlaced columns (right first)"));
+    editorActionProjectionInterlacedCheckerboardLr->setText(tr("Checkerboard (left first)"));
+    editorActionProjectionInterlacedCheckerboardRl->setText(tr("Checkerboard (right first)"));
+    editorMenuProjectionInterlaced->setIcon(QIcon(":/assets/icon/interlaced_rows_lr_32.png"));
+    editorActionProjectionTwoDimensional->setIcon(QIcon(":/assets/icon/two_dimensional_32.png"));
+    editorActionProjectionAnaglyphRedCyan->setIcon(QIcon(":/assets/icon/anaglyph_red_cyan_32.png"));
+    editorActionProjectionInterlacedRowsLr->setIcon(QIcon(":/assets/icon/interlaced_rows_lr_32.png"));
+    editorActionProjectionInterlacedRowsRl->setIcon(QIcon(":/assets/icon/interlaced_rows_rl_32.png"));
+    editorActionProjectionInterlacedColumnsLr->setIcon(QIcon(":/assets/icon/interlaced_columns_lr_32.png"));
+    editorActionProjectionInterlacedColumnsRl->setIcon(QIcon(":/assets/icon/interlaced_columns_rl_32.png"));
+    editorActionProjectionInterlacedCheckerboardLr->setIcon(QIcon(":/assets/icon/interlaced_checkerboard_lr_32.png"));
+    editorActionProjectionInterlacedCheckerboardRl->setIcon(QIcon(":/assets/icon/interlaced_checkerboard_rl_32.png"));
+
+    for(QAction *action : {editorActionOpen, editorActionSave,
+                           editorActionSelectAll, editorActionDeselectAll, editorActionInvertSelection,
+                           editorActionSetFrozen, editorActionSetUnfrozen, editorActionCameraDefault,
+                           editorActionCameraTop, editorActionCameraBottom, editorActionCameraLeft,
+                           editorActionCameraRight, editorActionCameraFront, editorActionCameraBack,
+                           editorActionCameraPerspective, editorActionCameraOrthographic,
+                           editorActionProjectionTwoDimensional, editorActionProjectionAnaglyphRedCyan,
+                           editorActionProjectionInterlacedRowsLr, editorActionProjectionInterlacedRowsRl,
+                           editorActionProjectionInterlacedColumnsLr, editorActionProjectionInterlacedColumnsRl,
+                           editorActionProjectionInterlacedCheckerboardLr, editorActionProjectionInterlacedCheckerboardRl}) {
+        action->setShortcutContext(scopedShortcutContext);
+        this->editor_shortcut_actions_.push_back(action);
+    }
+
+    editorMenuView->addMenu(editorMenuProjection);
+    editorMenuView->addMenu(editorMenuCamera);
+    editorMenuCamera->addMenu(editorMenuCameraAlign);
+    editorMenuCameraAlign->addAction(editorActionCameraDefault);
+    editorMenuCameraAlign->addAction(editorActionCameraTop);
+    editorMenuCameraAlign->addAction(editorActionCameraBottom);
+    editorMenuCameraAlign->addAction(editorActionCameraLeft);
+    editorMenuCameraAlign->addAction(editorActionCameraRight);
+    editorMenuCameraAlign->addAction(editorActionCameraFront);
+    editorMenuCameraAlign->addAction(editorActionCameraBack);
+    editorMenuCamera->addMenu(editorMenuCameraMode);
+    editorMenuCameraMode->addAction(editorActionCameraPerspective);
+    editorMenuCameraMode->addAction(editorActionCameraOrthographic);
+    editorMenuProjection->addAction(editorActionProjectionTwoDimensional);
+    editorMenuProjection->addAction(editorActionProjectionAnaglyphRedCyan);
+    editorMenuProjection->addMenu(editorMenuProjectionInterlaced);
+    editorMenuProjectionInterlaced->addAction(editorActionProjectionInterlacedRowsLr);
+    editorMenuProjectionInterlaced->addAction(editorActionProjectionInterlacedRowsRl);
+    editorMenuProjectionInterlaced->addAction(editorActionProjectionInterlacedColumnsLr);
+    editorMenuProjectionInterlaced->addAction(editorActionProjectionInterlacedColumnsRl);
+    editorMenuProjectionInterlaced->addAction(editorActionProjectionInterlacedCheckerboardLr);
+    editorMenuProjectionInterlaced->addAction(editorActionProjectionInterlacedCheckerboardRl);
+
+    QWidget *editorViewportRow = new QWidget(editorPanel);
+    QHBoxLayout *editorViewportLayout = new QHBoxLayout(editorViewportRow);
+    editorViewportLayout->setContentsMargins(0, 0, 0, 0);
+    editorViewportLayout->setSpacing(6);
+
+    editor_toolbar = new ToolBarWidget(editorViewportRow, true);
+    editor_toolbar->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
+
+    anaglyph_widget = new AnaglyphWidget(editorViewportRow);
     anaglyph_widget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    editorLayout->addWidget(anaglyph_widget);
+
+    editorViewportLayout->addWidget(editor_toolbar);
+    editorViewportLayout->addWidget(anaglyph_widget, 1);
+    editorLayout->addWidget(editorViewportRow, 1);
 
     // Interaction / selection labels
     QWidget *labelWidget = new QWidget(this);
@@ -85,6 +238,129 @@ InterfaceWindow::InterfaceWindow(MainWindow *mw)
     // Geometry optimization viewer (BOTTOM-LEFT)
     // ------------------------------------------------------------
     geometryOptimization = new AnalysisGeometryOptimization(this);
+    this->analysis_panel_ = geometryOptimization->viewer();
+
+    QMenuBar *analysisMenuBar = new QMenuBar(this);
+    analysisMenuBar->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Fixed);
+    analysisMenuBar->setStyleSheet(editorMenuBar->styleSheet());
+    QMenu *analysisMenuFile = analysisMenuBar->addMenu(tr("&File"));
+    QMenu *analysisMenuView = analysisMenuBar->addMenu(tr("&View"));
+
+    QMenu *analysisMenuCamera = new QMenu(tr("Camera"), analysisMenuView);
+    QMenu *analysisMenuCameraAlign = new QMenu(tr("Align"), analysisMenuCamera);
+    QAction *analysisActionCameraDefault = new QAction(analysisMenuCameraAlign);
+    QAction *analysisActionCameraTop = new QAction(analysisMenuCameraAlign);
+    QAction *analysisActionCameraBottom = new QAction(analysisMenuCameraAlign);
+    QAction *analysisActionCameraLeft = new QAction(analysisMenuCameraAlign);
+    QAction *analysisActionCameraRight = new QAction(analysisMenuCameraAlign);
+    QAction *analysisActionCameraFront = new QAction(analysisMenuCameraAlign);
+    QAction *analysisActionCameraBack = new QAction(analysisMenuCameraAlign);
+
+    QMenu *analysisMenuCameraMode = new QMenu(tr("Mode"), analysisMenuCamera);
+    QAction *analysisActionCameraPerspective = new QAction(analysisMenuCameraMode);
+    QAction *analysisActionCameraOrthographic = new QAction(analysisMenuCameraMode);
+
+    QMenu *analysisMenuProjection = new QMenu(tr("Projection"), analysisMenuView);
+    QAction *analysisActionProjectionTwoDimensional = new QAction(analysisMenuProjection);
+    QAction *analysisActionProjectionAnaglyphRedCyan = new QAction(analysisMenuProjection);
+    QMenu *analysisMenuProjectionInterlaced = new QMenu(tr("Interlaced"), analysisMenuProjection);
+    QAction *analysisActionProjectionInterlacedRowsLr = new QAction(analysisMenuProjectionInterlaced);
+    QAction *analysisActionProjectionInterlacedRowsRl = new QAction(analysisMenuProjectionInterlaced);
+    QAction *analysisActionProjectionInterlacedColumnsLr = new QAction(analysisMenuProjectionInterlaced);
+    QAction *analysisActionProjectionInterlacedColumnsRl = new QAction(analysisMenuProjectionInterlaced);
+    QAction *analysisActionProjectionInterlacedCheckerboardLr = new QAction(analysisMenuProjectionInterlaced);
+    QAction *analysisActionProjectionInterlacedCheckerboardRl = new QAction(analysisMenuProjectionInterlaced);
+
+    QAction *analysisActionOpen = analysisMenuFile->addAction(tr("Open"));
+    analysisActionOpen->setShortcuts(QKeySequence::Open);
+    QAction *analysisActionSendToEditor = analysisMenuFile->addAction(tr("Send to editor"));
+
+    analysisActionCameraDefault->setText(tr("Default"));
+    analysisActionCameraDefault->setData(QVariant((int)CameraAlignment::DEFAULT));
+    analysisActionCameraDefault->setShortcut(Qt::Key_0);
+    analysisActionCameraTop->setText(tr("Top"));
+    analysisActionCameraTop->setData(QVariant((int)CameraAlignment::TOP));
+    analysisActionCameraTop->setShortcut(Qt::Key_7);
+    analysisActionCameraBottom->setText(tr("Bottom"));
+    analysisActionCameraBottom->setData(QVariant((int)CameraAlignment::BOTTOM));
+    analysisActionCameraBottom->setShortcut(Qt::CTRL | Qt::Key_7);
+    analysisActionCameraLeft->setText(tr("Left"));
+    analysisActionCameraLeft->setData(QVariant((int)CameraAlignment::LEFT));
+    analysisActionCameraLeft->setShortcut(Qt::Key_3);
+    analysisActionCameraRight->setText(tr("Right"));
+    analysisActionCameraRight->setData(QVariant((int)CameraAlignment::RIGHT));
+    analysisActionCameraRight->setShortcut(Qt::CTRL | Qt::Key_3);
+    analysisActionCameraFront->setText(tr("Front"));
+    analysisActionCameraFront->setData(QVariant((int)CameraAlignment::FRONT));
+    analysisActionCameraFront->setShortcut(Qt::Key_1);
+    analysisActionCameraBack->setText(tr("Back"));
+    analysisActionCameraBack->setData(QVariant((int)CameraAlignment::BACK));
+    analysisActionCameraBack->setShortcut(Qt::CTRL | Qt::Key_1);
+    analysisActionCameraPerspective->setText(tr("Perspective"));
+    analysisActionCameraPerspective->setData(QVariant((int)CameraMode::PERSPECTIVE));
+    analysisActionCameraPerspective->setShortcut(Qt::Key_5);
+    analysisActionCameraOrthographic->setText(tr("Orthographic"));
+    analysisActionCameraOrthographic->setData(QVariant((int)CameraMode::ORTHOGRAPHIC));
+    analysisActionCameraOrthographic->setShortcut(Qt::CTRL | Qt::Key_5);
+
+    analysisActionProjectionTwoDimensional->setText(tr("Two-dimensional"));
+    analysisActionProjectionAnaglyphRedCyan->setText(tr("Anaglyph (red/cyan)"));
+    analysisActionProjectionInterlacedRowsLr->setText(tr("Interlaced rows (left first)"));
+    analysisActionProjectionInterlacedRowsRl->setText(tr("Interlaced rows (right first)"));
+    analysisActionProjectionInterlacedColumnsLr->setText(tr("Interlaced columns (left first)"));
+    analysisActionProjectionInterlacedColumnsRl->setText(tr("Interlaced columns (right first)"));
+    analysisActionProjectionInterlacedCheckerboardLr->setText(tr("Checkerboard (left first)"));
+    analysisActionProjectionInterlacedCheckerboardRl->setText(tr("Checkerboard (right first)"));
+    analysisMenuProjectionInterlaced->setIcon(QIcon(":/assets/icon/interlaced_rows_lr_32.png"));
+    analysisActionProjectionTwoDimensional->setIcon(QIcon(":/assets/icon/two_dimensional_32.png"));
+    analysisActionProjectionAnaglyphRedCyan->setIcon(QIcon(":/assets/icon/anaglyph_red_cyan_32.png"));
+    analysisActionProjectionInterlacedRowsLr->setIcon(QIcon(":/assets/icon/interlaced_rows_lr_32.png"));
+    analysisActionProjectionInterlacedRowsRl->setIcon(QIcon(":/assets/icon/interlaced_rows_rl_32.png"));
+    analysisActionProjectionInterlacedColumnsLr->setIcon(QIcon(":/assets/icon/interlaced_columns_lr_32.png"));
+    analysisActionProjectionInterlacedColumnsRl->setIcon(QIcon(":/assets/icon/interlaced_columns_rl_32.png"));
+    analysisActionProjectionInterlacedCheckerboardLr->setIcon(QIcon(":/assets/icon/interlaced_checkerboard_lr_32.png"));
+    analysisActionProjectionInterlacedCheckerboardRl->setIcon(QIcon(":/assets/icon/interlaced_checkerboard_rl_32.png"));
+
+    for(QAction *action : {analysisActionOpen, analysisActionSendToEditor,
+                           analysisActionCameraDefault, analysisActionCameraTop, analysisActionCameraBottom,
+                           analysisActionCameraLeft, analysisActionCameraRight, analysisActionCameraFront,
+                           analysisActionCameraBack, analysisActionCameraPerspective, analysisActionCameraOrthographic,
+                           analysisActionProjectionTwoDimensional, analysisActionProjectionAnaglyphRedCyan,
+                           analysisActionProjectionInterlacedRowsLr, analysisActionProjectionInterlacedRowsRl,
+                           analysisActionProjectionInterlacedColumnsLr, analysisActionProjectionInterlacedColumnsRl,
+                           analysisActionProjectionInterlacedCheckerboardLr, analysisActionProjectionInterlacedCheckerboardRl}) {
+        action->setShortcutContext(scopedShortcutContext);
+        this->analysis_shortcut_actions_.push_back(action);
+    }
+
+    analysisMenuView->addMenu(analysisMenuProjection);
+    analysisMenuView->addMenu(analysisMenuCamera);
+    analysisMenuCamera->addMenu(analysisMenuCameraAlign);
+    analysisMenuCameraAlign->addAction(analysisActionCameraDefault);
+    analysisMenuCameraAlign->addAction(analysisActionCameraTop);
+    analysisMenuCameraAlign->addAction(analysisActionCameraBottom);
+    analysisMenuCameraAlign->addAction(analysisActionCameraLeft);
+    analysisMenuCameraAlign->addAction(analysisActionCameraRight);
+    analysisMenuCameraAlign->addAction(analysisActionCameraFront);
+    analysisMenuCameraAlign->addAction(analysisActionCameraBack);
+    analysisMenuCamera->addMenu(analysisMenuCameraMode);
+    analysisMenuCameraMode->addAction(analysisActionCameraPerspective);
+    analysisMenuCameraMode->addAction(analysisActionCameraOrthographic);
+    analysisMenuProjection->addAction(analysisActionProjectionTwoDimensional);
+    analysisMenuProjection->addAction(analysisActionProjectionAnaglyphRedCyan);
+    analysisMenuProjection->addMenu(analysisMenuProjectionInterlaced);
+    analysisMenuProjectionInterlaced->addAction(analysisActionProjectionInterlacedRowsLr);
+    analysisMenuProjectionInterlaced->addAction(analysisActionProjectionInterlacedRowsRl);
+    analysisMenuProjectionInterlaced->addAction(analysisActionProjectionInterlacedColumnsLr);
+    analysisMenuProjectionInterlaced->addAction(analysisActionProjectionInterlacedColumnsRl);
+    analysisMenuProjectionInterlaced->addAction(analysisActionProjectionInterlacedCheckerboardLr);
+    analysisMenuProjectionInterlaced->addAction(analysisActionProjectionInterlacedCheckerboardRl);
+
+    geometryOptimization->viewer()->set_header_widget(analysisMenuBar);
+
+    analysis_toolbar = new ToolBarWidget(geometryOptimization->viewer(), false);
+    analysis_toolbar->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
+    geometryOptimization->viewer()->set_side_toolbar(analysis_toolbar);
 
     leftSplitter->addWidget(geometryOptimization->viewer());
 
@@ -132,17 +408,27 @@ InterfaceWindow::InterfaceWindow(MainWindow *mw)
     connect(anaglyph_widget, SIGNAL(opengl_ready()),
             this, SLOT(load_default_file()));
 
-    connect(toolbar->get_action("toggle_periodicity_xy"),
+    connect(editor_toolbar->get_action("toggle_periodicity_xy"),
             SIGNAL(triggered()),
             anaglyph_widget, SLOT(toggle_periodicity_xy()));
 
-    connect(toolbar->get_action("toggle_periodicity_z"),
+    connect(editor_toolbar->get_action("toggle_periodicity_z"),
             SIGNAL(triggered()),
             anaglyph_widget, SLOT(toggle_periodicity_z()));
 
-    connect(toolbar->get_action("add_fragment"),
+    connect(editor_toolbar->get_action("add_fragment"),
             SIGNAL(triggered()),
             this, SLOT(add_fragment()));
+
+    connect(analysis_toolbar->get_action("toggle_periodicity_xy"),
+            SIGNAL(triggered()),
+            geometryOptimization->viewer()->get_anaglyph_widget(),
+            SLOT(toggle_periodicity_xy()));
+
+    connect(analysis_toolbar->get_action("toggle_periodicity_z"),
+            SIGNAL(triggered()),
+            geometryOptimization->viewer()->get_anaglyph_widget(),
+            SLOT(toggle_periodicity_z()));
 
     connect(anaglyph_widget, SIGNAL(signal_interaction_message(const QString&)),
             this, SLOT(update_interaction_label(const QString&)));
@@ -165,6 +451,46 @@ InterfaceWindow::InterfaceWindow(MainWindow *mw)
 
     connect(geometryOptimization->viewer(), SIGNAL(edit_requested()),
             this, SLOT(load_structure_from_geometry_analysis()));
+
+    connect(editorActionOpen, &QAction::triggered, this, &InterfaceWindow::open_editor_file);
+    connect(editorActionSave, &QAction::triggered, this, &InterfaceWindow::save_editor_file);
+    connect(analysisActionOpen, &QAction::triggered, this, &InterfaceWindow::open_analysis_file);
+    connect(analysisActionSendToEditor, &QAction::triggered, this, &InterfaceWindow::load_structure_from_geometry_analysis);
+
+    connect(editorActionSelectAll, SIGNAL(triggered()), this, SLOT(select_all_atoms()));
+    connect(editorActionDeselectAll, SIGNAL(triggered()), this, SLOT(deselect_all_atoms()));
+    connect(editorActionInvertSelection, SIGNAL(triggered()), this, SLOT(invert_selection()));
+    connect(editorActionSetFrozen, SIGNAL(triggered()), this, SLOT(set_frozen()));
+    connect(editorActionSetUnfrozen, SIGNAL(triggered()), this, SLOT(set_unfrozen()));
+
+    connect(editorMenuCameraAlign, SIGNAL(triggered(QAction*)), this, SLOT(set_camera_align(QAction*)));
+    connect(editorMenuCameraMode, SIGNAL(triggered(QAction*)), this, SLOT(set_camera_mode(QAction*)));
+    connect(editorActionProjectionTwoDimensional, &QAction::triggered, this, [this]{ this->anaglyph_widget->set_stereo("no_stereo_flat"); });
+    connect(editorActionProjectionAnaglyphRedCyan, &QAction::triggered, this, [this]{ this->anaglyph_widget->set_stereo("stereo_anaglyph_red_cyan"); });
+    connect(editorActionProjectionInterlacedRowsLr, &QAction::triggered, this, [this]{ this->anaglyph_widget->set_stereo("stereo_interlaced_rows_lr"); });
+    connect(editorActionProjectionInterlacedRowsRl, &QAction::triggered, this, [this]{ this->anaglyph_widget->set_stereo("stereo_interlaced_rows_rl"); });
+    connect(editorActionProjectionInterlacedColumnsLr, &QAction::triggered, this, [this]{ this->anaglyph_widget->set_stereo("stereo_interlaced_columns_lr"); });
+    connect(editorActionProjectionInterlacedColumnsRl, &QAction::triggered, this, [this]{ this->anaglyph_widget->set_stereo("stereo_interlaced_columns_rl"); });
+    connect(editorActionProjectionInterlacedCheckerboardLr, &QAction::triggered, this, [this]{ this->anaglyph_widget->set_stereo("stereo_interlaced_checkerboard_lr"); });
+    connect(editorActionProjectionInterlacedCheckerboardRl, &QAction::triggered, this, [this]{ this->anaglyph_widget->set_stereo("stereo_interlaced_checkerboard_rl"); });
+
+    connect(analysisMenuCameraAlign, SIGNAL(triggered(QAction*)), geometryOptimization, SLOT(set_camera_align(QAction*)));
+    connect(analysisMenuCameraMode, SIGNAL(triggered(QAction*)), geometryOptimization, SLOT(set_camera_mode(QAction*)));
+    connect(analysisActionProjectionTwoDimensional, &QAction::triggered, this, [this]{ this->geometryOptimization->set_stereo("no_stereo_flat"); });
+    connect(analysisActionProjectionAnaglyphRedCyan, &QAction::triggered, this, [this]{ this->geometryOptimization->set_stereo("stereo_anaglyph_red_cyan"); });
+    connect(analysisActionProjectionInterlacedRowsLr, &QAction::triggered, this, [this]{ this->geometryOptimization->set_stereo("stereo_interlaced_rows_lr"); });
+    connect(analysisActionProjectionInterlacedRowsRl, &QAction::triggered, this, [this]{ this->geometryOptimization->set_stereo("stereo_interlaced_rows_rl"); });
+    connect(analysisActionProjectionInterlacedColumnsLr, &QAction::triggered, this, [this]{ this->geometryOptimization->set_stereo("stereo_interlaced_columns_lr"); });
+    connect(analysisActionProjectionInterlacedColumnsRl, &QAction::triggered, this, [this]{ this->geometryOptimization->set_stereo("stereo_interlaced_columns_rl"); });
+    connect(analysisActionProjectionInterlacedCheckerboardLr, &QAction::triggered, this, [this]{ this->geometryOptimization->set_stereo("stereo_interlaced_checkerboard_lr"); });
+    connect(analysisActionProjectionInterlacedCheckerboardRl, &QAction::triggered, this, [this]{ this->geometryOptimization->set_stereo("stereo_interlaced_checkerboard_rl"); });
+
+    this->active_panel_timer_ = new QTimer(this);
+    this->active_panel_timer_->setInterval(40);
+    connect(this->active_panel_timer_, &QTimer::timeout, this, &InterfaceWindow::update_active_panel_from_cursor);
+    this->active_panel_timer_->start();
+
+    this->set_active_panel(true);
 
     // ============================================================
     // Default fragment
@@ -207,6 +533,55 @@ void InterfaceWindow::keyPressEvent(QKeyEvent* event) {
 
     // Let Qt handle it (menus, shortcuts, text input, etc.)
     QWidget::keyPressEvent(event);
+}
+
+void InterfaceWindow::set_active_panel(bool editor_active)
+{
+    this->editor_panel_active_ = editor_active;
+
+    if(this->anaglyph_widget != nullptr) {
+        this->anaglyph_widget->set_active_highlight(editor_active);
+    }
+
+    if(this->geometryOptimization != nullptr && this->geometryOptimization->viewer() != nullptr) {
+        auto *analysisAnaglyph = this->geometryOptimization->viewer()->get_anaglyph_widget();
+        if(analysisAnaglyph != nullptr) {
+            analysisAnaglyph->set_active_highlight(!editor_active);
+        }
+    }
+
+    for(QAction *action : this->editor_shortcut_actions_) {
+        action->setEnabled(editor_active);
+    }
+
+    for(QAction *action : this->analysis_shortcut_actions_) {
+        action->setEnabled(!editor_active);
+    }
+
+}
+
+void InterfaceWindow::update_active_panel_from_cursor()
+{
+    const QPoint global = QCursor::pos();
+
+    if(this->editor_panel_ != nullptr) {
+        const QPoint local = this->editor_panel_->mapFromGlobal(global);
+        if(this->editor_panel_->rect().contains(local)) {
+            if(!this->editor_panel_active_) {
+                this->set_active_panel(true);
+            }
+            return;
+        }
+    }
+
+    if(this->analysis_panel_ != nullptr) {
+        const QPoint local = this->analysis_panel_->mapFromGlobal(global);
+        if(this->analysis_panel_->rect().contains(local)) {
+            if(this->editor_panel_active_) {
+                this->set_active_panel(false);
+            }
+        }
+    }
 }
 
 /**
@@ -308,6 +683,51 @@ void InterfaceWindow::open_file(const QString& filename)
  */
 void InterfaceWindow::save_file(const QString& filename) {
     this->structure_saver.save_poscar(this->anaglyph_widget->get_structure(), filename.toStdString());
+}
+
+void InterfaceWindow::open_editor_file()
+{
+    QString filename = QFileDialog::getOpenFileName(this, tr("Open file"), "", tr("All supported files (*.geo *.xyz *.yaml *.yml *.vasp OUTCAR* CONTCAR* POSCAR*);;VASP files (*.vasp POSCAR* CONTCAR* OUTCAR*);;YAML frequency files (*.yaml *.yml);;ADF geometry files (*.geo);;XYZ files (*.xyz)"));
+    if(filename.isEmpty()) {
+        return;
+    }
+
+    std::shared_ptr<Structure> structure;
+    try {
+        structure = structure_loader.load_file(filename.toStdString());
+    } catch (const std::exception& e) {
+        QMessageBox::critical(this, tr("Exception encountered"), tr(e.what()));
+        return;
+    }
+
+    structure_stack.clear();
+    structure_stack.push_back(structure);
+    structure_stack_pointer = 0;
+
+    emit new_file_loaded();
+
+    anaglyph_widget->set_structure(structure);
+    structure_info_widget->set_structure(structure);
+}
+
+void InterfaceWindow::open_analysis_file()
+{
+    QString filename = QFileDialog::getOpenFileName(this, tr("Open file"), "", tr("Trajectory / Frequency files (OUTCAR* *.yaml *.yml);;VASP OUTCAR (OUTCAR*);;YAML frequency files (*.yaml *.yml)"));
+    if(filename.isEmpty()) {
+        return;
+    }
+
+    geometryOptimization->load_file(filename);
+}
+
+void InterfaceWindow::save_editor_file()
+{
+    QString filename = QFileDialog::getSaveFileName(this, tr("Save file"), "", tr("POSCAR"));
+    if(filename.isEmpty()) {
+        return;
+    }
+
+    this->save_file(filename);
 }
 
 /**

@@ -21,7 +21,6 @@
 #include "anaglyph_widget.h"
 
 #include <QAction>
-#include <QGuiApplication>
 #include <QMenu>
 #include <QOpenGLContext>
 #include <QTimer>
@@ -29,16 +28,13 @@
 
 namespace {
 
-// Prefer the palette of the containing widget (what the user actually sees),
-// fall back to this widget, then the application palette.
-QColor effectiveWindowBg(const QWidget* w) {
-    if (w && w->parentWidget()) {
-        return w->parentWidget()->palette().color(QPalette::Window);
-    }
-    if (w) {
-        return w->palette().color(QPalette::Window);
-    }
-    return QGuiApplication::palette().color(QPalette::Window);
+// Single-point viewport background colors for inactive/active viewports.
+constexpr const char* kViewportBackgroundInactiveHex = "#f0f0f0";
+constexpr const char* kViewportBackgroundActiveHex = "#f5f5f5";
+
+QColor viewportBackgroundColor(bool active_highlight) {
+    return QColor(active_highlight ? kViewportBackgroundActiveHex
+                                   : kViewportBackgroundInactiveHex);
 }
 
 } // namespace
@@ -115,7 +111,7 @@ void AnaglyphWidget::initializeGL()
     initializeOpenGLFunctions();
 
     // Clear color is set every frame where needed; keep a sane initial value here.
-    const QColor bg = effectiveWindowBg(this);
+    const QColor bg = viewportBackgroundColor(false);
     glClearColor(bg.redF(), bg.greenF(), bg.blueF(), 1.0f);
 
     qDebug() << "Load shaders";
@@ -150,9 +146,7 @@ void AnaglyphWidget::paintGL()
         glEnable(GL_DEPTH_TEST);
 
         // Transparent background (will be alpha-blended later)
-        QColor bg = parentWidget()
-            ? parentWidget()->palette().color(QPalette::Window)
-            : palette().color(QPalette::Window);
+        const QColor bg = viewportBackgroundColor(active_highlight_);
 
         glClearColor(bg.redF(), bg.greenF(), bg.blueF(), 0.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -221,6 +215,12 @@ void AnaglyphWidget::set_structure(const std::shared_ptr<Structure>& s)
     scene->camera_position = QVector3D(0.0f, -p.norm(), 0.0f);
 
     update();
+}
+
+void AnaglyphWidget::set_active_highlight(bool active)
+{
+    this->active_highlight_ = active;
+    this->update();
 }
 
 void AnaglyphWidget::set_structure_conservative(const std::shared_ptr<Structure>& s)
@@ -718,9 +718,7 @@ void AnaglyphWidget::paint_regular()
     glBindFramebuffer(GL_FRAMEBUFFER, msaa_fbo[FrameBuffer::STRUCTURE_NORMAL]);
     glEnable(GL_DEPTH_TEST);
 
-    QColor bg = parentWidget()
-        ? parentWidget()->palette().color(QPalette::Window)
-        : palette().color(QPalette::Window);
+    const QColor bg = viewportBackgroundColor(active_highlight_);
 
     glClearColor(bg.redF(), bg.greenF(), bg.blueF(), 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -770,6 +768,9 @@ void AnaglyphWidget::paint_stereographic()
     glEnable(GL_BLEND);
     glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
     glBlendEquation(GL_FUNC_ADD);
+
+    const QColor bg = viewportBackgroundColor(active_highlight_);
+    glClearColor(bg.redF(), bg.greenF(), bg.blueF(), 1.0f);
 
     const QVector3D lookat(0.0f, 1.0f, 0.0f);
     const float dist = 1.0f - scene->camera_position[1];

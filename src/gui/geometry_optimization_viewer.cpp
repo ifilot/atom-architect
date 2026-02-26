@@ -20,15 +20,27 @@ GeometryOptimizationViewer::GeometryOptimizationViewer(QWidget *parent)
     setLayout(layout);
 
     // ---- Header ----
-    label_title = new QLabel("GEOMETRY OPTIMIZATION", this);
+    QWidget *header = new QWidget(this);
+    header_layout = new QHBoxLayout(header);
+    header_layout->setContentsMargins(0, 0, 0, 0);
+    header_layout->setSpacing(6);
+    label_title = new QLabel("GEOMETRY OPTIMIZATION", header);
     label_title->setStyleSheet("font-weight: bold;");
-    layout->addWidget(label_title);
+    header_layout->addWidget(label_title);
+    header_layout->addStretch();
+    layout->addWidget(header);
 
     // ---- Anaglyph ----
-    anaglyph_widget = new AnaglyphWidget(this);
+    QWidget *viewportRow = new QWidget(this);
+    viewport_layout = new QHBoxLayout(viewportRow);
+    viewport_layout->setContentsMargins(0, 0, 0, 0);
+    viewport_layout->setSpacing(6);
+
+    anaglyph_widget = new AnaglyphWidget(viewportRow);
     anaglyph_widget->disable_selection();
     anaglyph_widget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    layout->addWidget(anaglyph_widget);
+    viewport_layout->addWidget(anaglyph_widget, 1);
+    layout->addWidget(viewportRow, 1);
 
     // ---- Controls ----
     QWidget *controls = new QWidget(this);
@@ -59,6 +71,26 @@ GeometryOptimizationViewer::GeometryOptimizationViewer(QWidget *parent)
     connect(button_next, &QPushButton::clicked, this, &GeometryOptimizationViewer::next_requested);
     connect(button_last, &QPushButton::clicked, this, &GeometryOptimizationViewer::last_requested);
     connect(button_edit, &QPushButton::clicked, this, &GeometryOptimizationViewer::edit_requested);
+}
+
+void GeometryOptimizationViewer::set_header_widget(QWidget *widget)
+{
+    if(widget == nullptr || header_layout == nullptr) {
+        return;
+    }
+
+    widget->setParent(this);
+    header_layout->insertWidget(0, widget, 0, Qt::AlignLeft);
+}
+
+void GeometryOptimizationViewer::set_side_toolbar(QWidget *widget)
+{
+    if(widget == nullptr || viewport_layout == nullptr) {
+        return;
+    }
+
+    widget->setParent(this);
+    viewport_layout->insertWidget(0, widget, 0, Qt::AlignTop);
 }
 
 void GeometryOptimizationViewer::set_structure_conservative(

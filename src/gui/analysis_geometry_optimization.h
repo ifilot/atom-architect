@@ -2,6 +2,7 @@
 
 #include <QObject>
 #include <QTimer>
+#include <QAction>
 #include <memory>
 #include <vector>
 
@@ -23,6 +24,9 @@ public:
 
 public slots:
     void load_file(const QString& filename);
+    void set_camera_align(QAction* action);
+    void set_camera_mode(QAction* action);
+    void set_stereo(const QString& stereo_name);
 
 private slots:
     void first();

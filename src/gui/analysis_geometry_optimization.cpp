@@ -209,6 +209,34 @@ void AnalysisGeometryOptimization::select_frequency_mode(size_t index)
     update_current();
 }
 
+
+void AnalysisGeometryOptimization::set_camera_align(QAction* action)
+{
+    if(!action || !viewer_ || !viewer_->get_anaglyph_widget()) {
+        return;
+    }
+
+    viewer_->get_anaglyph_widget()->get_user_action()->set_camera_alignment(action->data().toInt());
+}
+
+void AnalysisGeometryOptimization::set_camera_mode(QAction* action)
+{
+    if(!action || !viewer_ || !viewer_->get_anaglyph_widget()) {
+        return;
+    }
+
+    viewer_->get_anaglyph_widget()->get_user_action()->set_camera_mode(action->data().toInt());
+}
+
+void AnalysisGeometryOptimization::set_stereo(const QString& stereo_name)
+{
+    if(!viewer_ || !viewer_->get_anaglyph_widget()) {
+        return;
+    }
+
+    viewer_->get_anaglyph_widget()->set_stereo(stereo_name);
+}
+
 void AnalysisGeometryOptimization::load_file(const QString &filename)
 {
     StructureLoader sl;

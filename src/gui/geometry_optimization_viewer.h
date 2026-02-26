@@ -3,6 +3,7 @@
 #include <QWidget>
 #include <QPushButton>
 #include <QLabel>
+#include <QHBoxLayout>
 
 #include "anaglyph_widget.h"
 #include "../data/structure.h"
@@ -22,7 +23,12 @@ public:
     void set_structure_conservative(const std::shared_ptr<Structure>& structure);
     void set_index(size_t index, size_t total);
     void set_mode(ViewerMode mode);
-    inline const auto* get_anaglyph_widget() const {
+    void set_header_widget(QWidget *widget);
+    void set_side_toolbar(QWidget *widget);
+    inline AnaglyphWidget* get_anaglyph_widget() {
+        return this->anaglyph_widget;
+    }
+    inline const AnaglyphWidget* get_anaglyph_widget() const {
         return this->anaglyph_widget;
     }
 
@@ -53,6 +59,9 @@ private:
     QLabel *label_title;
     QLabel *label_structure_id;
     QLabel *label_current_energy;
+
+    QHBoxLayout *header_layout = nullptr;
+    QHBoxLayout *viewport_layout = nullptr;
 
     ViewerMode viewer_mode = ViewerMode::GEOMETRY_OPTIMIZATION;
 };

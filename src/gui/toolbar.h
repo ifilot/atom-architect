@@ -37,7 +37,7 @@ public:
      *
      * @param      parent  The parent
      */
-    ToolBarWidget(QWidget* parent = nullptr);
+    ToolBarWidget(QWidget* parent = nullptr, bool include_add_fragment = true);
 
     /**
      * @brief      Get an action by action name

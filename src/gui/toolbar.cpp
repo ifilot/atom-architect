@@ -25,7 +25,7 @@
  *
  * @param      parent  The parent
  */
-ToolBarWidget::ToolBarWidget(QWidget* parent) :
+ToolBarWidget::ToolBarWidget(QWidget* parent, bool include_add_fragment) :
 QToolBar(parent) {
     // set vertical orientation
     this->setOrientation(Qt::Vertical);
@@ -34,8 +34,9 @@ QToolBar(parent) {
     setIconSize(QSize(32, 32));
     this->add_action("toggle_periodicity_xy", "expand_xy");
     this->add_action("toggle_periodicity_z", "expand_z");
-    // this->add_action("---");
-    this->add_action("add_fragment", "add_fragment");
+    if(include_add_fragment) {
+        this->add_action("add_fragment", "add_fragment");
+    }
 }
 
 /**

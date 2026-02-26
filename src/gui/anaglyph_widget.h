@@ -119,6 +119,7 @@ private:
 
     std::shared_ptr<UserAction> user_action;        // object that stores current action of the user on a structure
     bool allow_selection = true;                    // whether selecting atoms is possible
+    bool active_highlight_ = false;                 // subtle background highlight for active viewport
 
 public:
     AnaglyphWidget(QWidget *parent = 0);
@@ -160,6 +161,8 @@ public:
     void window_move_event();
 
     void set_stereo(QString stereo_name);
+
+    void set_active_highlight(bool active);
 
     QSize minimumSizeHint() const Q_DECL_OVERRIDE;
 

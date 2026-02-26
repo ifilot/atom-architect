@@ -36,6 +36,7 @@
 #include <QTimer>
 #include <QSplitter>
 #include <QInputDialog>
+#include <QVector>
 
 #include "anaglyph_widget.h"
 #include "analysis_geometry_optimization.h"
@@ -64,13 +65,25 @@ private:
     StructureInfoWidget *structure_info_widget;
     AnalysisGeometryOptimization *geometryOptimization;
 
-    ToolBarWidget *toolbar;
+    ToolBarWidget *editor_toolbar;
+    ToolBarWidget *analysis_toolbar;
 
     StructureLoader structure_loader;
     StructureSaver structure_saver;
 
     size_t structure_stack_pointer = 0;
     std::vector<std::shared_ptr<Structure>> structure_stack;
+
+    QWidget *editor_panel_ = nullptr;
+    QWidget *analysis_panel_ = nullptr;
+    bool editor_panel_active_ = true;
+    QTimer *active_panel_timer_ = nullptr;
+
+    QVector<QAction*> editor_shortcut_actions_;
+    QVector<QAction*> analysis_shortcut_actions_;
+
+    void set_active_panel(bool editor_active);
+    void update_active_panel_from_cursor();
 
 public:
     /**
@@ -109,6 +122,8 @@ public slots:
      * @return     loading time of object in seconds
      */
     void open_file(const QString& filename);
+    void open_editor_file();
+    void open_analysis_file();
 
     /**
      * @brief      Saves a file.
@@ -116,6 +131,7 @@ public slots:
      * @param[in]  filename  The filename
      */
     void save_file(const QString& filename);
+    void save_editor_file();
 
     /**
      * @brief      Sets the camera align.
