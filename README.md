@@ -5,8 +5,6 @@
 [![linux](https://github.com/ifilot/atom-architect/actions/workflows/linux.yml/badge.svg)](https://github.com/ifilot/atom-architect/actions/workflows/linux.yml)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
-![Screenshot of Atom Architect](img/atom-architect-screenshot.png)
-
 ## Purpose
 Atom Architect is a VASP visualization and structure building tool. Its unique
 feature is that atom placement is conducted in a relative fashion, i.e. with
@@ -14,9 +12,19 @@ respect to the existing atomic structure. This is especially useful for
 catalysis purposes where atoms are typically placed at e.g. bridge, threefold or
 fourfold sites.
 
+## Features
+
+* Construction of VASP POSCAR files.
+* Analysis of geometry optimization, frequency analysis and nudged elastic band
+  calculations.
+
 ## Downloads
 
-👉 [Download the latest release](https://github.com/ifilot/atom-architect/releases/latest)
+💾 [Download the latest release](https://github.com/ifilot/atom-architect/releases/latest)
+
+## Screenshot
+
+![Screenshot of Atom Architect](img/atom-architect-screenshot.png)
 
 ## Compilation
 
