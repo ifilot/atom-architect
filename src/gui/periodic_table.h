@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -31,6 +31,9 @@
 
 #include "../data/atom_settings.h"
 
+/**
+ * @brief DialogPeriodicTable class.
+ */
 class DialogPeriodicTable : public QDialog {
     Q_OBJECT
 
@@ -39,18 +42,59 @@ private:
     std::unordered_map<std::string, QPushButton*> buttons;
 
 private:
+/**
+ * @brief add_element_button.
+ *
+ * @param elnr Parameter elnr.
+ * @param row Parameter row.
+ * @param column Parameter column.
+ * @param block_color Parameter block_color.
+ */
     void add_element_button(unsigned int elnr, int row, int column, const QString& block_color);
+/**
+ * @brief create_element_tile.
+ *
+ * @param elnr Parameter elnr.
+ * @param symbol Parameter symbol.
+ * @param block_color Parameter block_color.
+ */
     QIcon create_element_tile(unsigned int elnr, const QString& symbol, const QString& block_color) const;
+/**
+ * @brief get_full_name.
+ *
+ * @param elnr Parameter elnr.
+ */
     QString get_full_name(unsigned int elnr) const;
+/**
+ * @brief add_table_labels.
+ *
+ */
     void add_table_labels();
+/**
+ * @brief add_block_legend.
+ *
+ */
     void add_block_legend();
 
 public:
+/**
+ * @brief DialogPeriodicTable.
+ *
+ * @param parent Parameter parent.
+ */
     DialogPeriodicTable(QWidget *parent = nullptr);
 
 private:
+/**
+ * @brief add_buttons.
+ *
+ */
     void add_buttons();
 
 private slots:
+/**
+ * @brief return_element.
+ *
+ */
     void return_element();
 };

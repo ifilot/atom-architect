@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -17,6 +17,7 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>. *
  *                                                                          *
  ****************************************************************************/
+
 #include "interface_window.h"
 
 #include <QCursor>
@@ -558,6 +559,11 @@ void InterfaceWindow::keyPressEvent(QKeyEvent* event) {
     QWidget::keyPressEvent(event);
 }
 
+/**
+ * @brief set_active_panel.
+ *
+ * @param editor_active Parameter editor_active.
+ */
 void InterfaceWindow::set_active_panel(bool editor_active)
 {
     this->editor_panel_active_ = editor_active;
@@ -583,6 +589,10 @@ void InterfaceWindow::set_active_panel(bool editor_active)
 
 }
 
+/**
+ * @brief update_active_panel_from_cursor.
+ *
+ */
 void InterfaceWindow::update_active_panel_from_cursor()
 {
     const QPoint global = QCursor::pos();
@@ -607,13 +617,13 @@ void InterfaceWindow::update_active_panel_from_cursor()
     }
 }
 
-/**
- * @brief      Opens a file.
- *
- * @param[in]  filename  The filename
- *
- * @return     loading time of object in seconds
- */
+    /**
+     * @brief      Opens a file.
+     *
+     * @param[in]  filename  The filename
+     *
+     * @return     loading time of object in seconds
+     */
 void InterfaceWindow::open_file(const QString& filename)
 {
     qDebug() << "Opening file:" << filename;
@@ -699,15 +709,19 @@ void InterfaceWindow::open_file(const QString& filename)
     structure_info_widget->set_structure(structure);
 }
 
-/**
- * @brief      Saves a file.
- *
- * @param[in]  filename  The filename
- */
+    /**
+     * @brief      Saves a file.
+     *
+     * @param[in]  filename  The filename
+     */
 void InterfaceWindow::save_file(const QString& filename) {
     this->structure_saver.save_poscar(this->anaglyph_widget->get_structure(), filename.toStdString());
 }
 
+/**
+ * @brief open_editor_file.
+ *
+ */
 void InterfaceWindow::open_editor_file()
 {
     QSettings settings;
@@ -741,6 +755,10 @@ void InterfaceWindow::open_editor_file()
     structure_info_widget->set_structure(structure);
 }
 
+/**
+ * @brief open_analysis_file.
+ *
+ */
 void InterfaceWindow::open_analysis_file()
 {
     QSettings settings;
@@ -759,6 +777,10 @@ void InterfaceWindow::open_analysis_file()
     structureAnalysis->load_file(filename);
 }
 
+/**
+ * @brief open_analysis_neb_calculation.
+ *
+ */
 void InterfaceWindow::open_analysis_neb_calculation()
 {
     QSettings settings;
@@ -804,6 +826,10 @@ void InterfaceWindow::open_analysis_neb_calculation()
     structureAnalysis->set_structures(geometry_structures, StructureAnalysisViewer::SeriesKind::NEB);
 }
 
+/**
+ * @brief save_editor_file.
+ *
+ */
 void InterfaceWindow::save_editor_file()
 {
     QString filename = QFileDialog::getSaveFileName(this, tr("Save file"), "", tr("POSCAR"));
@@ -814,27 +840,27 @@ void InterfaceWindow::save_editor_file()
     this->save_file(filename);
 }
 
-/**
- * @brief      Sets the camera align.
- *
- * @param      action  The action
- */
+    /**
+     * @brief      Sets the camera align.
+     *
+     * @param      action  The action
+     */
 void InterfaceWindow::set_camera_align(QAction* action) {
     this->anaglyph_widget->get_user_action()->set_camera_alignment(action->data().toInt());
 }
 
-/**
- * @brief      Sets the camera mode (orthogonal or perspective).
- *
- * @param      action  The action
- */
+    /**
+     * @brief      Sets the camera mode (orthogonal or perspective).
+     *
+     * @param      action  The action
+     */
 void InterfaceWindow::set_camera_mode(QAction* action) {
     this->anaglyph_widget->get_user_action()->set_camera_mode(action->data().toInt());
 }
 
-/**
- * @brief      Loads a default structure file.
- */
+    /**
+     * @brief      Loads a default structure file.
+     */
 void InterfaceWindow::load_default_file() {
     // do not load default file if a file is already loaded (via CLI)
     if(this->structure_stack.size() != 0) {
@@ -848,76 +874,73 @@ void InterfaceWindow::load_default_file() {
     this->open_file(tmp_dir.path() + "/" + filename.c_str());
 }
 
-/**
- * @brief      Add a fragment to the selection
- */
+    /**
+     * @brief      Add a fragment to the selection
+     */
 void InterfaceWindow::add_fragment() {
     this->anaglyph_widget
         ->get_user_action()
         ->cmd_add_fragment();
 }
 
-/**
- * @brief      Select all atoms
- */
+    /**
+     * @brief      Select all atoms
+     */
 void InterfaceWindow::select_all_atoms() {
     this->anaglyph_widget
         ->get_user_action()
         ->cmd_select_all();
 }
 
-/**
- * @brief      Deselect all atoms
- */
+    /**
+     * @brief      Deselect all atoms
+     */
 void InterfaceWindow::deselect_all_atoms() {
     this->anaglyph_widget
         ->get_user_action()
         ->cmd_deselect_all();
 }
 
-/**
- * @brief      Invert selection
- */
+    /**
+     * @brief      Select all atoms
+     */
 void InterfaceWindow::invert_selection() {
     this->anaglyph_widget
         ->get_user_action()
         ->cmd_invert_selection();
 }
 
-/**
- * @brief      Set selected atoms to frozen state
- */
+    /**
+     * @brief      Toggle frozen
+     */
 void InterfaceWindow::set_frozen() {
     this->anaglyph_widget
         ->get_user_action()
         ->cmd_set_frozen();
 }
-/**
- * @brief      Set selected atoms to unfrozen state
- */
+    /**
+     * @brief      Set unfrozen
+     */
 void InterfaceWindow::set_unfrozen() {
     this->anaglyph_widget
         ->get_user_action()
         ->cmd_set_unfrozen();
 }
 
-/**
- * @brief      Update the inform label
- *
- * @param[in]  text  The text
- */
+    /**
+     * @brief      Update the inform label
+     *
+     * @param[in]  text  The text
+     */
 void InterfaceWindow::update_interaction_label(const QString& text) {
     this->interaction_label->setText(text);
 }
 
-/**
- * @brief      Update the selection label
- *
- * If the list of atoms exceeds 120 characters, truncate the list and show
- * cdots
- *
- * @param[in]  text  The text
- */
+    /**
+     * @brief      Update the inform label
+     *
+     * @param[in]  text  The text
+     */
 void InterfaceWindow::update_selection_label(const QString& text) {
     QStringList atomlists = text.split("<br>");
     QStringList pieces1 = atomlists[0].split(";");
@@ -942,10 +965,10 @@ void InterfaceWindow::update_selection_label(const QString& text) {
     this->selection_label->setText(atomlists.join("<br>"));
 }
 
-/**
- * @brief Grab the latest structure and push it to the stack and
- *        create a new copy on the stack
- */
+    /**
+     * @brief Grab the latest structure and push it to the stack and
+     *        create a new copy on the stack
+     */
 void InterfaceWindow::push_structure() {
     // Current structure as used by the renderer/user action
     auto current = this->anaglyph_widget->get_structure();
@@ -966,9 +989,9 @@ void InterfaceWindow::push_structure() {
     this->anaglyph_widget->get_user_action()->set_structure(this->structure_stack[this->structure_stack_pointer]);
 }
 
-/**
- * @brief Increment the stack pointer
- */
+    /**
+     * @brief Increment the stack pointer
+     */
 void InterfaceWindow::increment_structure_stack_pointer() {
     if(this->structure_stack_pointer < (this->structure_stack.size() - 1)) {
         this->structure_stack_pointer++;
@@ -980,9 +1003,9 @@ void InterfaceWindow::increment_structure_stack_pointer() {
     }
 }
 
-/**
- * @brief Decrement the stack pointer
- */
+    /**
+     * @brief Decrement the stack pointer
+     */
 void InterfaceWindow::decrement_structure_stack_pointer() {
     if(this->structure_stack_pointer > 0) {
         this->structure_stack_pointer--;
@@ -994,9 +1017,9 @@ void InterfaceWindow::decrement_structure_stack_pointer() {
     }
 }
 
-/**
- * @brief Copy structure from GeometryAnalysis window to Editor
- */
+    /**
+     * @brief Copy structure from GeometryAnalysis window to Editor
+     */
 void InterfaceWindow::load_structure_from_geometry_analysis() {
     this->anaglyph_widget->set_structure(
         this->structureAnalysis->viewer()->get_anaglyph_widget()->get_structure()->clone_for_view()

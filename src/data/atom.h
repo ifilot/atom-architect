@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -31,6 +31,9 @@ enum {
     ATOM_EXPANSION_Z
 };
 
+/**
+ * @brief Atom class.
+ */
 class Atom {
 public:
     unsigned int atnr;
@@ -39,6 +42,15 @@ public:
     unsigned int select = 0;
     std::array<bool, 3> selective_dynamics = {true, true, true};
 
+/**
+ * @brief Atom.
+ *
+ * @param _atnr Parameter _atnr.
+ * @param _x Parameter _x.
+ * @param _y Parameter _y.
+ * @param _z Parameter _z.
+ * @param _atomtype Parameter _atomtype.
+ */
     Atom(unsigned int _atnr, double _x, double _y, double _z, unsigned int _atomtype = (1 << ATOM_CENTRAL_UNITCELL));
 
     /**
@@ -47,6 +59,13 @@ public:
      * @return     The position.
      */
     inline QVector3D get_pos_qtvec() const {
+/**
+ * @brief QVector3D.
+ *
+ * @param param Parameter param.
+ * @param param Parameter param.
+ * @param param Parameter param.
+ */
         return QVector3D(this->x, this->y, this->z);
     }
 

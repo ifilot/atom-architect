@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -51,6 +51,11 @@ const std::array<const char*, 119> ELEMENT_FULL_NAMES = {
 };
 }
 
+/**
+ * @brief DialogPeriodicTable.
+ *
+ * @param param Parameter param.
+ */
 DialogPeriodicTable::DialogPeriodicTable(QWidget *parent) : QDialog(parent) {
     this->layout = new QGridLayout();
     this->layout->setSpacing(2);
@@ -60,6 +65,10 @@ DialogPeriodicTable::DialogPeriodicTable(QWidget *parent) : QDialog(parent) {
     this->add_buttons();
 }
 
+/**
+ * @brief add_buttons.
+ *
+ */
 void DialogPeriodicTable::add_buttons() {
     this->add_table_labels();
 
@@ -128,6 +137,14 @@ void DialogPeriodicTable::add_buttons() {
     }
 }
 
+/**
+ * @brief add_element_button.
+ *
+ * @param elnr Parameter elnr.
+ * @param row Parameter row.
+ * @param column Parameter column.
+ * @param block_color Parameter block_color.
+ */
 void DialogPeriodicTable::add_element_button(unsigned int elnr, int row, int column, const QString& block_color) {
     const QString symbol = QString::fromStdString(AtomSettings::get().get_name_from_elnr(elnr));
 
@@ -142,6 +159,13 @@ void DialogPeriodicTable::add_element_button(unsigned int elnr, int row, int col
     this->layout->addWidget(button, row, column);
 }
 
+/**
+ * @brief create_element_tile.
+ *
+ * @param elnr Parameter elnr.
+ * @param symbol Parameter symbol.
+ * @param block_color Parameter block_color.
+ */
 QIcon DialogPeriodicTable::create_element_tile(unsigned int elnr, const QString& symbol, const QString& block_color) const {
     QPixmap pixmap(TILE_WIDTH, TILE_HEIGHT);
     pixmap.fill(Qt::transparent);
@@ -175,6 +199,11 @@ QIcon DialogPeriodicTable::create_element_tile(unsigned int elnr, const QString&
     return QIcon(pixmap);
 }
 
+/**
+ * @brief get_full_name.
+ *
+ * @param elnr Parameter elnr.
+ */
 QString DialogPeriodicTable::get_full_name(unsigned int elnr) const {
     if(elnr < ELEMENT_FULL_NAMES.size()) {
         return QString(ELEMENT_FULL_NAMES[elnr]);
@@ -183,6 +212,10 @@ QString DialogPeriodicTable::get_full_name(unsigned int elnr) const {
     return QString();
 }
 
+/**
+ * @brief add_table_labels.
+ *
+ */
 void DialogPeriodicTable::add_table_labels() {
     for(int group = 1; group <= 18; group++) {
         auto* group_label = new QLabel(QString::number(group));
@@ -205,6 +238,10 @@ void DialogPeriodicTable::add_table_labels() {
     this->layout->addWidget(actinide_label, 9, 0);
 }
 
+/**
+ * @brief add_block_legend.
+ *
+ */
 void DialogPeriodicTable::add_block_legend() {
     const std::array<std::pair<QString, QString>, 4> block_labels = {{
         {"s-block", S_BLOCK_COLOR},
@@ -223,6 +260,10 @@ void DialogPeriodicTable::add_block_legend() {
     }
 }
 
+/**
+ * @brief return_element.
+ *
+ */
 void DialogPeriodicTable::return_element() {
     QPushButton* push_button = qobject_cast<QPushButton*>(sender());
     if (push_button) {

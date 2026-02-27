@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -68,6 +68,9 @@ enum FrameBuffer {
     NR_FRAMEBUFFERS
 };
 
+/**
+ * @brief AnaglyphWidget class.
+ */
 class AnaglyphWidget : public QOpenGLWidget, protected QOpenGLFunctions {
     Q_OBJECT
 
@@ -122,8 +125,17 @@ private:
     bool active_highlight_ = false;                 // subtle background highlight for active viewport
 
 public:
+/**
+ * @brief AnaglyphWidget.
+ *
+ * @param parent Parameter parent.
+ */
     AnaglyphWidget(QWidget *parent = 0);
 
+    /**
+     * @brief disable_selection.
+     *
+     */
     inline void disable_selection() {
         this->allow_selection = false;
     }
@@ -158,16 +170,42 @@ public:
         return this->structure.get();
     }
 
+/**
+ * @brief window_move_event.
+ *
+ */
     void window_move_event();
 
+/**
+ * @brief set_stereo.
+ *
+ * @param stereo_name Parameter stereo_name.
+ */
     void set_stereo(QString stereo_name);
 
+/**
+ * @brief set_active_highlight.
+ *
+ * @param active Parameter active.
+ */
     void set_active_highlight(bool active);
 
+    /**
+     * @brief minimumSizeHint.
+     *
+     */
     QSize minimumSizeHint() const Q_DECL_OVERRIDE;
 
+    /**
+     * @brief sizeHint.
+     *
+     */
     QSize sizeHint() const Q_DECL_OVERRIDE;
 
+/**
+ * @brief ~AnaglyphWidget.
+ *
+ */
     ~AnaglyphWidget();
 
     /**

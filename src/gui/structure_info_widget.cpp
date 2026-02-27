@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -20,6 +20,11 @@
 
 #include "structure_info_widget.h"
 
+/**
+ * @brief StructureInfoWidget.
+ *
+ * @param param Parameter param.
+ */
 StructureInfoWidget::StructureInfoWidget(QWidget *parent) :
     QWidget(parent)
 {
@@ -39,25 +44,25 @@ StructureInfoWidget::StructureInfoWidget(QWidget *parent) :
     this->tabs->addTab(this->fragment_selector, tr("Fragments"));
 }
 
-/**
- * @brief      Sets the structure.
- *
- * @param[in]  _structure  The structure
- */
+    /**
+     * @brief      Sets the structure.
+     *
+     * @param[in]  _structure  The structure
+     */
 void StructureInfoWidget::set_structure(const std::shared_ptr<Structure>& _structure) {
     this->structure_basic_info_tab->set_structure(_structure);
 }
 
-/**
- * @brief      Updates the object.
- */
+    /**
+     * @brief      Update data based on contents;
+     */
 void StructureInfoWidget::update() {
     this->structure_basic_info_tab->update_data();
 }
 
-/**
- * @brief      Resets the object.
- */
+    /**
+     * @brief      Resets the object.
+     */
 void StructureInfoWidget::reset() {
     this->structure_basic_info_tab->reset();
 }

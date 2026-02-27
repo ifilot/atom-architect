@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -67,15 +67,34 @@ private:
     static bool debug_logging_enabled;
 
 public:
+    /**
+     * @brief set_debug_logging_enabled.
+     *
+     * @param enabled Parameter enabled.
+     */
     static void set_debug_logging_enabled(bool enabled) {
         Structure::debug_logging_enabled = enabled;
     }
 
+    /**
+     * @brief is_debug_logging_enabled.
+     *
+     */
     static bool is_debug_logging_enabled() {
         return Structure::debug_logging_enabled;
     }
 
+    /**
+     * @brief Structure.
+     *
+     * @param Structure Parameter Structure.
+     */
     Structure(const Structure&) = default;
+    /**
+     * @brief operator =.
+     *
+     * @param Structure Parameter Structure.
+     */
     Structure& operator=(const Structure&) = default;
 
     /**
@@ -302,6 +321,10 @@ public:
         return this->bonds.size();
     }
 
+    /**
+     * @brief ~Structure.
+     *
+     */
     ~Structure() {
         if(Structure::debug_logging_enabled) {
             qDebug() << "Deleting structure ("
@@ -310,6 +333,10 @@ public:
         }
     }
 
+    /**
+     * @brief clone_for_view.
+     *
+     */
     std::shared_ptr<Structure> clone_for_view() const {
         auto c = std::make_shared<Structure>(*this);
 
@@ -441,6 +468,12 @@ private:
      * @brief      Construct the bonds
      */
     void construct_bonds();
+    /**
+     * @brief update_bonds_for_atoms.
+     *
+     * @param atom_indices Parameter atom_indices.
+     * @param transposition Parameter transposition.
+     */
     void update_bonds_for_atoms(const std::vector<unsigned int>& atom_indices,
                                 const QMatrix4x4* transposition);
 

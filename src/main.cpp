@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -17,6 +17,7 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>. *
  *                                                                          *
  ****************************************************************************/
+
 #include <QApplication>
 #include <QSurfaceFormat>
 #include <QStatusBar>
@@ -71,6 +72,12 @@ void message_output(QtMsgType type, const QMessageLogContext &context, const QSt
     }
 }
 
+/**
+ * @brief main.
+ *
+ * @param argc Parameter argc.
+ * @param param Parameter param.
+ */
 int main(int argc, char *argv[]) {
     QCoreApplication::setOrganizationName("IMC");
     QCoreApplication::setOrganizationDomain("IMC");

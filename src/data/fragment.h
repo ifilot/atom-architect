@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -26,6 +26,9 @@
 
 #include "atom.h"
 
+/**
+ * @brief Fragment class.
+ */
 class Fragment {
 public:
     std::string name;
@@ -33,6 +36,12 @@ public:
 
     std::vector<Atom> atoms;
 
+/**
+ * @brief Fragment.
+ *
+ * @param _name Parameter _name.
+ * @param _label Parameter _label.
+ */
     Fragment(const std::string& _name, const QString& _label);
 
     /**

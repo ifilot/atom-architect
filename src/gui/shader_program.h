@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -29,6 +29,9 @@
 
 #include "shader_program_types.h"
 
+/**
+ * @brief ShaderProgram class.
+ */
 class ShaderProgram {
 private:
     QOpenGLShaderProgram *m_program;
@@ -40,13 +43,35 @@ private:
 
     std::unordered_map<std::string, int> uniforms;
 
+/**
+ * @brief add_attributes.
+ *
+ */
     void add_attributes();
+/**
+ * @brief add_uniforms.
+ *
+ */
     void add_uniforms();
 
 public:
+/**
+ * @brief ShaderProgram.
+ *
+ * @param _name Parameter _name.
+ * @param type Parameter type.
+ * @param vertex_filename Parameter vertex_filename.
+ * @param fragment_filename Parameter fragment_filename.
+ */
     ShaderProgram(const std::string& _name, const ShaderProgramType type, const QString& vertex_filename, const QString& fragment_filename);
 
     template <typename T>
+    /**
+     * @brief set_uniform.
+     *
+     * @param name Parameter name.
+     * @param value Parameter value.
+     */
     void set_uniform(const std::string &name, T const &value) {
         auto got = this->uniforms.find(name);
 
@@ -57,17 +82,33 @@ public:
         this->m_program->setUniformValue(got->second, value);
     }
 
+    /**
+     * @brief bind.
+     *
+     */
     inline bool bind() {
         return this->m_program->bind();
     }
 
+    /**
+     * @brief release.
+     *
+     */
     inline void release() {
         this->m_program->release();
     }
 
+    /**
+     * @brief get_type.
+     *
+     */
     inline ShaderProgramType get_type() {
         return this->type;
     }
 
+/**
+ * @brief ~ShaderProgram.
+ *
+ */
     ~ShaderProgram();
 };

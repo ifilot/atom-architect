@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -32,6 +32,11 @@ namespace {
 constexpr const char* kViewportBackgroundInactiveHex = "#f0f0f0";
 constexpr const char* kViewportBackgroundActiveHex = "#f5f5f5";
 
+/**
+ * @brief viewportBackgroundColor.
+ *
+ * @param active_highlight Parameter active_highlight.
+ */
 QColor viewportBackgroundColor(bool active_highlight) {
     return QColor(active_highlight ? kViewportBackgroundActiveHex
                                    : kViewportBackgroundInactiveHex);
@@ -39,6 +44,11 @@ QColor viewportBackgroundColor(bool active_highlight) {
 
 } // namespace
 
+/**
+ * @brief AnaglyphWidget.
+ *
+ * @param parent Parameter parent.
+ */
 AnaglyphWidget::AnaglyphWidget(QWidget* parent)
     : QOpenGLWidget(parent)
 {
@@ -80,27 +90,45 @@ AnaglyphWidget::AnaglyphWidget(QWidget* parent)
     setAttribute(Qt::WA_NoSystemBackground);
 }
 
+/**
+ * @brief ~AnaglyphWidget.
+ *
+ */
 AnaglyphWidget::~AnaglyphWidget()
 {
     cleanup();
 }
 
+    /**
+     * @brief minimumSizeHint.
+     *
+     */
 QSize AnaglyphWidget::minimumSizeHint() const
 {
     return QSize(50, 50);
 }
 
+    /**
+     * @brief sizeHint.
+     *
+     */
 QSize AnaglyphWidget::sizeHint() const
 {
     return QSize(400, 400);
 }
 
+    /**
+     * @brief      Clean the anaglyph class
+     */
 void AnaglyphWidget::cleanup()
 {
     makeCurrent();
     doneCurrent();
 }
 
+    /**
+     * @brief      Initialize OpenGL environment
+     */
 void AnaglyphWidget::initializeGL()
 {
     qDebug() << "Connecting to OpenGL Context";
@@ -132,6 +160,9 @@ void AnaglyphWidget::initializeGL()
     emit(opengl_ready());
 }
 
+    /**
+     * @brief      Render scene
+     */
 void AnaglyphWidget::paintGL()
 {
     // Coordinate axes to its own framebuffer
@@ -196,6 +227,9 @@ void AnaglyphWidget::paintGL()
     }
 }
 
+    /**
+     * @brief      Paint the models in the models vector to the screen
+     */
 void AnaglyphWidget::draw_structure()
 {
     if (!structure) {
@@ -204,6 +238,11 @@ void AnaglyphWidget::draw_structure()
     structure_renderer->draw(structure.get(), flag_show_periodicity_xy, flag_show_periodicity_z);
 }
 
+    /**
+     * @brief      Sets the structure.
+     *
+     * @param[in]  _structure  The structure
+     */
 void AnaglyphWidget::set_structure(const std::shared_ptr<Structure>& s)
 {
     structure = s;
@@ -217,12 +256,22 @@ void AnaglyphWidget::set_structure(const std::shared_ptr<Structure>& s)
     update();
 }
 
+/**
+ * @brief set_active_highlight.
+ *
+ * @param active Parameter active.
+ */
 void AnaglyphWidget::set_active_highlight(bool active)
 {
     this->active_highlight_ = active;
     this->update();
 }
 
+/**
+ * @brief set_structure_conservative.
+ *
+ * @param structure Parameter structure.
+ */
 void AnaglyphWidget::set_structure_conservative(const std::shared_ptr<Structure>& s)
 {
     structure = s;
@@ -230,6 +279,12 @@ void AnaglyphWidget::set_structure_conservative(const std::shared_ptr<Structure>
     update();
 }
 
+    /**
+     * @brief      Resize window
+     *
+     * @param[in]  width   screen width
+     * @param[in]  height  screen height
+     */
 void AnaglyphWidget::resizeGL(int w, int h)
 {
     QOpenGLExtraFunctions* f =
@@ -304,6 +359,11 @@ void AnaglyphWidget::resizeGL(int w, int h)
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
+/**
+ * @brief mousePressEvent.
+ *
+ * @param event Parameter event.
+ */
 void AnaglyphWidget::mousePressEvent(QMouseEvent* event)
 {
     if (event->buttons() & Qt::LeftButton) {
@@ -338,6 +398,11 @@ void AnaglyphWidget::mousePressEvent(QMouseEvent* event)
     }
 }
 
+/**
+ * @brief mouseReleaseEvent.
+ *
+ * @param event Parameter event.
+ */
 void AnaglyphWidget::mouseReleaseEvent(QMouseEvent* event)
 {
     if (arcball_rotation_flag && !(event->buttons() & Qt::LeftButton)) {
@@ -349,6 +414,11 @@ void AnaglyphWidget::mouseReleaseEvent(QMouseEvent* event)
     }
 }
 
+/**
+ * @brief mouseMoveEvent.
+ *
+ * @param event Parameter event.
+ */
 void AnaglyphWidget::mouseMoveEvent(QMouseEvent* event)
 {
     // Qt 5: widget-local logical coordinates
@@ -396,6 +466,12 @@ void AnaglyphWidget::mouseMoveEvent(QMouseEvent* event)
     set_arcball_rotation(qRadiansToDegrees(angle), axis_model_space);
 }
 
+    /**
+     * @brief      Calculate the arcball vector for mouse rotation
+     *
+     * @param[in]  x, y  The mouse position
+     * @param[out] P  The arcball vector
+     */
 QVector3D AnaglyphWidget::get_arcball_vector(int x, int y)
 {
     QVector3D p( 1.0f * float(x) / float(geometry().width())  * 2.0f - 1.0f,
@@ -412,6 +488,11 @@ QVector3D AnaglyphWidget::get_arcball_vector(int x, int y)
     return p;
 }
 
+    /**
+     * @brief      Set the arcball vector rotation (angle and vector) to model and updates
+     *
+     * @param      arcball_angle, arcball_vector
+     */
 void AnaglyphWidget::set_arcball_rotation(float arcball_angle, const QVector4D& arcball_vector)
 {
     scene->arcball_rotation.setToIdentity();
@@ -419,6 +500,11 @@ void AnaglyphWidget::set_arcball_rotation(float arcball_angle, const QVector4D& 
     update();
 }
 
+/**
+ * @brief wheelEvent.
+ *
+ * @param event Parameter event.
+ */
 void AnaglyphWidget::wheelEvent(QWheelEvent* event)
 {
     scene->camera_position += event->angleDelta().ry() * 0.01f * QVector3D(0, 1, 0);
@@ -441,12 +527,19 @@ void AnaglyphWidget::wheelEvent(QWheelEvent* event)
     update();
 }
 
+/**
+ * @brief window_move_event.
+ *
+ */
 void AnaglyphWidget::window_move_event()
 {
     top_left = mapToGlobal(QPoint(0, 0));
     update();
 }
 
+    /**
+     * @brief      Set stereo projection
+     */
 void AnaglyphWidget::set_stereo(QString stereo_name)
 {
     stereographic_type_name = stereo_name.startsWith("stereo") ? stereo_name : "NONE";
@@ -455,6 +548,9 @@ void AnaglyphWidget::set_stereo(QString stereo_name)
 
 /* PRIVATE */
 
+    /**
+     * @brief      Load OpenGL shaders
+     */
 void AnaglyphWidget::load_shaders()
 {
     shader_manager->create_shader_program("model_shader", ShaderProgramType::ModelShader,
@@ -489,6 +585,9 @@ void AnaglyphWidget::load_shaders()
                                          ":/assets/shaders/simplecanvas.vs", ":/assets/shaders/simplecanvas.fs");
 }
 
+    /**
+     * @brief      Build a canvas used for stereographic rendering
+     */
 void AnaglyphWidget::build_framebuffers()
 {
     QOpenGLExtraFunctions* f = QOpenGLContext::currentContext()->extraFunctions();
@@ -593,6 +692,9 @@ void AnaglyphWidget::build_framebuffers()
     quad_vao.release();
 }
 
+    /**
+     * @brief      Reset rotation matrices
+     */
 void AnaglyphWidget::reset_matrices()
 {
     scene->rotation_matrix.setToIdentity();
@@ -601,6 +703,15 @@ void AnaglyphWidget::reset_matrices()
     scene->arcball_rotation.setToIdentity();
 }
 
+    /**
+     * @brief      get the closest atom from a raycast
+     *
+     * @param[in]  ray_origin  The ray origin
+     * @param[in]  ray_vector  The ray vector
+     * @param[in]  rot         rotation matrix
+     *
+     * @return     the atom, -1 if no atom is hit
+     */
 int AnaglyphWidget::get_atom_raycast(const QVector3D& ray_origin, const QVector3D& ray_vector)
 {
     if (!structure) {
@@ -674,6 +785,9 @@ int AnaglyphWidget::get_atom_raycast(const QVector3D& ray_origin, const QVector3
     return selected_atom;
 }
 
+    /**
+     * @brief      Regular draw call
+     */
 void AnaglyphWidget::paint_regular()
 {
     QOpenGLExtraFunctions* f = QOpenGLContext::currentContext()->extraFunctions();
@@ -759,6 +873,9 @@ void AnaglyphWidget::paint_regular()
     canvas_shader->release();
 }
 
+    /**
+     * @brief      Stereographic draw call
+     */
 void AnaglyphWidget::paint_stereographic()
 {
     QOpenGLExtraFunctions* f = QOpenGLContext::currentContext()->extraFunctions();
@@ -874,6 +991,11 @@ void AnaglyphWidget::paint_stereographic()
     stereo_shader->release();
 }
 
+    /**
+     * @brief      Open menu for atom
+     *
+     * @param[in]  pos   The position
+     */
 void AnaglyphWidget::custom_menu_requested(QPoint pos)
 {
     auto* menu = new QMenu(this);
@@ -882,6 +1004,9 @@ void AnaglyphWidget::custom_menu_requested(QPoint pos)
     menu->popup(pos);
 }
 
+    /**
+     * @brief      Update the scene
+     */
 void AnaglyphWidget::call_update()
 {
     if (structure && user_action &&
@@ -892,6 +1017,9 @@ void AnaglyphWidget::call_update()
     update();
 }
 
+    /**
+     * @brief Transmit interaction/status message.
+     */
 void AnaglyphWidget::transmit_message(const QString& text)
 {
     emit signal_interaction_message(text);

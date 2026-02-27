@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -29,6 +29,11 @@
 #include <limits>
 
 namespace {
+/**
+ * @brief leading_spaces.
+ *
+ * @param value Parameter value.
+ */
 int leading_spaces(const std::string& value) {
     int count = 0;
     while(count < (int)value.size() && value[(size_t)count] == ' ') {
@@ -37,6 +42,12 @@ int leading_spaces(const std::string& value) {
     return count;
 }
 
+/**
+ * @brief sorted_mae.
+ *
+ * @param lhs Parameter lhs.
+ * @param rhs Parameter rhs.
+ */
 double sorted_mae(const std::vector<double>& lhs,
                   const std::vector<double>& rhs) {
     const size_t n = std::min(lhs.size(), rhs.size());
@@ -57,10 +68,27 @@ double sorted_mae(const std::vector<double>& lhs,
     return mae / (double)n;
 }
 
+/**
+ * @brief contains_token.
+ *
+ * @param line Parameter line.
+ * @param token Parameter token.
+ */
 inline bool contains_token(const std::string& line, const char* token) {
     return line.find(token) != std::string::npos;
 }
 
+/**
+ * @brief parse_six_columns.
+ *
+ * @param line Parameter line.
+ * @param c1 Parameter c1.
+ * @param c2 Parameter c2.
+ * @param c3 Parameter c3.
+ * @param c4 Parameter c4.
+ * @param c5 Parameter c5.
+ * @param c6 Parameter c6.
+ */
 inline bool parse_six_columns(const std::string& line,
                               double& c1,
                               double& c2,
@@ -73,18 +101,18 @@ inline bool parse_six_columns(const std::string& line,
 
 }
 
-/**
- * @brief      Constructs a new instance.
- */
+    /**
+     * @brief      Constructs a new instance.
+     */
 StructureLoader::StructureLoader(){}
 
-/**
- * @brief      Load a file
- *
- * @param[in]  filename  The filename
- *
- * @return     shared ptr to structure object
- */
+    /**
+     * @brief      Load a file
+     *
+     * @param[in]  filename  The filename
+     *
+     * @return     shared ptr to structure object
+     */
 std::shared_ptr<Structure> StructureLoader::load_file(const std::string& filename) {
     qDebug() << "Building structure via StructureLoader";
     QFileInfo qfi(QString(filename.c_str()));
@@ -115,6 +143,13 @@ std::shared_ptr<Structure> StructureLoader::load_file(const std::string& filenam
     }
 }
 
+    /**
+     * @brief      Load structure + vibrational data from pymkmkit YAML file
+     *
+     * @param[in]  filename  The filename
+     *
+     * @return     Structures
+     */
 std::vector<std::shared_ptr<Structure>> StructureLoader::load_yaml(const std::string& filename) {
     qDebug() << "Loading PyMKMKit YAML file: " << QString(filename.c_str());
 
@@ -459,13 +494,13 @@ std::vector<std::shared_ptr<Structure>> StructureLoader::load_yaml(const std::st
     return {structure};
 }
 
-/**
- * @brief      Load structure from .geo file
- *
- * @param[in]  filename  The filename
- *
- * @return     Structure
- */
+    /**
+     * @brief      Load structure from .geo file
+     *
+     * @param[in]  filename  The filename
+     *
+     * @return     Structure
+     */
 std::shared_ptr<Structure> StructureLoader::load_geo(const std::string& filename) {
     std::ifstream infile(filename);
 
@@ -533,13 +568,13 @@ std::shared_ptr<Structure> StructureLoader::load_geo(const std::string& filename
     return structure;
 }
 
-/**
- * @brief      Load structure from .xyz file
- *
- * @param[in]  filename  The filename
- *
- * @return     Structure
- */
+    /**
+     * @brief      Load structure from .xyz file
+     *
+     * @param[in]  filename  The filename
+     *
+     * @return     Structure
+     */
 std::shared_ptr<Structure> StructureLoader::load_xyz(const std::string& filename) {
     static QRegularExpression whitespace("\\s+");
 
@@ -614,13 +649,13 @@ std::shared_ptr<Structure> StructureLoader::load_xyz(const std::string& filename
     return structure;
 }
 
-/**
- * @brief      Load structure from POSCAR file
- *
- * @param[in]  filename  The filename
- *
- * @return     Structure
- */
+    /**
+     * @brief      Load structure from POSCAR file
+     *
+     * @param[in]  filename  The filename
+     *
+     * @return     Structure
+     */
 std::shared_ptr<Structure> StructureLoader::load_poscar(const std::string& filename) {
     std::ifstream infile(filename);
     if (!infile) {
@@ -782,13 +817,13 @@ std::shared_ptr<Structure> StructureLoader::load_poscar(const std::string& filen
     return structure;
 }
 
-/**
- * @brief      Load structure from OUTCAR file
- *
- * @param[in]  filename  The filename
- *
- * @return     Structure
- */
+    /**
+     * @brief      Load structure from OUTCAR file
+     *
+     * @param[in]  filename  The filename
+     *
+     * @return     Structures
+     */
 std::vector<std::shared_ptr<Structure>> StructureLoader::load_outcar(const std::string& filename) {
     qDebug() << "Loading OUTCAR: " << QString(filename.c_str());
     std::ifstream infile(filename);
@@ -1082,13 +1117,13 @@ std::vector<std::shared_ptr<Structure>> StructureLoader::load_outcar(const std::
     return structures;
 }
 
-/**
- * @brief      Load only the final ionic structure from OUTCAR file
- *
- * @param[in]  filename  The filename
- *
- * @return     Structure
- */
+    /**
+     * @brief      Load only the final ionic structure from an OUTCAR file
+     *
+     * @param[in]  filename  The filename
+     *
+     * @return     Last ionic structure
+     */
 std::shared_ptr<Structure> StructureLoader::load_outcar_last(const std::string& filename) {
     qDebug() << "Loading final ionic step from OUTCAR: " << QString(filename.c_str());
     std::ifstream infile(filename);
@@ -1265,13 +1300,13 @@ std::shared_ptr<Structure> StructureLoader::load_outcar_last(const std::string& 
     return final_structure;
 }
 
-/**
- * @brief      Load NEB binary
- *
- * @param[in]  filename  The filename
- *
- * @return     Bundled set of structures
- */
+    /**
+     * @brief      Load NEB binary
+     *
+     * @param[in]  filename  The filename
+     *
+     * @return     Bundled set of structures
+     */
 std::vector<std::vector<std::shared_ptr<Structure>>> StructureLoader::load_neb_bin(const std::string& filename) {
     std::ifstream infile(filename, std::ios::in | std::ios::binary);
 

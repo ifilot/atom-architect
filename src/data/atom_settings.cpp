@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -20,9 +20,9 @@
 
 #include "atom_settings.h"
 
-/**
- * @brief      Constructs a new instance.
- */
+    /**
+     * @brief      Constructs a new instance.
+     */
 AtomSettings::AtomSettings() {
     this->load();
 
@@ -70,9 +70,9 @@ AtomSettings::AtomSettings() {
     }
 }
 
-/**
- * @brief      Load the JSON file and parse its contents
- */
+    /**
+     * @brief      Load the JSON file and parse its contents
+     */
 void AtomSettings::load() {
     // try to locate atoms.json
     QFile f(":/assets/configuration/atoms.json");
@@ -95,106 +95,106 @@ void AtomSettings::load() {
     }
 }
 
-/**
- * @brief      Get the default color for an atom
- *
- * @param[in]  elname  Element name
- *
- * @return     Color of the atom
- */
+    /**
+     * @brief      Get the default color for an atom
+     *
+     * @param[in]  elname  Element name
+     *
+     * @return     Color of the atom
+     */
 glm::vec3 AtomSettings::get_atom_color(const std::string& elname){
     QString hexColor = this->root["atoms"]["colors"][QString(elname.c_str())].toString();
     QColor *getColor = new QColor(hexColor);
     return glm::vec3((float)getColor->red()/255, (float)getColor->green()/255, (float)getColor->blue()/255);
 }
 
-/**
- * @brief      Get the default color for an atom
- *
- * @param[in]  elname  Element name
- *
- * @return     Color of the atom
- */
+    /**
+     * @brief      Get the default color for an atom
+     *
+     * @param[in]  elname  Element name
+     *
+     * @return     Color of the atom
+     */
 QVector3D AtomSettings::get_atom_color_qvector(const std::string& elname){
     QString hexColor = this->root["atoms"]["colors"][QString(elname.c_str())].toString();
     QColor *getColor = new QColor(hexColor);
     return QVector3D((float)getColor->red()/255, (float)getColor->green()/255, (float)getColor->blue()/255);
 }
 
-/**
- * @brief      Get the atomic radius of an element
- *
- * @param[in]  elname  Element name
- *
- * @return     atomic radius
- */
+    /**
+     * @brief      Get the atomic radius of an element
+     *
+     * @param[in]  elname  Element name
+     *
+     * @return     atomic radius
+     */
 float AtomSettings::get_atom_radius(const std::string& elname){
     return this->root["atoms"]["radii"][QString(elname.c_str())].toString().toDouble();
 }
 
-/**
- * @brief      Get the atomic radius of an element
- *
- * @param[in]  elname  Element name
- *
- * @return     atomic radius
- */
+    /**
+     * @brief      Get the atomic radius of an element
+     *
+     * @param[in]  elname  Element name
+     *
+     * @return     atomic radius
+     */
 float AtomSettings::get_atom_radius_from_elnr(unsigned int elnr) {
     return this->radii[elnr];
 }
 
-/**
- * @brief      Get element number of an element
- *
- * @param[in]  elname  Element name
- *
- * @return     The atom elnr.
- */
+    /**
+     * @brief      Get element number of an element
+     *
+     * @param[in]  elname  Element name
+     *
+     * @return     The atom elnr.
+     */
 unsigned int AtomSettings::get_atom_elnr(const std::string& elname){
     return this->root["atoms"]["elnr"][QString(elname.c_str())].toString().toUInt();
 }
 
-/**
- * @brief      Get atomic mass of an element
- *
- * @param[in]  elname  Element name
- *
- * @return     Atomic mass in amu
- */
+    /**
+     * @brief      Get atomic mass of an element (amu)
+     *
+     * @param[in]  elname  Element name
+     *
+     * @return     Atomic mass in amu
+     */
 double AtomSettings::get_atom_mass(const std::string& elname){
     return this->root["atoms"]["masses"][QString(elname.c_str())].toString().toDouble();
 }
 
-/**
- * @brief      Get atomic mass from element number
- *
- * @param[in]  elnr  Element number
- *
- * @return     Atomic mass in amu
- */
+    /**
+     * @brief      Get atomic mass from element number (amu)
+     *
+     * @param[in]  elnr  Element number
+     *
+     * @return     Atomic mass in amu
+     */
 double AtomSettings::get_atom_mass_from_elnr(unsigned int elnr) {
     return this->masses[elnr];
 }
 
-/**
- * @brief      Get the maximum bond distance between two atoms
- *
- * @param[in]  atoma  The atoma
- * @param[in]  atomb  The atomb
- *
- * @return     The bond distance.
- */
+    /**
+     * @brief      Get the maximum bond distance between two atoms
+     *
+     * @param[in]  atoma  The atoma
+     * @param[in]  atomb  The atomb
+     *
+     * @return     The bond distance.
+     */
 double AtomSettings::get_bond_distance(int atoma, int atomb) {
     return this->bond_distances[atoma][atomb];
 }
 
-/**
- * @brief      Gets the name from element number.
- *
- * @param[in]  elnr  The elnr
- *
- * @return     The name from elnr.
- */
+    /**
+     * @brief      Gets the name from element number.
+     *
+     * @param[in]  elnr  The elnr
+     *
+     * @return     The name from elnr.
+     */
 std::string AtomSettings::get_name_from_elnr(unsigned int elnr) {
     return this->root["atoms"]["nr2element"][QString::number(elnr)].toString().toStdString();
 }

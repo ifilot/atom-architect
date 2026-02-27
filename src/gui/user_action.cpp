@@ -1,3 +1,23 @@
+/****************************************************************************
+ *                                                                          *
+ *   ATOM ARCHITECT                                                         *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *                                                                          *
+ *   This program is free software: you can redistribute it and/or modify   *
+ *   it under the terms of the GNU Lesser General Public License as         *
+ *   published by the Free Software Foundation, either version 3 of the     *
+ *   License, or (at your option) any later version.                        *
+ *                                                                          *
+ *   This program is distributed in the hope that it will be useful,        *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of         *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the          *
+ *   GNU General Public License for more details.                           *
+ *                                                                          *
+ *   You should have received a copy of the GNU General Public license      *
+ *   along with this program.  If not, see <https://www.gnu.org/licenses/>. *
+ *                                                                          *
+ ****************************************************************************/
+
 #include "user_action.h"
 #include <QKeyEvent>
 
@@ -14,12 +34,12 @@ UserAction::UserAction(const std::shared_ptr<Scene>& _scene)
     : scene(_scene) {
 }
 
-/**
- * @brief Update cursor position and recompute transform if active.
- *
- * @param cursor_pos_logical Cursor position in logical pixels
- * @param dpr Device pixel ratio
- */
+    /**
+     * @brief Update cursor position and recompute transform if active.
+     *
+     * @param cursor_pos_logical Cursor position in logical pixels
+     * @param dpr Device pixel ratio
+     */
 void UserAction::update(const QPointF& cursor_pos_logical, qreal dpr) {
     this->cursor_position_now = QPointF(
         cursor_pos_logical.x() * dpr,
@@ -40,31 +60,31 @@ void UserAction::update(const QPointF& cursor_pos_logical, qreal dpr) {
  *  Internal helpers
  * ============================================================ */
 
-/**
- * @brief Check whether no movement or rotation mode is active.
- *
- * @return true if idle, false otherwise
- */
+    /**
+     * @brief Check whether no movement or rotation is active.
+     *
+     * @return true if idle, false otherwise
+     */
 bool UserAction::idle_only() const {
     return this->movement_action == MovementAction::MOVEMENT_NONE &&
            this->rotation_action == RotationAction::ROTATION_NONE;
 }
 
-/**
- * @brief Check whether a primary buffer exists.
- *
- * @return true if primary buffer contains atoms
- */
+    /**
+     * @brief Check whether a primary atom buffer exists.
+     *
+     * @return true if primary buffer contains atoms
+     */
 bool UserAction::has_primary() const {
     return this->structure &&
            this->structure->get_nr_atoms_primary_buffer() != 0;
 }
 
-/**
- * @brief Check whether a secondary buffer exists.
- *
- * @return true if secondary buffer contains atoms
- */
+    /**
+     * @brief Check whether a secondary atom buffer exists.
+     *
+     * @return true if secondary buffer contains atoms
+     */
 bool UserAction::has_secondary() const {
     return this->structure &&
            this->structure->get_nr_atoms_secondary_buffer() != 0;
@@ -74,9 +94,9 @@ bool UserAction::has_secondary() const {
  *  Action toggles
  * ============================================================ */
 
-/**
- * @brief Toggle movement mode or commit an active movement.
- */
+    /**
+     * @brief Toggle movement mode or commit an active movement.
+     */
 void UserAction::handle_action_movement() {
     if(!has_primary()) return;
 
@@ -97,9 +117,9 @@ void UserAction::handle_action_movement() {
     emit request_update();
 }
 
-/**
- * @brief Toggle rotation mode or commit an active rotation.
- */
+    /**
+     * @brief Toggle rotation mode or commit an active rotation.
+     */
 void UserAction::handle_action_rotation() {
     if(!has_primary()) return;
 
@@ -120,9 +140,9 @@ void UserAction::handle_action_rotation() {
     emit request_update();
 }
 
-/**
- * @brief Finalize movement or rotation on mouse click.
- */
+    /**
+     * @brief Finalize movement or rotation on mouse click.
+     */
 void UserAction::handle_left_mouse_click() {
     if(this->movement_action != MovementAction::MOVEMENT_NONE)
         handle_action_movement();
@@ -135,28 +155,28 @@ void UserAction::handle_left_mouse_click() {
  *  Semantic command hooks
  * ============================================================ */
 
-/**
- * @brief Toggle movement mode.
- */
+    /**
+     * @brief Toggle movement mode.
+     */
 void UserAction::cmd_toggle_move() {
     if(this->rotation_action == RotationAction::ROTATION_NONE)
         handle_action_movement();
 }
 
-/**
- * @brief Toggle rotation mode.
- */
+    /**
+     * @brief Toggle rotation mode.
+     */
 void UserAction::cmd_toggle_rotate() {
     if(this->movement_action == MovementAction::MOVEMENT_NONE)
         handle_action_rotation();
 }
 
-/**
- * @brief Set movement alignment mode.
- *
- * @param mode Movement action to activate
- * @param msg Status message to display
- */
+    /**
+     * @brief Set movement alignment mode while moving.
+     *
+     * @param mode Movement alignment mode
+     * @param msg Status message
+     */
 void UserAction::cmd_set_move(MovementAction mode, const QString& msg) {
     if(this->movement_action == MovementAction::MOVEMENT_NONE) return;
     if(mode == MovementAction::MOVEMENT_FOCUS && !has_secondary()) return;
@@ -166,12 +186,12 @@ void UserAction::cmd_set_move(MovementAction mode, const QString& msg) {
     emit request_update();
 }
 
-/**
- * @brief Set rotation alignment mode.
- *
- * @param mode Rotation action to activate
- * @param msg Status message to display
- */
+    /**
+     * @brief Set rotation alignment mode while rotating.
+     *
+     * @param mode Rotation alignment mode
+     * @param msg Status message
+     */
 void UserAction::cmd_set_rotate(RotationAction mode, const QString& msg) {
     if(this->rotation_action == RotationAction::ROTATION_NONE) return;
     if((mode == RotationAction::ROTATION_FOCUS ||
@@ -188,9 +208,9 @@ void UserAction::cmd_set_rotate(RotationAction mode, const QString& msg) {
  *  Selection / editing
  * ============================================================ */
 
-/**
- * @brief Select all atoms.
- */
+    /**
+     * @brief Select all atoms.
+     */
 void UserAction::cmd_select_all() {
     if(!idle_only()) return;
     this->structure->select_all_atoms();
@@ -198,9 +218,9 @@ void UserAction::cmd_select_all() {
     emit request_update();
 }
 
-/**
- * @brief Clear atom selection.
- */
+    /**
+     * @brief Clear atom selection.
+     */
 void UserAction::cmd_deselect_all() {
     if(!idle_only()) return;
     this->structure->clear_selection();
@@ -208,9 +228,9 @@ void UserAction::cmd_deselect_all() {
     emit request_update();
 }
 
-/**
- * @brief Invert atom selection.
- */
+    /**
+     * @brief Invert atom selection.
+     */
 void UserAction::cmd_invert_selection() {
     if(!idle_only()) return;
     this->structure->invert_selection();
@@ -218,9 +238,9 @@ void UserAction::cmd_invert_selection() {
     emit request_update();
 }
 
-/**
- * @brief Delete selected atoms.
- */
+    /**
+     * @brief Delete selected atoms.
+     */
 void UserAction::cmd_delete_selection() {
     if(!idle_only() || !has_primary()) return;
     emit signal_push_structure();
@@ -229,9 +249,9 @@ void UserAction::cmd_delete_selection() {
     emit request_update();
 }
 
-/**
- * @brief Freeze selected atoms.
- */
+    /**
+     * @brief Freeze selected atoms.
+     */
 void UserAction::cmd_set_frozen() {
     if(!idle_only()) return;
     emit signal_push_structure();
@@ -239,9 +259,9 @@ void UserAction::cmd_set_frozen() {
     emit request_update();
 }
 
-/**
- * @brief Unfreeze selected atoms.
- */
+    /**
+     * @brief Unfreeze selected atoms.
+     */
 void UserAction::cmd_set_unfrozen() {
     if(!idle_only()) return;
     emit signal_push_structure();
@@ -249,9 +269,9 @@ void UserAction::cmd_set_unfrozen() {
     emit request_update();
 }
 
-/**
- * @brief Add a fragment to the current structure.
- */
+    /**
+     * @brief Insert a fragment.
+     */
 void UserAction::cmd_add_fragment() {
     if(!idle_only()) return;
     add_fragment();
@@ -261,12 +281,12 @@ void UserAction::cmd_add_fragment() {
  *  Keyboard input
  * ============================================================ */
 
-/**
- * @brief Handle keyboard input for structure manipulation.
- *
- * @param event Qt key event
- * @return true if event was handled
- */
+    /**
+     * @brief Handle keyboard input (viewport input only).
+     *
+     * @param event Qt key event
+     * @return true if handled
+     */
 bool UserAction::handle_key(QKeyEvent* event) {
     const int key = event->key();
     const auto mods = event->modifiers();
@@ -336,20 +356,20 @@ bool UserAction::handle_key(QKeyEvent* event) {
  *  Fragment / camera
  * ============================================================ */
 
-/**
- * @brief Set the current fragment used for insertion.
- *
- * @param _fragment Fragment to insert
- */
+    /**
+     * @brief Set the current fragment used for insertion.
+     *
+     * @param _fragment Fragment to insert
+     */
 void UserAction::set_fragment(const Fragment& _fragment) {
     this->fragment = std::make_unique<Fragment>(_fragment);
 }
 
-/**
- * @brief Align the camera to a predefined direction.
- *
- * @param direction CameraAlignment enum value
- */
+    /**
+     * @brief Align the camera to a predefined direction.
+     *
+     * @param direction CameraAlignment enum value
+     */
 void UserAction::set_camera_alignment(int direction) {
     QVector3D dirvec;
 
@@ -385,11 +405,11 @@ void UserAction::set_camera_alignment(int direction) {
     emit request_update();
 }
 
-/**
- * @brief Set the camera projection mode.
- *
- * @param mode CameraMode enum value
- */
+    /**
+     * @brief Set the camera projection mode.
+     *
+     * @param mode CameraMode enum value
+     */
 void UserAction::set_camera_mode(int mode) {
     float w = this->scene->canvas_width;
     float h = this->scene->canvas_height;
@@ -415,9 +435,9 @@ void UserAction::set_camera_mode(int mode) {
  *  Fragment insertion
  * ============================================================ */
 
-/**
- * @brief Insert a fragment at the current selection.
- */
+    /**
+     * @brief      Add a fragment to the selection
+     */
 void UserAction::add_fragment() {
     try {
         this->structure->get_position_primary_buffer();
@@ -449,9 +469,9 @@ void UserAction::add_fragment() {
  *  Transposition math
  * ============================================================ */
 
-/**
- * @brief Compute the current transposition matrix.
- */
+    /**
+     * @brief Compute the current transposition matrix.
+     */
 void UserAction::calculate_transposition_matrix() {
     if(this->movement_action != MovementAction::MOVEMENT_NONE) {
         QVector3D ray_origin, ray_direction;
@@ -482,12 +502,12 @@ void UserAction::calculate_transposition_matrix() {
     }
 }
 
-/**
- * @brief Project a movement vector according to the active movement mode.
- *
- * @param vin Input vector
- * @return Projected vector
- */
+    /**
+     * @brief Project a movement vector according to alignment mode.
+     *
+     * @param vin Input vector
+     * @return Projected vector
+     */
 QVector3D UserAction::project_movement_vector(const QVector3D& vin) const {
     switch(this->movement_action) {
         case MovementAction::MOVEMENT_X: return QVector3D(vin.x(), 0, 0);
@@ -504,12 +524,12 @@ QVector3D UserAction::project_movement_vector(const QVector3D& vin) const {
     }
 }
 
-/**
- * @brief Compute a rotation matrix for the active rotation mode.
- *
- * @param angle Rotation angle in radians
- * @return Transformation matrix
- */
+    /**
+     * @brief Compute a rotation matrix for the active rotation mode.
+     *
+     * @param angle Rotation angle in radians
+     * @return Transformation matrix
+     */
 QMatrix4x4 UserAction::project_rotation_matrix(float angle) const {
     QMatrix4x4 mat;
     QVector3D pivot = this->structure->get_position_primary_buffer();

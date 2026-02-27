@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -28,12 +28,12 @@
 AtomArchitectApplication::AtomArchitectApplication(int& argc, char** argv) :
 QApplication(argc, argv) {}
 
-/**
- * @brief notify
- * @param receiver
- * @param event
- * @return
- */
+    /**
+     * @brief notify
+     * @param receiver
+     * @param event
+     * @return
+     */
 bool AtomArchitectApplication::notify(QObject* receiver, QEvent* event) {
     bool done = true;
     try {
@@ -49,6 +49,12 @@ bool AtomArchitectApplication::notify(QObject* receiver, QEvent* event) {
 }
 
 
+/**
+ * @brief throw_message_window.
+ *
+ * @param title Parameter title.
+ * @param message Parameter message.
+ */
 void AtomArchitectApplication::throw_message_window(const QString& title, const QString& message) {
     QMessageBox message_box;
     message_box.setText(message);

@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -160,6 +160,16 @@ private:
     void load();
 
     // delete copy constructor
+    /**
+     * @brief AtomSettings.
+     *
+     * @param const Parameter const.
+     */
     AtomSettings(AtomSettings const&)          = delete;
+    /**
+     * @brief operator =.
+     *
+     * @param const Parameter const.
+     */
     void operator=(AtomSettings const&)    = delete;
 };

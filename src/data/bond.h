@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -22,6 +22,9 @@
 
 #include "atom.h"
 
+/**
+ * @brief Bond class.
+ */
 class Bond {
 public:
     // atom 1
@@ -38,6 +41,14 @@ public:
     QVector3D axis;
     double angle;
 
+/**
+ * @brief Bond.
+ *
+ * @param _atom1 Parameter _atom1.
+ * @param _atom2 Parameter _atom2.
+ * @param _atom1_idx Parameter _atom1_idx.
+ * @param _atom2_idx Parameter _atom2_idx.
+ */
     Bond(const Atom& _atom1, const Atom& _atom2, unsigned int _atom1_idx, unsigned int _atom2_idx);
 
 private:

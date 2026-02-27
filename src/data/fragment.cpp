@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -20,20 +20,27 @@
 
 #include "fragment.h"
 
+/**
+ * @brief Fragment.
+ *
+ * @param _name Parameter _name.
+ * @param param Parameter param.
+ * @param param Parameter param.
+ */
 Fragment::Fragment(const std::string& _name, const QString& _label) :
 name(_name),
 label(_label) {
 
 }
 
-/**
- * @brief      Add an atom to the structure
- *
- * @param[in]  atnr  Atom number
- * @param[in]  x     x coordinate
- * @param[in]  y     y coordinate
- * @param[in]  z     z coordinate
- */
+    /**
+     * @brief      Add an atom to the structure
+     *
+     * @param[in]  atnr  Atom number
+     * @param[in]  x     x coordinate
+     * @param[in]  y     y coordinate
+     * @param[in]  z     z coordinate
+     */
 void Fragment::add_atom(unsigned int atnr, double x, double y, double z) {
     this->atoms.emplace_back(atnr, x, y, z);
 }

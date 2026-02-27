@@ -1,9 +1,34 @@
+/****************************************************************************
+ *                                                                          *
+ *   ATOM ARCHITECT                                                         *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *                                                                          *
+ *   This program is free software: you can redistribute it and/or modify   *
+ *   it under the terms of the GNU Lesser General Public License as         *
+ *   published by the Free Software Foundation, either version 3 of the     *
+ *   License, or (at your option) any later version.                        *
+ *                                                                          *
+ *   This program is distributed in the hope that it will be useful,        *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of         *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the          *
+ *   GNU General Public License for more details.                           *
+ *                                                                          *
+ *   You should have received a copy of the GNU General Public license      *
+ *   along with this program.  If not, see <https://www.gnu.org/licenses/>. *
+ *                                                                          *
+ ****************************************************************************/
+
 #include "structure_analysis_graph.h"
 
 #include <QVBoxLayout>
 #include <QSignalBlocker>
 #include <QHeaderView>
 
+/**
+ * @brief StructureAnalysisGraph.
+ *
+ * @param parent Parameter parent.
+ */
 StructureAnalysisGraph::StructureAnalysisGraph(QWidget *parent)
     : QWidget(parent)
 {
@@ -47,6 +72,12 @@ StructureAnalysisGraph::StructureAnalysisGraph(QWidget *parent)
             });
 }
 
+/**
+ * @brief set_structures.
+ *
+ * @param s Parameter s.
+ * @param kind Parameter kind.
+ */
 void StructureAnalysisGraph::set_structures(const std::vector<std::shared_ptr<Structure>>& s,
                                             SeriesKind kind)
 {
@@ -59,6 +90,11 @@ void StructureAnalysisGraph::set_structures(const std::vector<std::shared_ptr<St
     rebuild_chart();
 }
 
+/**
+ * @brief set_frequency_modes.
+ *
+ * @param modes Parameter modes.
+ */
 void StructureAnalysisGraph::set_frequency_modes(const std::vector<Structure::Eigenmode>& modes)
 {
     title->setText("FREQUENCIES");
@@ -86,6 +122,11 @@ void StructureAnalysisGraph::set_frequency_modes(const std::vector<Structure::Ei
     }
 }
 
+/**
+ * @brief set_current_index.
+ *
+ * @param index Parameter index.
+ */
 void StructureAnalysisGraph::set_current_index(size_t idx)
 {
     current_index = idx;
@@ -101,6 +142,10 @@ void StructureAnalysisGraph::set_current_index(size_t idx)
     }
 }
 
+/**
+ * @brief rebuild_chart.
+ *
+ */
 void StructureAnalysisGraph::rebuild_chart()
 {
     chart = new QChart();
@@ -134,6 +179,10 @@ void StructureAnalysisGraph::rebuild_chart()
     update_highlight();
 }
 
+/**
+ * @brief update_highlight.
+ *
+ */
 void StructureAnalysisGraph::update_highlight()
 {
     if(!chart || structures.empty() || current_index >= structures.size()) {

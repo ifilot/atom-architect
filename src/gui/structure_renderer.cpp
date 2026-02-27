@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -47,14 +47,12 @@ StructureRenderer::StructureRenderer(const std::shared_ptr<Scene>& _scene,
     this->load_arrow_model();
 }
 
-/**
- * @brief      Draw the structure
- *
- * @param[in]  structure       The structure
- * @param[in]  periodicity_xy  whether to draw periodicity in xy direction
- * @param[in]  periodicity_z   whether to draw periodicity in z direction
- * @param      model_shader  The model shader
- */
+    /**
+     * @brief      Draw the structure
+     *
+     * @param[in]  structure     The structure
+     * @param      model_shader  The model shader
+     */
 void StructureRenderer::draw(const Structure *structure, bool periodicity_xy, bool periodicity_z) {
     this->draw_atoms_regular(structure);
 
@@ -73,27 +71,27 @@ void StructureRenderer::draw(const Structure *structure, bool periodicity_xy, bo
     this->draw_movement_plane(structure);
 }
 
-/**
- * @brief      Draw the structure
- *
- * @param[in]  structure     The structure
- */
+    /**
+     * @brief      Draw the structure
+     *
+     * @param[in]  structure     The structure
+     */
 void StructureRenderer::draw_silhouette(const Structure *structure) {
     this->draw_atoms_silhouette(structure->get_atoms(), structure);
 }
 
-/**
- * @brief      Draws atoms in the regular unit cell.
- *
- * @param[in]  structure  The structure
- */
+    /**
+     * @brief      Draws atoms in the regular unit cell.
+     *
+     * @param[in]  structure  The structure
+     */
 void StructureRenderer::draw_atoms_regular(const Structure* structure) {
     this->draw_atoms(structure->get_atoms(), structure);
 }
 
-/**
- * @brief      Draws coordinate axes.
- */
+    /**
+     * @brief      Draws coordinate axes.
+     */
 void StructureRenderer::draw_coordinate_axes()
 {
     ShaderProgram* shader = shader_manager->get_shader_program("axes_shader");
@@ -164,25 +162,25 @@ void StructureRenderer::draw_coordinate_axes()
 }
 
 
-/**
- * @brief      Draws the atoms in the periodicity expansions.
- *
- * @param[in]  structure       The structure
- * @param[in]  periodicity_xy  The periodicity xy
- * @param[in]  periodicity_z   The periodicity z
- */
+    /**
+     * @brief      Draws the atoms in the periodicity expansions.
+     *
+     * @param[in]  structure       The structure
+     * @param[in]  periodicity_xy  The periodicity xy
+     * @param[in]  periodicity_z   The periodicity z
+     */
 void StructureRenderer::draw_atoms_expansion(const Structure* structure, bool periodicity_xy, bool periodicity_z) {
     this->draw_atoms(structure->get_atoms_expansion(), structure, periodicity_xy, periodicity_z);
 }
 
-/**
- * @brief      Draws atoms.
- *
- * @param[in]  atoms           The atoms
- * @param[in]  structure       The structure
- * @param[in]  periodicity_xy  The periodicity xy
- * @param[in]  periodicity_z   The periodicity z
- */
+    /**
+     * @brief      Draws atoms.
+     *
+     * @param[in]  atoms           The atoms
+     * @param[in]  structure       The structure
+     * @param[in]  periodicity_xy  The periodicity xy
+     * @param[in]  periodicity_z   The periodicity z
+     */
 void StructureRenderer::draw_atoms(const std::vector<Atom>& atoms, const Structure* structure, bool periodicity_xy, bool periodicity_z) {
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
 
@@ -263,12 +261,12 @@ void StructureRenderer::draw_atoms(const std::vector<Atom>& atoms, const Structu
     model_shader->release();
 }
 
-/**
- * @brief      Draws silhouette of atoms.
- *
- * @param[in]  atoms           The atoms
- * @param[in]  structure       The structure
- */
+    /**
+     * @brief      Draws silhouette of atoms.
+     *
+     * @param[in]  atoms           The atoms
+     * @param[in]  structure       The structure
+     */
 void StructureRenderer::draw_atoms_silhouette(const std::vector<Atom>& atoms, const Structure* structure) {
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
 
@@ -334,11 +332,11 @@ void StructureRenderer::draw_atoms_silhouette(const std::vector<Atom>& atoms, co
     model_shader->release();
 }
 
-/**
- * @brief      Draws bonds.
- *
- * @param[in]  structure  The structure
- */
+    /**
+     * @brief      Draws bonds.
+     *
+     * @param[in]  structure  The structure
+     */
 void StructureRenderer::draw_bonds(const Structure* structure) {
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
 
@@ -413,11 +411,11 @@ void StructureRenderer::draw_bonds(const Structure* structure) {
     model_shader->release();
 }
 
-/**
- * @brief      Draws the unitcell.
- *
- * @param[in]  structure  The structure
- */
+    /**
+     * @brief      Draws the unitcell.
+     *
+     * @param[in]  structure  The structure
+     */
 void StructureRenderer::draw_unitcell(const Structure* structure) {
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
 
@@ -438,11 +436,11 @@ void StructureRenderer::draw_unitcell(const Structure* structure) {
     unitcell_shader->release();
 }
 
-/**
- * @brief      Draw movement lines
- *
- * @param[in]  structure  The structure
- */
+    /**
+     * @brief      Draw movement lines
+     *
+     * @param[in]  structure  The structure
+     */
 void StructureRenderer::draw_movement_lines(const Structure* structure) {
     if(!(this->user_action->get_movement_action() == MovementAction::MOVEMENT_NONE ||
          this->user_action->get_movement_action() == MovementAction::MOVEMENT_FREE)) {
@@ -571,11 +569,11 @@ void StructureRenderer::draw_movement_lines(const Structure* structure) {
     }
 }
 
-/**
- * @brief      Draw movement plane
- *
- * @param[in]  structure  The structure
- */
+    /**
+     * @brief      Draw movement plane
+     *
+     * @param[in]  structure  The structure
+     */
 void StructureRenderer::draw_movement_plane(const Structure* structure) {
     if(!(this->user_action->get_movement_action() == MovementAction::MOVEMENT_FREE)) {
         return;
@@ -613,11 +611,11 @@ void StructureRenderer::draw_movement_plane(const Structure* structure) {
     plane_shader->release();
 }
 
-/**
- * @brief      Generate coordinates of a sphere
- *
- * @param[in]  tesselation_level  The tesselation level
- */
+    /**
+     * @brief      Generate coordinates of a sphere
+     *
+     * @param[in]  tesselation_level  The tesselation level
+     */
 void StructureRenderer::generate_sphere_coordinates(unsigned int tesselation_level) {
     std::vector<glm::vec3> vertices;
 
@@ -705,12 +703,12 @@ void StructureRenderer::generate_sphere_coordinates(unsigned int tesselation_lev
     this->sphere_indices = triangles;
 }
 
-/**
- * @brief      Generate coordinates for a default cylinder (radius 1, height 1)
- *
- * @param[in]  stack_count  The stack count
- * @param[in]  slice_count  The slice count
- */
+    /**
+     * @brief      Generate coordinates for a default cylinder (radius 1, height 1)
+     *
+     * @param[in]  stack_count  The stack count
+     * @param[in]  slice_count  The slice count
+     */
 void StructureRenderer::generate_cylinder_coordinates(unsigned int stack_count, unsigned int slice_count) {
     // construct vertices and normals
     for (float stack = 0; stack < stack_count; ++stack) {
@@ -763,9 +761,9 @@ void StructureRenderer::generate_cylinder_coordinates(unsigned int stack_count, 
     }
 }
 
-/**
- * @brief      Generate the coordinates of the unitcell
- */
+    /**
+     * @brief      Generate the coordinates of the unitcell
+     */
 void StructureRenderer::generate_coordinates_unitcell(const MatrixUnitcell& unitcell) {
     // set vertices of the unitcell
     std::vector<glm::vec3> unitcell_vertices;
@@ -840,11 +838,11 @@ void StructureRenderer::generate_coordinates_unitcell(const MatrixUnitcell& unit
     this->vao_sphere.release();
 }
 
-/**
- * @brief      Update the unitcell vertices in the unit cell
- *
- * @param[in]  unitcell  The unitcell
- */
+    /**
+     * @brief      Update the unitcell vertices in the unit cell
+     *
+     * @param[in]  unitcell  The unitcell
+     */
 void StructureRenderer::set_unitcell_vertices(const MatrixUnitcell& unitcell) {
     // set vertices of the unitcell
     std::vector<glm::vec3> unitcell_vertices;
@@ -863,9 +861,9 @@ void StructureRenderer::set_unitcell_vertices(const MatrixUnitcell& unitcell) {
     this->vao_sphere.release();
 }
 
-/**
- * @brief      Load all data to a vertex array object
- */
+    /**
+     * @brief      Load all data to a vertex array object
+     */
 void StructureRenderer::load_sphere_to_vao() {
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
 
@@ -895,9 +893,9 @@ void StructureRenderer::load_sphere_to_vao() {
     this->vao_sphere.release();
 }
 
-/**
- * @brief      Load all data to a vertex array object
- */
+    /**
+     * @brief      Load all data to a vertex array object
+     */
 void StructureRenderer::load_cylinder_to_vao() {
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
 
@@ -927,9 +925,9 @@ void StructureRenderer::load_cylinder_to_vao() {
     this->vao_sphere.release();
 }
 
-/**
- * @brief      Load simple line data to vertex array object
- */
+    /**
+     * @brief      Load simple line data to vertex array object
+     */
 void StructureRenderer::load_line_to_vao() {
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
 
@@ -954,9 +952,9 @@ void StructureRenderer::load_line_to_vao() {
     this->vao_line.release();
 }
 
-/**
- * @brief      Load simple line data to vertex array object
- */
+    /**
+     * @brief      Load simple plane data to vertex array object
+     */
 void StructureRenderer::load_plane_to_vao() {
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
 
@@ -981,9 +979,9 @@ void StructureRenderer::load_plane_to_vao() {
     this->vao_plane.release();
 }
 
-/**
- * @brief      Loads an arrow model.
- */
+    /**
+     * @brief      Loads an arrow model.
+     */
 void StructureRenderer::load_arrow_model() {
     // load axis model
     QTemporaryDir tmp_dir;
@@ -995,39 +993,39 @@ void StructureRenderer::load_arrow_model() {
     this->axis_model->load_to_vao();
 }
 
-/**
- * @brief      Darken color
- *
- * @param[in]  color   The color
- * @param[in]  amount  The amount
- *
- * @return     The 3D vector.
- */
+    /**
+     * @brief      Darken color
+     *
+     * @param[in]  color   The color
+     * @param[in]  amount  The amount
+     *
+     * @return     The 3D vector.
+     */
 QVector3D StructureRenderer::darken(const QVector3D& color, float amount) const {
     return amount * QVector3D(0.0, 0.0, 0.0) + (1.0 - amount) * color;
 }
 
-/**
- * @brief      Lighten color
- *
- * @param[in]  color   The color
- * @param[in]  amount  The amount
- *
- * @return     The 3D vector.
- */
+    /**
+     * @brief      Lighten color
+     *
+     * @param[in]  color   The color
+     * @param[in]  amount  The amount
+     *
+     * @return     The 3D vector.
+     */
 QVector3D StructureRenderer::lighten(const QVector3D& color, float amount) const {
     return amount * QVector3D(1.0, 1.0, 1.0) + (1.0 - amount) * color;
 }
 
-/**
- * @brief      Mix colors
- *
- * @param[in]  color1  First color
- * @param[in]  color2  Second color
- * @param[in]  amount  The amount
- *
- * @return     The 3D vector.
- */
+    /**
+     * @brief      Mix colors
+     *
+     * @param[in]  color1  First color
+     * @param[in]  color2  Second color
+     * @param[in]  amount  The amount
+     *
+     * @return     The 3D vector.
+     */
 QVector3D StructureRenderer::mix(const QVector3D& color1, const QVector3D& color2, float amount) const {
     return (1.0 - amount) * color1 + amount * color2;
 }

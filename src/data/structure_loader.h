@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -37,6 +37,9 @@ enum OutcarReadStatus {
     VASP_OUTCAR_READ_STATE_FINISHED
 };
 
+/**
+ * @brief StructureLoader class.
+ */
 class StructureLoader {
 private:
 

@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -32,9 +32,9 @@ unitcell(_unitcell) {
 
 }
 
-/**
- * @brief      Constructs a new instance.
- */
+    /**
+     * @brief      Constructs a new instance.
+     */
 Structure::Structure(const Fragment& fragment) {
     this->unitcell = MatrixUnitcell::Identity() * 5.0f;
     this->atoms = fragment.atoms;
@@ -42,20 +42,20 @@ Structure::Structure(const Fragment& fragment) {
     this->construct_bonds();
 }
 
-/**
- * @brief      Constructs a new instance.
- */
+    /**
+     * @brief      Constructs a new instance.
+     */
 Structure::Structure(unsigned int elnr) {
     this->unitcell = MatrixUnitcell::Identity() * 2.5f;
     this->atoms.emplace_back(elnr, 0.0, 0.0, 0.0);
     this->center();
 }
 
-/**
- * @brief      Gets the root mean square force
- *
- * @return     The root mean square force.
- */
+    /**
+     * @brief      Gets the root mean square force
+     *
+     * @return     The root mean square force.
+     */
 double Structure::get_rms_force() const {
     double sum = 0.0;
     for(const auto& force : this->forces) {
@@ -65,12 +65,12 @@ double Structure::get_rms_force() const {
     return sum / (float)this->forces.size();
 }
 
-/**
- * @brief      Add an eigenmode.
- *
- * @param[in]  eigenvalue    Eigenvalue/frequency of the mode.
- * @param[in]  eigenvectors  Per-atom displacement vectors.
- */
+    /**
+     * @brief      Add an eigenmode.
+     *
+     * @param[in]  eigenvalue    Eigenvalue/frequency of the mode.
+     * @param[in]  eigenvectors  Per-atom displacement vectors.
+     */
 void Structure::add_eigenmode(double eigenvalue, const std::vector<QVector3D>& eigenvectors) {
     if(!this->atoms.empty() && eigenvectors.size() != this->atoms.size()) {
         throw std::runtime_error("Eigenmode vector size does not match number of atoms.");
@@ -79,55 +79,55 @@ void Structure::add_eigenmode(double eigenvalue, const std::vector<QVector3D>& e
     this->eigenmodes.push_back({eigenvalue, eigenvectors});
 }
 
-/**
- * @brief      Add an atom to the structure
- *
- * @param[in]  atnr  Atom number
- * @param[in]  x     x coordinate
- * @param[in]  y     y coordinate
- * @param[in]  z     z coordinate
- */
+    /**
+     * @brief      Add an atom to the structure
+     *
+     * @param[in]  atnr  Atom number
+     * @param[in]  x     x coordinate
+     * @param[in]  y     y coordinate
+     * @param[in]  z     z coordinate
+     */
 void Structure::add_atom(unsigned int atnr, double x, double y, double z) {
     this->atoms.emplace_back(atnr, x, y, z);
     this->transpose_atom(this->atoms.size() - 1, QMatrix4x4());
     this->radii.push_back(AtomSettings::get().get_atom_radius(AtomSettings::get().get_name_from_elnr(atnr)));
 }
 
-/**
- * @brief      Add an atom to the structure including forces
- *
- * @param[in]  atnr  Atom number
- * @param[in]  x     x coordinate
- * @param[in]  y     y coordinate
- * @param[in]  z     z coordinate
- * @param[in]  fx    force in x direction
- * @param[in]  fy    force in y direction
- * @param[in]  fz    force in z direction
- */
+    /**
+     * @brief      Add an atom to the structure including forces
+     *
+     * @param[in]  atnr  Atom number
+     * @param[in]  x     x coordinate
+     * @param[in]  y     y coordinate
+     * @param[in]  z     z coordinate
+     * @param[in]  fx    force in x direction
+     * @param[in]  fy    force in y direction
+     * @param[in]  fz    force in z direction
+     */
 void Structure::add_atom(unsigned int atnr, double x, double y, double z, double fx, double fy, double fz) {
     this->add_atom(atnr, x, y, z);
     this->forces.push_back(QVector3D(fx, fy, fz));
 }
 
-/**
- * @brief      Add an atom to the structure including forces
- *
- * @param[in]  atnr  Atom number
- * @param[in]  x     x coordinate
- * @param[in]  y     y coordinate
- * @param[in]  z     z coordinate
- * @param[in]  sx    Selective dynamics x direction
- * @param[in]  sy    Selective dynamics y direction
- * @param[in]  sz    Selective dynamics z direction
- */
+    /**
+     * @brief      Add an atom to the structure including forces
+     *
+     * @param[in]  atnr  Atom number
+     * @param[in]  x     x coordinate
+     * @param[in]  y     y coordinate
+     * @param[in]  z     z coordinate
+     * @param[in]  sx    Selective dynamics x direction
+     * @param[in]  sy    Selective dynamics y direction
+     * @param[in]  sz    Selective dynamics z direction
+     */
 void Structure::add_atom(unsigned int atnr, double x, double y, double z, bool sx, bool sy, bool sz) {
     this->add_atom(atnr, x, y, z);
     this->atoms.back().selective_dynamics = {sx, sy, sz};
 }
 
-/**
- * @brief      Delete atoms in the primary buffer
- */
+    /**
+     * @brief      Delete atoms in the primary buffer
+     */
 void Structure::delete_atoms() {
     std::sort(this->primary_buffer.begin(), this->primary_buffer.end(), std::greater<unsigned int>());
 
@@ -150,11 +150,11 @@ void Structure::delete_atoms() {
     this->update();
 }
 
-/**
- * @brief      Commits a transposition.
- *
- * @param[in]  transposition  The transposition
- */
+    /**
+     * @brief      Commits a transposition.
+     *
+     * @param[in]  transposition  The transposition
+     */
 void Structure::commit_transposition(const QMatrix4x4& transposition) {
     std::vector<unsigned int> moved_indices;
     moved_indices.reserve(this->primary_buffer.size());
@@ -172,11 +172,11 @@ void Structure::commit_transposition(const QMatrix4x4& transposition) {
     }
 }
 
-/**
- * @brief      Preview bond updates for a transposition without committing atom positions.
- *
- * @param[in]  transposition  The transposition
- */
+    /**
+     * @brief      Preview bond updates for a transposition without committing atom positions.
+     *
+     * @param[in]  transposition  The transposition
+     */
 void Structure::preview_bonds_for_transposition(const QMatrix4x4& transposition) {
     if(this->primary_buffer.empty()) {
         return;
@@ -195,9 +195,9 @@ void Structure::preview_bonds_for_transposition(const QMatrix4x4& transposition)
     }
 }
 
-/**
- * @brief      Center the structure at the origin
- */
+    /**
+     * @brief      Center the structure at the origin
+     */
 void Structure::center() {
     double sumx = 0.0;
     double sumy = 0.0;
@@ -232,11 +232,11 @@ void Structure::center() {
     }
 }
 
-/**
- * @brief      Get the largest distance from the origin
- *
- * @return     The largest distance.
- */
+    /**
+     * @brief      Get the largest distance from the origin
+     *
+     * @return     The largest distance.
+     */
 QVector3D Structure::get_largest_distance() const {
     unsigned int idx = 0;
     float dist = -1.0f;
@@ -257,11 +257,11 @@ QVector3D Structure::get_largest_distance() const {
     return this->atoms[idx].get_pos_qtvec();
 }
 
-/**
- * @brief      Gets the elements in this structure as a string
- *
- * @return     String holding comma seperated list of elements
- */
+    /**
+     * @brief      Gets the elements in this structure as a string
+     *
+     * @return     String holding comma seperated list of elements
+     */
 std::string Structure::get_elements_string() const {
     std::string result;
 
@@ -278,30 +278,30 @@ std::string Structure::get_elements_string() const {
     return result;
 }
 
-/**
- * @brief      Get the centering vector
- *
- * @return     Vector that puts unitcell at the origin
- */
+    /**
+     * @brief      Get the centering vector
+     *
+     * @return     Vector that puts unitcell at the origin
+     */
 QVector3D Structure::get_center_vector() const {
     auto ctr = this->unitcell.transpose() * VectorPosition::Ones() * 0.5;
     return QVector3D(-ctr(0), -ctr(1), -ctr(2));
 }
 
-/**
- * @brief      Update data based on contents;
- */
+    /**
+     * @brief      Update data based on contents;
+     */
 void Structure::update() {
     this->count_elements();
     this->construct_bonds();
     this->build_expansion();
 }
 
-/**
- * @brief      Select atom by idx
- *
- * @param[in]  idx   The index
- */
+    /**
+     * @brief      Select atom by idx
+     *
+     * @param[in]  idx   The index
+     */
 void Structure::select_atom(unsigned int idx) {
     unsigned int select = 0;
     if(idx < this->get_nr_atoms()) {
@@ -322,11 +322,11 @@ void Structure::select_atom(unsigned int idx) {
     }
 }
 
-/**
- * @brief      Gets the position primary buffer.
- *
- * @return     The position primary buffer.
- */
+    /**
+     * @brief      Gets the position primary buffer.
+     *
+     * @return     The position primary buffer.
+     */
 QVector3D Structure::get_position_primary_buffer() const {
     if(this->primary_buffer.size() == 0) {
         throw std::runtime_error("No atoms in primary buffer. This exception should not be thrown. Please file an issue.");
@@ -345,11 +345,11 @@ QVector3D Structure::get_position_primary_buffer() const {
     return ctr;
 }
 
-/**
- * @brief      Gets the position secondary buffer.
- *
- * @return     The position secondary buffer.
- */
+    /**
+     * @brief      Gets the position secondary buffer.
+     *
+     * @return     The position secondary buffer.
+     */
 QVector3D Structure::get_position_secondary_buffer() const {
     if(this->secondary_buffer.size() == 0) {
         throw std::logic_error("No atoms in secondary buffer. This exception should not be thrown. Please file an issue.");
@@ -368,9 +368,9 @@ QVector3D Structure::get_position_secondary_buffer() const {
     return ctr;
 }
 
-/**
- * @brief      Clear the selection_buffers
- */
+    /**
+     * @brief      Clear the selection_buffers
+     */
 void Structure::clear_selection() {
     for(unsigned int idx : this->primary_buffer) {
         if(idx >= this->get_nr_atoms()) {
@@ -392,9 +392,9 @@ void Structure::clear_selection() {
     this->secondary_buffer.clear();
 }
 
-/**
- * @brief      Select all atoms
- */
+    /**
+     * @brief      Select all atoms
+     */
 void Structure::select_all_atoms() {
     // clear buffers
     this->clear_selection();
@@ -406,9 +406,9 @@ void Structure::select_all_atoms() {
     }
 }
 
-/**
- * @brief      Invert the selection
- */
+    /**
+     * @brief      Select all atoms
+     */
 void Structure::invert_selection() {
     // make copy of primary selection
     auto list = this->primary_buffer;
@@ -421,9 +421,9 @@ void Structure::invert_selection() {
     }
 }
 
-/**
- * @brief      Set frozen
- */
+    /**
+     * @brief      Toggle frozen
+     */
 void Structure::set_frozen() {
     for(unsigned int idx : this->primary_buffer) {
         for(unsigned int j=0; j<3; j++) {
@@ -432,9 +432,9 @@ void Structure::set_frozen() {
     }
 }
 
-/**
- * @brief      Set frozen
- */
+    /**
+     * @brief      Set unfrozen
+     */
 void Structure::set_unfrozen() {
     for(unsigned int idx : this->primary_buffer) {
         for(unsigned int j=0; j<3; j++) {
@@ -443,11 +443,11 @@ void Structure::set_unfrozen() {
     }
 }
 
-/**
- * @brief      Get a string containing current selection data
- *
- * @return     The selection string.
- */
+    /**
+     * @brief      Get a string containing current selection data
+     *
+     * @return     The selection string.
+     */
 QString Structure::get_selection_string() const {
     QString str;
 
@@ -490,9 +490,9 @@ QString Structure::get_selection_string() const {
     return str;
 }
 
-/**
- * @brief      Count the number of elements
- */
+    /**
+     * @brief      Count the number of elements
+     */
 void Structure::count_elements() {
     this->element_types.clear();
 
@@ -507,9 +507,9 @@ void Structure::count_elements() {
     }
 }
 
-/**
- * @brief      Construct the bonds
- */
+    /**
+     * @brief      Construct the bonds
+     */
 void Structure::construct_bonds() {
     if(Structure::debug_logging_enabled) {
         qDebug() << "Building bonds";
@@ -600,9 +600,9 @@ void Structure::update_bonds_for_atoms(const std::vector<unsigned int>& atom_ind
     }
 }
 
-/**
- * @brief      Expand unit cell
- */
+    /**
+     * @brief      Expand unit cell
+     */
 void Structure::build_expansion() {
     this->atoms_expansion.clear();
 
@@ -634,12 +634,12 @@ void Structure::build_expansion() {
     }
 }
 
-/**
- * @brief      Transpose single atom
- *
- * @param[in]  idx            Atom index
- * @param[in]  transposition  The transposition
- */
+    /**
+     * @brief      Transpose single atom
+     *
+     * @param[in]  idx            Atom index
+     * @param[in]  transposition  The transposition
+     */
 void Structure::transpose_atom(unsigned int idx, const QMatrix4x4& transposition) {
     QMatrix4x4 unitcellmatrix(this->get_matrix3x3(this->unitcell));
     auto pos = this->atoms[idx].get_pos_qtvec();
@@ -663,13 +663,13 @@ void Structure::transpose_atom(unsigned int idx, const QMatrix4x4& transposition
     this->atoms[idx].z = newpos[2];
 }
 
-/**
- * @brief      Gets the unitcell matrix.
- *
- * @param[in]  matrix  The matrix
- *
- * @return     The casted matrix.
- */
+    /**
+     * @brief      Gets the unitcell matrix.
+     *
+     * @param[in]  matrix  The matrix
+     *
+     * @return     The casted matrix.
+     */
 QMatrix3x3 Structure::get_matrix3x3(const MatrixUnitcell& matrix) const {
     std::vector<float> values(9, 0.0);
     for(unsigned int i=0; i<3; i++) {

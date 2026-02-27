@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -20,6 +20,17 @@
 
 #include "bond.h"
 
+/**
+ * @brief Bond.
+ *
+ * @param _atom1 Parameter _atom1.
+ * @param _atom2 Parameter _atom2.
+ * @param _atom1_idx Parameter _atom1_idx.
+ * @param param Parameter param.
+ * @param param Parameter param.
+ * @param param Parameter param.
+ * @param param Parameter param.
+ */
 Bond::Bond(const Atom& _atom1, const Atom& _atom2, unsigned int _atom1_idx, unsigned int _atom2_idx) :
 atom1(_atom1),
 atom2(_atom2),

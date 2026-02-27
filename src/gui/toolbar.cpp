@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -39,13 +39,13 @@ QToolBar(parent) {
     }
 }
 
-/**
- * @brief      Get an action by action name
- *
- * @param[in]  action_name  The action name
- *
- * @return     The action.
- */
+    /**
+     * @brief      Get an action by action name
+     *
+     * @param[in]  action_name  The action name
+     *
+     * @return     The action.
+     */
 QAction* ToolBarWidget::get_action(const std::string& action_name) {
     auto got = this->actions.find(action_name);
     if(got != this->actions.end()) {
@@ -55,11 +55,11 @@ QAction* ToolBarWidget::get_action(const std::string& action_name) {
     }
 }
 
-/**
- * @brief      Add an action to the toolbar
- *
- * @param[in]  action_name  The action name
- */
+    /**
+     * @brief      Add an action to the toolbar
+     *
+     * @param[in]  action_name  The action name
+     */
 void ToolBarWidget::add_action(const std::string& action_name, const QString& icon) {
     if(action_name == "---") {
         this->addSeparator();

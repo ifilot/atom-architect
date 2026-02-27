@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -31,9 +31,9 @@ Model::Model(std::vector<glm::vec3> _positions, std::vector<glm::vec3> _normals,
     indices(_indices) {
 }
 
-/**
- * @brief      Destroys the object.
- */
+    /**
+     * @brief      Destroys the object.
+     */
 Model::~Model() {
     this->vao.bind();
     for(unsigned int i=0; i<4; i++) {
@@ -42,9 +42,9 @@ Model::~Model() {
     this->vao.destroy();
 }
 
-/**
- * @brief      Draw the model
- */
+    /**
+     * @brief      Draw the model
+     */
 void Model::draw() {
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
 
@@ -53,11 +53,11 @@ void Model::draw() {
     this->vao.release();
 }
 
-/**
- * @brief      Get maximum vector
- *
- * @return     The maximum vector distance
- */
+    /**
+     * @brief      Get maximum vector
+     *
+     * @return     The maximum vector distance
+     */
 glm::vec3 Model::get_max_dim() const {
     float maxdist2 = 0.0;
     glm::vec3 vmax;
@@ -72,9 +72,9 @@ glm::vec3 Model::get_max_dim() const {
     return vmax;
 }
 
-/**
- * @brief      Load all data to a vertex array object
- */
+    /**
+     * @brief      Load all data to a vertex array object
+     */
 void Model::load_to_vao() {
     if(this->flag_loaded_vao) {
         return;

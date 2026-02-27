@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -21,6 +21,11 @@
 #include "fragment_selector.h"
 #include "qjsonarray.h"
 
+/**
+ * @brief FragmentSelector.
+ *
+ * @param param Parameter param.
+ */
 FragmentSelector::FragmentSelector(QWidget *parent) : StructureInfoTab(parent) {
     // set gridlayout as default layout
     this->layout = new QVBoxLayout();
@@ -65,11 +70,11 @@ FragmentSelector::FragmentSelector(QWidget *parent) : StructureInfoTab(parent) {
     connect(this->fragment_list, SIGNAL(currentItemChanged(QListWidgetItem*, QListWidgetItem*)), this, SLOT(update_display(QListWidgetItem*, QListWidgetItem*)));
 }
 
-/**
- * @brief      Gets the current fragment.
- *
- * @return     The current fragment.
- */
+    /**
+     * @brief      Gets the current fragment.
+     *
+     * @return     The current fragment.
+     */
 const Fragment& FragmentSelector::get_current_fragment() const {
     auto got = this->fragments.find(this->fragment_list->currentItem()->text().toStdString());
     return got->second;
@@ -77,33 +82,34 @@ const Fragment& FragmentSelector::get_current_fragment() const {
 }
 
 /**
- * @brief      Update data in tab based on current structure
+ * @brief update_data.
+ *
  */
 void FragmentSelector::update_data() {
 
 }
 
-/**
- * @brief      Resets the object.
- */
+    /**
+     * @brief      Resets the object.
+     */
 void FragmentSelector::reset() {
 
 }
 
-/**
- * @brief      Add a fragment
- *
- * @param[in]  fragment  The fragment
- */
+    /**
+     * @brief      Add a fragment
+     *
+     * @param[in]  fragment  The fragment
+     */
 void FragmentSelector::add_fragment(const Fragment& fragment) {
     this->fragments.emplace(fragment.label.toStdString(), fragment);
 }
 
-/**
- * @brief      Add series of fragments from file
- *
- * @param[in]  filename  The filename
- */
+    /**
+     * @brief      Add series of fragments from file
+     *
+     * @param[in]  filename  The filename
+     */
 void FragmentSelector::add_fragments_from_file(const QString& filename) {
     // try to locate atoms.json
     QFile f(":/assets/fragments/" + filename);
@@ -152,9 +158,9 @@ void FragmentSelector::add_fragments_from_file(const QString& filename) {
     }
 }
 
-/**
- * @brief      Perform fuzzy search
- */
+    /**
+     * @brief      Perform fuzzy search
+     */
 void FragmentSelector::perform_fuzzy_search(const QString& _source) {
     std::vector<std::pair<size_t, std::string>> result;
 
@@ -171,12 +177,12 @@ void FragmentSelector::perform_fuzzy_search(const QString& _source) {
     }
 }
 
-/**
- * @brief      Update the anaglyph widget with the selected molecule
- *
- * @param      current   Currently selected fragment
- * @param      previous  Previously selected fragments
- */
+    /**
+     * @brief      Update the anaglyph widget with the selected molecule
+     *
+     * @param      current   Currently selected fragment
+     * @param      previous  Previously selected fragments
+     */
 void FragmentSelector::update_display(QListWidgetItem *current, QListWidgetItem *previous) {
     if(current != nullptr) {
         auto got = this->fragments.find(current->text().toStdString());
@@ -187,9 +193,9 @@ void FragmentSelector::update_display(QListWidgetItem *current, QListWidgetItem 
     }
 }
 
-/**
- * @brief      Select an atom from the periodic table
- */
+    /**
+     * @brief      Select an atom from the periodic table
+     */
 void FragmentSelector::select_atom_periodic_table() {
     DialogPeriodicTable pd;
     int ret = pd.exec();
@@ -203,6 +209,14 @@ void FragmentSelector::select_atom_periodic_table() {
     }
 }
 
+    /**
+     * @brief      Calculate distance between two strings
+     *
+     * @param[in]  str1  String 1
+     * @param[in]  str2  String 2
+     *
+     * @return     distance between strings
+     */
 size_t FragmentSelector::string_levenshtein_distance(const std::string& s1, const std::string& s2) {
     const size_t m(s1.size());
     const size_t n(s2.size());

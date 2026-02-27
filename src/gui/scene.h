@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -45,6 +45,9 @@ enum class CameraMode {
     ORTHOGRAPHIC
 };
 
+/**
+ * @brief Scene class.
+ */
 class Scene {
 public:
     QMatrix4x4 projection;
@@ -59,6 +62,10 @@ public:
 
     CameraMode camera_mode = CameraMode::PERSPECTIVE;
 
+/**
+ * @brief Scene.
+ *
+ */
     Scene();
 
     /**

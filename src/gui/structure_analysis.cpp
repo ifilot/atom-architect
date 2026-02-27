@@ -1,7 +1,32 @@
+/****************************************************************************
+ *                                                                          *
+ *   ATOM ARCHITECT                                                         *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *                                                                          *
+ *   This program is free software: you can redistribute it and/or modify   *
+ *   it under the terms of the GNU Lesser General Public License as         *
+ *   published by the Free Software Foundation, either version 3 of the     *
+ *   License, or (at your option) any later version.                        *
+ *                                                                          *
+ *   This program is distributed in the hope that it will be useful,        *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of         *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the          *
+ *   GNU General Public License for more details.                           *
+ *                                                                          *
+ *   You should have received a copy of the GNU General Public license      *
+ *   along with this program.  If not, see <https://www.gnu.org/licenses/>. *
+ *                                                                          *
+ ****************************************************************************/
+
 #include "structure_analysis.h"
 
 #include <cmath>
 
+/**
+ * @brief StructureAnalysis.
+ *
+ * @param parent Parameter parent.
+ */
 StructureAnalysis::StructureAnalysis(QObject *parent)
     : QObject(parent)
 {
@@ -21,6 +46,12 @@ StructureAnalysis::StructureAnalysis(QObject *parent)
             this, &StructureAnalysis::tick_frequency_animation);
 }
 
+/**
+ * @brief set_structures.
+ *
+ * @param s Parameter s.
+ * @param series_kind Parameter series_kind.
+ */
 void StructureAnalysis::set_structures(const std::vector<std::shared_ptr<Structure>>& s,
                                        StructureAnalysisViewer::SeriesKind series_kind)
 {
@@ -50,6 +81,11 @@ void StructureAnalysis::set_structures(const std::vector<std::shared_ptr<Structu
     viewer_->set_structure(structures_[current_index_]);
 }
 
+/**
+ * @brief set_frequency_structure.
+ *
+ * @param structure Parameter structure.
+ */
 void StructureAnalysis::set_frequency_structure(const std::shared_ptr<Structure>& structure)
 {
     if(!structure || structure->get_nr_eigenmodes() == 0) {
@@ -72,6 +108,10 @@ void StructureAnalysis::set_frequency_structure(const std::shared_ptr<Structure>
     frequency_animation_timer_.start();
 }
 
+/**
+ * @brief update_current.
+ *
+ */
 void StructureAnalysis::update_current()
 {
     if(mode_ == AnalysisMode::STRUCTURE_SERIES) {
@@ -90,6 +130,10 @@ void StructureAnalysis::update_current()
     }
 }
 
+/**
+ * @brief update_frequency_mode.
+ *
+ */
 void StructureAnalysis::update_frequency_mode()
 {
     if(!frequency_structure_) {
@@ -105,6 +149,12 @@ void StructureAnalysis::update_frequency_mode()
     viewer_->set_index(current_index_, frequency_structure_->get_nr_eigenmodes());
 }
 
+/**
+ * @brief build_frequency_frame_structure.
+ *
+ * @param mode_index Parameter mode_index.
+ * @param phase Parameter phase.
+ */
 std::shared_ptr<Structure> StructureAnalysis::build_frequency_frame_structure(size_t mode_index,
                                                                               double phase) const
 {
@@ -126,6 +176,10 @@ std::shared_ptr<Structure> StructureAnalysis::build_frequency_frame_structure(si
     return display;
 }
 
+/**
+ * @brief first.
+ *
+ */
 void StructureAnalysis::first()
 {
     if(mode_ == AnalysisMode::STRUCTURE_SERIES) {
@@ -141,6 +195,10 @@ void StructureAnalysis::first()
     }
 }
 
+/**
+ * @brief prev.
+ *
+ */
 void StructureAnalysis::prev()
 {
     if(mode_ == AnalysisMode::STRUCTURE_SERIES) {
@@ -157,6 +215,10 @@ void StructureAnalysis::prev()
     }
 }
 
+/**
+ * @brief next.
+ *
+ */
 void StructureAnalysis::next()
 {
     if(mode_ == AnalysisMode::STRUCTURE_SERIES) {
@@ -173,6 +235,10 @@ void StructureAnalysis::next()
     }
 }
 
+/**
+ * @brief last.
+ *
+ */
 void StructureAnalysis::last()
 {
     if(mode_ == AnalysisMode::STRUCTURE_SERIES) {
@@ -188,6 +254,10 @@ void StructureAnalysis::last()
     }
 }
 
+/**
+ * @brief tick_frequency_animation.
+ *
+ */
 void StructureAnalysis::tick_frequency_animation()
 {
     if(mode_ != AnalysisMode::FREQUENCY) {
@@ -198,6 +268,11 @@ void StructureAnalysis::tick_frequency_animation()
     update_frequency_mode();
 }
 
+/**
+ * @brief select_frequency_mode.
+ *
+ * @param index Parameter index.
+ */
 void StructureAnalysis::select_frequency_mode(size_t index)
 {
     if(mode_ != AnalysisMode::FREQUENCY || !frequency_structure_) {
@@ -214,6 +289,11 @@ void StructureAnalysis::select_frequency_mode(size_t index)
     update_current();
 }
 
+    /**
+     * @brief      Sets the camera align.
+     *
+     * @param      action  The action
+     */
 void StructureAnalysis::set_camera_align(QAction* action)
 {
     if(!action || !viewer_ || !viewer_->get_anaglyph_widget()) {
@@ -223,6 +303,11 @@ void StructureAnalysis::set_camera_align(QAction* action)
     viewer_->get_anaglyph_widget()->get_user_action()->set_camera_alignment(action->data().toInt());
 }
 
+    /**
+     * @brief      Sets the camera mode (orthogonal or perspective).
+     *
+     * @param      action  The action
+     */
 void StructureAnalysis::set_camera_mode(QAction* action)
 {
     if(!action || !viewer_ || !viewer_->get_anaglyph_widget()) {
@@ -232,6 +317,11 @@ void StructureAnalysis::set_camera_mode(QAction* action)
     viewer_->get_anaglyph_widget()->get_user_action()->set_camera_mode(action->data().toInt());
 }
 
+/**
+ * @brief set_stereo.
+ *
+ * @param stereo_name Parameter stereo_name.
+ */
 void StructureAnalysis::set_stereo(const QString& stereo_name)
 {
     if(!viewer_ || !viewer_->get_anaglyph_widget()) {
@@ -241,6 +331,11 @@ void StructureAnalysis::set_stereo(const QString& stereo_name)
     viewer_->get_anaglyph_widget()->set_stereo(stereo_name);
 }
 
+/**
+ * @brief load_file.
+ *
+ * @param filename Parameter filename.
+ */
 void StructureAnalysis::load_file(const QString &filename)
 {
     StructureLoader sl;
