@@ -111,9 +111,9 @@ MainWindow::MainWindow(const std::shared_ptr<QStringList> _log_messages,
     qDebug() << "Done building MainWindow";
 }
 
-    /**
-     * @brief Parse command line arguments
-     */
+/**
+ * @brief Parse command line arguments
+ */
 void MainWindow::set_cli_parser(const QCommandLineParser& cli_parser) {
     if(!cli_parser.value("o").isEmpty()) {
         QString filename = cli_parser.value("o");
@@ -124,9 +124,9 @@ void MainWindow::set_cli_parser(const QCommandLineParser& cli_parser) {
     }
 }
 
-    /**
-     * @brief      Open a new object file
-     */
+/**
+ * @brief      Open a new object file
+ */
 void MainWindow::open()
 {
     QSettings settings;
@@ -174,9 +174,9 @@ void MainWindow::open()
     );
 }
 
-    /**
-     * @brief      Open a new object file
-     */
+/**
+ * @brief      Open a new object file
+ */
 void MainWindow::save() {
     QString filename = QFileDialog::getSaveFileName(this, tr("Save file"), "", tr("POSCAR"));
 
@@ -189,9 +189,9 @@ void MainWindow::save() {
     statusBar()->showMessage("Save to " + filename + ".");
 }
 
-    /**
-     * @brief      Close the application
-     */
+/**
+ * @brief      Close the application
+ */
 void MainWindow::exit() {
     QMessageBox msgBox;
     msgBox.setText("Exit program.");
@@ -214,16 +214,20 @@ void MainWindow::exit() {
     }
 }
 
-    /**
-     * @brief      Display about menu
-     */
+/**
+ * @brief      Display about menu
+ */
 void MainWindow::about() {
     QMessageBox message_box;
     message_box.setStyleSheet("QLabel{min-width: 250px; font-weight: normal;}");
     message_box.setText(PROGRAM_NAME
                         " version "
                         PROGRAM_VERSION
-                        ".\n\nAuthor:\nIvo Filot <i.a.w.filot@tue.nl>\n\n"
+                        ".\n\nMaintainer:\n"
+                        "Ivo Filot <i.a.w.filot@tue.nl>\n\n"
+                        "Authors:\n"
+                        "Ivo Filot\n"
+                        "Joeri van Limpt\n\n"
                         PROGRAM_NAME " is licensed under the GPLv3 license.\n\n"
                         PROGRAM_NAME " is dynamically linked to Qt, which is licensed under LGPLv3.\n");
     message_box.setIcon(QMessageBox::Information);
@@ -233,9 +237,9 @@ void MainWindow::about() {
     message_box.exec();
 }
 
-    /**
-     * @brief      Set stereo projection
-     */
+/**
+ * @brief      Set stereo projection
+ */
 void MainWindow::set_stereo(QString stereo_name) {
     this->interface_window->get_anaglyph_widget()->set_stereo(stereo_name);
 
@@ -251,11 +255,11 @@ void MainWindow::set_stereo(QString stereo_name) {
     this->statusbar_projection_icon->setPixmap(pixmap.scaled(16, 16));
 }
 
-    /**
-     * @brief moveEvent.
-     *
-     * @param QMoveEvent Parameter QMoveEvent.
-     */
+/**
+ * @brief moveEvent.
+ *
+ * @param QMoveEvent Parameter QMoveEvent.
+ */
 void MainWindow::moveEvent(QMoveEvent* event) {
     this->interface_window->get_anaglyph_widget()->window_move_event();
 
@@ -352,16 +356,16 @@ void MainWindow::dragLeaveEvent(QDragLeaveEvent *event) {
     event->accept();
 }
 
-    /**
-     * @brief      Clear statusbar when timer runs out
-     */
+/**
+ * @brief      Clear statusbar when timer runs out
+ */
 void MainWindow::statusbar_timeout() {
     statusBar()->showMessage("");
 }
 
-    /**
-     * @brief      Loads a theme.
-     */
+/**
+ * @brief      Loads a theme.
+ */
 void MainWindow::load_theme() {
     // load theme
     QFile f(":/assets/themes/darkorange/darkorange.qss");
@@ -374,19 +378,19 @@ void MainWindow::load_theme() {
     }
 }
 
-    /**
-     * @brief      Show a message on the statusbar
-     *
-     * @param[in]  message  The message
-     */
+/**
+* @brief      Show a message on the statusbar
+*
+* @param[in]  message  The message
+*/
 void MainWindow::show_message_statusbar(const QString& message) {
     statusBar()->showMessage(message);
     this->statusbar_timer->start(1000);
 }
 
-    /**
-     * @brief Show an about window
-     */
+/**
+ * @brief Show an about window
+ */
 void MainWindow::slot_debug_log() {
     this->log_window->show();
 }
