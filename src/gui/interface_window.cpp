@@ -20,6 +20,9 @@
 #include "interface_window.h"
 
 #include <QCursor>
+#include <QDir>
+#include <QFileInfo>
+#include <QSettings>
 
 /**
  * @brief      Constructs the object.
@@ -55,7 +58,7 @@ InterfaceWindow::InterfaceWindow(MainWindow *mw)
     QVBoxLayout *editorLayout = new QVBoxLayout(editorPanel);
 
     QMenuBar *editorMenuBar = new QMenuBar(editorPanel);
-    QMenu *editorMenuFile = editorMenuBar->addMenu(tr("&File"));
+    QMenu *editorMenuFile = editorMenuBar->addMenu(tr("&Load"));
     QMenu *editorMenuView = editorMenuBar->addMenu(tr("&View"));
     QMenu *editorMenuSelect = editorMenuBar->addMenu(tr("&Select"));
     editorMenuBar->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Fixed);
@@ -243,7 +246,7 @@ InterfaceWindow::InterfaceWindow(MainWindow *mw)
     QMenuBar *analysisMenuBar = new QMenuBar(this);
     analysisMenuBar->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Fixed);
     analysisMenuBar->setStyleSheet(editorMenuBar->styleSheet());
-    QMenu *analysisMenuFile = analysisMenuBar->addMenu(tr("&File"));
+    QMenu *analysisMenuFile = analysisMenuBar->addMenu(tr("&Load"));
     QMenu *analysisMenuView = analysisMenuBar->addMenu(tr("&View"));
 
     QMenu *analysisMenuCamera = new QMenu(tr("Camera"), analysisMenuView);
@@ -274,7 +277,7 @@ InterfaceWindow::InterfaceWindow(MainWindow *mw)
     QAction *analysisActionOpen = analysisMenuFile->addAction(tr("Open"));
     analysisActionOpen->setShortcuts(QKeySequence::Open);
     QAction *analysisActionOpenNeb = analysisMenuFile->addAction(tr("Open NEB calculation"));
-    QAction *analysisActionSendToEditor = analysisMenuFile->addAction(tr("Send to editor"));
+    QAction *analysisActionSendToEditor = new QAction(tr("Send to editor"), this);
 
     analysisActionCameraDefault->setText(tr("Default"));
     analysisActionCameraDefault->setData(QVariant((int)CameraAlignment::DEFAULT));
@@ -357,7 +360,24 @@ InterfaceWindow::InterfaceWindow(MainWindow *mw)
     analysisMenuProjectionInterlaced->addAction(analysisActionProjectionInterlacedCheckerboardLr);
     analysisMenuProjectionInterlaced->addAction(analysisActionProjectionInterlacedCheckerboardRl);
 
-    structureAnalysis->viewer()->set_header_widget(analysisMenuBar);
+    QWidget *analysisHeaderWidget = new QWidget(this);
+    QHBoxLayout *analysisHeaderLayout = new QHBoxLayout(analysisHeaderWidget);
+    analysisHeaderLayout->setContentsMargins(0, 0, 0, 0);
+    analysisHeaderLayout->setSpacing(6);
+    QPushButton *analysisSendToEditorButton = new QPushButton(tr("Send to editor"), analysisHeaderWidget);
+    analysisSendToEditorButton->setStyleSheet(
+        "QPushButton { border: 1px solid #7a7a7a; border-radius: 4px; margin: 2px; padding: 3px 10px;"
+        " background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #fbfbfb, stop:1 #d5d5d5); }"
+        "QPushButton:hover { border: 1px solid #6f95cc;"
+        " background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #ffffff, stop:1 #c7ddff); }"
+        "QPushButton:pressed { border: 1px solid #6f95cc;"
+        " background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #cfe1ff, stop:1 #ffffff); }"
+    );
+    analysisHeaderLayout->addWidget(analysisMenuBar, 0, Qt::AlignLeft);
+    analysisHeaderLayout->addWidget(analysisSendToEditorButton, 0, Qt::AlignLeft);
+    analysisHeaderLayout->addStretch();
+
+    structureAnalysis->viewer()->set_header_widget(analysisHeaderWidget);
 
     analysis_toolbar = new ToolBarWidget(structureAnalysis->viewer(), false);
     analysis_toolbar->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
@@ -458,6 +478,7 @@ InterfaceWindow::InterfaceWindow(MainWindow *mw)
     connect(analysisActionOpen, &QAction::triggered, this, &InterfaceWindow::open_analysis_file);
     connect(analysisActionOpenNeb, &QAction::triggered, this, &InterfaceWindow::open_analysis_neb_calculation);
     connect(analysisActionSendToEditor, &QAction::triggered, this, &InterfaceWindow::load_structure_from_geometry_analysis);
+    connect(analysisSendToEditorButton, &QPushButton::clicked, analysisActionSendToEditor, &QAction::trigger);
 
     connect(editorActionSelectAll, SIGNAL(triggered()), this, SLOT(select_all_atoms()));
     connect(editorActionDeselectAll, SIGNAL(triggered()), this, SLOT(deselect_all_atoms()));
@@ -689,10 +710,18 @@ void InterfaceWindow::save_file(const QString& filename) {
 
 void InterfaceWindow::open_editor_file()
 {
-    QString filename = QFileDialog::getOpenFileName(this, tr("Open file"), "", tr("All supported files (*.geo *.xyz *.yaml *.yml *.vasp OUTCAR* CONTCAR* POSCAR*);;VASP files (*.vasp POSCAR* CONTCAR* OUTCAR*);;YAML frequency files (*.yaml *.yml);;ADF geometry files (*.geo);;XYZ files (*.xyz)"));
+    QSettings settings;
+    const QString start_dir = settings.value(
+        "ui/lastLoadDir",
+        QDir::homePath()
+    ).toString();
+
+    QString filename = QFileDialog::getOpenFileName(this, tr("Open file"), start_dir, tr("All supported files (*.geo *.xyz *.yaml *.yml *.vasp OUTCAR* CONTCAR* POSCAR*);;VASP files (*.vasp POSCAR* CONTCAR* OUTCAR*);;YAML frequency files (*.yaml *.yml);;ADF geometry files (*.geo);;XYZ files (*.xyz)"));
     if(filename.isEmpty()) {
         return;
     }
+
+    settings.setValue("ui/lastLoadDir", QFileInfo(filename).absolutePath());
 
     std::shared_ptr<Structure> structure;
     try {
@@ -714,26 +743,42 @@ void InterfaceWindow::open_editor_file()
 
 void InterfaceWindow::open_analysis_file()
 {
-    QString filename = QFileDialog::getOpenFileName(this, tr("Open file"), "", tr("Trajectory / Frequency files (OUTCAR* *.yaml *.yml);;VASP OUTCAR (OUTCAR*);;YAML frequency files (*.yaml *.yml)"));
+    QSettings settings;
+    const QString start_dir = settings.value(
+        "ui/lastLoadDir",
+        QDir::homePath()
+    ).toString();
+
+    QString filename = QFileDialog::getOpenFileName(this, tr("Open file"), start_dir, tr("Trajectory / Frequency files (OUTCAR* *.yaml *.yml);;VASP OUTCAR (OUTCAR*);;YAML frequency files (*.yaml *.yml)"));
     if(filename.isEmpty()) {
         return;
     }
+
+    settings.setValue("ui/lastLoadDir", QFileInfo(filename).absolutePath());
 
     structureAnalysis->load_file(filename);
 }
 
 void InterfaceWindow::open_analysis_neb_calculation()
 {
+    QSettings settings;
+    const QString start_dir = settings.value(
+        "ui/lastLoadDir",
+        QDir::homePath()
+    ).toString();
+
     const QString folder = QFileDialog::getExistingDirectory(
         this,
         tr("Open NEB calculation"),
-        QString(),
+        start_dir,
         QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks
     );
 
     if(folder.isEmpty()) {
         return;
     }
+
+    settings.setValue("ui/lastLoadDir", folder);
 
     NebCalculationLoader neb_loader;
     QString error_message;

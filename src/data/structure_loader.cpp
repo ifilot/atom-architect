@@ -25,6 +25,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdio>
 #include <limits>
 
 namespace {
@@ -54,6 +55,20 @@ double sorted_mae(const std::vector<double>& lhs,
     }
 
     return mae / (double)n;
+}
+
+inline bool contains_token(const std::string& line, const char* token) {
+    return line.find(token) != std::string::npos;
+}
+
+inline bool parse_six_columns(const std::string& line,
+                              double& c1,
+                              double& c2,
+                              double& c3,
+                              double& c4,
+                              double& c5,
+                              double& c6) {
+    return std::sscanf(line.c_str(), " %lf %lf %lf %lf %lf %lf", &c1, &c2, &c3, &c4, &c5, &c6) == 6;
 }
 
 }
@@ -817,7 +832,6 @@ std::vector<std::shared_ptr<Structure>> StructureLoader::load_outcar(const std::
     static QRegularExpression regex_ions_per_element("^\\s*(ions per type =\\s+)([0-9 ]+)\\s*$");
     static QRegularExpression regex_lattice_vectors("^\\s*direct lattice vectors.*$");
     static QRegularExpression regex_atoms("^\\s*POSITION.*$");
-    static QRegularExpression regex_grab_numbers("^\\s+([0-9.-]+)\\s+([0-9.-]+)\\s+([0-9.-]+)\\s+([0-9.-]+)\\s+([0-9.-]+)\\s+([0-9.-]+).*$");
     static QRegularExpression regex_grab_energy("^\\s+energy  without entropy=\\s+([0-9.-]+)\\s+energy\\(sigma->0\\) =\\s+([0-9.-]+).*$");
     static QRegularExpression regex_frequency_mode("^\\s*[0-9]+\\s+f(/i)?\\s*=\\s*([0-9eE.+-]+)\\s+THz.*$");
     static QRegularExpression regex_frequency_eigenvector(
@@ -853,8 +867,9 @@ std::vector<std::shared_ptr<Structure>> StructureLoader::load_outcar(const std::
             }
         }
 
-        QRegularExpressionMatch frequency_mode_match = regex_frequency_mode.match(qline);
-        if(frequency_mode_match.hasMatch()) {
+        if(contains_token(line, "THz")) {
+            QRegularExpressionMatch frequency_mode_match = regex_frequency_mode.match(qline);
+            if(frequency_mode_match.hasMatch()) {
             double eigenvalue = frequency_mode_match.captured(2).toDouble();
             if(frequency_mode_match.captured(1) == "/i") {
                 eigenvalue *= -1.0;
@@ -866,6 +881,7 @@ std::vector<std::shared_ptr<Structure>> StructureLoader::load_outcar(const std::
             qDebug() << "Detected frequency mode" << parsed_eigenmodes.size()
                      << "(THz):" << eigenvalue;
             continue;
+            }
         }
 
         /*
@@ -873,16 +889,18 @@ std::vector<std::shared_ptr<Structure>> StructureLoader::load_outcar(const std::
          */
         if(readstate & (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_ELEMENTS) ) {
             // get the elements and put these in an array
-            QRegularExpressionMatch match = regex_vasp_version.match(qline);
-            if (match.hasMatch()) {
+            if(contains_token(line, "vasp.")) {
+                QRegularExpressionMatch match = regex_vasp_version.match(qline);
+                if (match.hasMatch()) {
 
-                vasp_version = match.captured(1).toUInt();
-                unsigned int version_major = match.captured(2).toUInt();
-                unsigned int version_minor = match.captured(3).toUInt();
+                    vasp_version = match.captured(1).toUInt();
+                    unsigned int version_major = match.captured(2).toUInt();
+                    unsigned int version_minor = match.captured(3).toUInt();
 
-                qDebug() << "Detected VASP: " << vasp_version << "." << version_major << "." << version_minor;
+                    qDebug() << "Detected VASP: " << vasp_version << "." << version_major << "." << version_minor;
 
-                continue;
+                    continue;
+                }
             }
         }
 
@@ -890,13 +908,15 @@ std::vector<std::shared_ptr<Structure>> StructureLoader::load_outcar(const std::
          * Collect the elements
          */
         if(readstate & (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_ELEMENTS) ) {
-            QRegularExpressionMatch match = regex_element.match(qline);
-            if (match.hasMatch()) {
-                elements.push_back(match.captured(2).toStdString());
+            if(contains_token(line, "VRHFIN")) {
+                QRegularExpressionMatch match = regex_element.match(qline);
+                if (match.hasMatch()) {
+                    elements.push_back(match.captured(2).toStdString());
 
-                qDebug() << "Captured element:" << match.captured(2);
+                    qDebug() << "Captured element:" << match.captured(2);
 
-                continue;
+                    continue;
+                }
             }
         }
 
@@ -904,27 +924,28 @@ std::vector<std::shared_ptr<Structure>> StructureLoader::load_outcar(const std::
          * Collect the number of ions of each element type
          */
         if(readstate & (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_IONS_PER_ELEMENT) ) {
+            if(contains_token(line, "ions per type")) {
+                QRegularExpressionMatch match = regex_ions_per_element.match(qline);
+                if (match.hasMatch()) {
+                    QString subline = match.captured(2);
+                    QStringList pieces = subline.split(whitespace);
+                    for(unsigned int i=0; i<pieces.size(); i++) {
+                        nr_atoms_per_elm.push_back(pieces[i].toUInt());
+                        nr_atoms += pieces[i].toUInt();
+                    }
 
-            QRegularExpressionMatch match = regex_ions_per_element.match(qline);
-            if (match.hasMatch()) {
-                QString subline = match.captured(2);
-                QStringList pieces = subline.split(whitespace);
-                for(unsigned int i=0; i<pieces.size(); i++) {
-                    nr_atoms_per_elm.push_back(pieces[i].toUInt());
-                    nr_atoms += pieces[i].toUInt();
+                    // remove ions state and elements state
+                    readstate &= ~(1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_ELEMENTS);
+                    readstate &= ~(1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_IONS_PER_ELEMENT);
+                    readstate |= (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_LATTICE_VECTORS);
+
+                    // check if a vasp version has been identified, if not, terminate
+                    if(!(vasp_version == 4 || vasp_version == 5 || vasp_version == 6)) {
+                        throw std::runtime_error("Invalid VASP version encountered: " + QString::number(vasp_version).toStdString());
+                    }
+
+                    continue;
                 }
-
-                // remove ions state and elements state
-                readstate &= ~(1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_ELEMENTS);
-                readstate &= ~(1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_IONS_PER_ELEMENT);
-                readstate |= (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_LATTICE_VECTORS);
-
-                // check if a vasp version has been identified, if not, terminate
-                if(!(vasp_version == 4 || vasp_version == 5 || vasp_version == 6)) {
-                    throw std::runtime_error("Invalid VASP version encountered: " + QString::number(vasp_version).toStdString());
-                }
-
-                continue;
             }
         }
 
@@ -935,24 +956,26 @@ std::vector<std::shared_ptr<Structure>> StructureLoader::load_outcar(const std::
          */
         if(readstate & (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_LATTICE_VECTORS) ) {
             // get the dimensionality of the unit cell
-            QRegularExpressionMatch match = regex_lattice_vectors.match(qline);
-            if (match.hasMatch()) {
+            if(contains_token(line, "direct lattice vectors")) {
+                QRegularExpressionMatch match = regex_lattice_vectors.match(qline);
+                if (match.hasMatch()) {
 
-                // grab next tree lines
-                for(unsigned int i=0; i<3; i++) {
-                    std::getline(infile, line);
-                    QRegularExpressionMatch match2 = regex_grab_numbers.match(QString(line.c_str()));
-                    if (match2.hasMatch()) {
-                        unitcell(i,0) = match2.captured(1).toDouble();
-                        unitcell(i,1) = match2.captured(2).toDouble();
-                        unitcell(i,2) = match2.captured(3).toDouble();
+                    // grab next tree lines
+                    for(unsigned int i=0; i<3; i++) {
+                        std::getline(infile, line);
+                        double x, y, z, d4, d5, d6;
+                        if(parse_six_columns(line, x, y, z, d4, d5, d6)) {
+                            unitcell(i,0) = x;
+                            unitcell(i,1) = y;
+                            unitcell(i,2) = z;
+                        }
                     }
+
+                    readstate &= ~(1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_LATTICE_VECTORS);
+                    readstate |= (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_ATOMS);
+
+                    continue;
                 }
-
-                readstate &= ~(1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_LATTICE_VECTORS);
-                readstate |= (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_ATOMS);
-
-                continue;
             }
         }
 
@@ -960,16 +983,18 @@ std::vector<std::shared_ptr<Structure>> StructureLoader::load_outcar(const std::
          * Collect the energy of the state
          */
         if(readstate & (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_ATOMS) ) {
-            QRegularExpressionMatch match = regex_grab_energy.match(qline);
-            if (match.hasMatch()) {
+            if(contains_token(line, "energy  without entropy=")) {
+                QRegularExpressionMatch match = regex_grab_energy.match(qline);
+                if (match.hasMatch()) {
 
-                energies.push_back(match.captured(2).toDouble());
+                    energies.push_back(match.captured(2).toDouble());
 
-                if(vasp_version == 5) {
-                    nr_states++;
+                    if(vasp_version == 5) {
+                        nr_states++;
+                    }
+
+                    continue;
                 }
-
-                continue;
             }
         }
 
@@ -977,6 +1002,10 @@ std::vector<std::shared_ptr<Structure>> StructureLoader::load_outcar(const std::
          * Collect the atomic positions and forces for this state
          */
         if(readstate & (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_ATOMS) ) {
+
+            if(!contains_token(line, "POSITION")) {
+                continue;
+            }
 
             QRegularExpressionMatch match = regex_atoms.match(qline);
             if (match.hasMatch()) {
@@ -989,14 +1018,8 @@ std::vector<std::shared_ptr<Structure>> StructureLoader::load_outcar(const std::
                 for(unsigned i=0; i<nr_atoms_per_elm.size(); i++) {
                     for(unsigned int j=0; j<nr_atoms_per_elm[i]; j++) {
                         std::getline(infile, line);
-                        QRegularExpressionMatch match2 = regex_grab_numbers.match(QString(line.c_str()));
-                        if (match2.hasMatch()) {
-                            double x = match2.captured(1).toDouble();
-                            double y = match2.captured(2).toDouble();
-                            double z = match2.captured(3).toDouble();
-                            double fx = match2.captured(4).toDouble();
-                            double fy = match2.captured(5).toDouble();
-                            double fz = match2.captured(6).toDouble();
+                        double x, y, z, fx, fy, fz;
+                        if(parse_six_columns(line, x, y, z, fx, fy, fz)) {
 
                             unsigned int atnr = AtomSettings::get().get_atom_elnr(elements[i]);
                             structures.back()->add_atom(atnr, x, y, z, fx, fy, fz);
@@ -1057,6 +1080,189 @@ std::vector<std::shared_ptr<Structure>> StructureLoader::load_outcar(const std::
     }
 
     return structures;
+}
+
+/**
+ * @brief      Load only the final ionic structure from OUTCAR file
+ *
+ * @param[in]  filename  The filename
+ *
+ * @return     Structure
+ */
+std::shared_ptr<Structure> StructureLoader::load_outcar_last(const std::string& filename) {
+    qDebug() << "Loading final ionic step from OUTCAR: " << QString(filename.c_str());
+    std::ifstream infile(filename);
+
+    if(!infile.is_open()) {
+        throw std::runtime_error("Could not open " + filename);
+    }
+
+    unsigned int vasp_version = 0;
+
+    unsigned int readstate = 0;
+    readstate |= (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_ELEMENTS);
+    readstate |= (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_IONS_PER_ELEMENT);
+    readstate |= (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_OPEN);
+
+    unsigned int nr_atoms = 0;
+
+    MatrixUnitcell unitcell = MatrixUnitcell::Zero(3,3);
+    std::vector<std::string> elements;
+    std::vector<unsigned int> nr_atoms_per_elm;
+
+    bool has_energy = false;
+    double last_energy = 0.0;
+
+    std::streampos last_atoms_block_start = std::streampos(-1);
+
+    static QRegularExpression regex_vasp_version("^\\s*vasp.([0-9]).([0-9]+).([0-9]+).*$");
+    static QRegularExpression regex_element("^\\s*(VRHFIN\\s+=)([A-Za-z]+)\\s*:.*$");
+    static QRegularExpression regex_ions_per_element("^\\s*(ions per type =\\s+)([0-9 ]+)\\s*$");
+    static QRegularExpression regex_lattice_vectors("^\\s*direct lattice vectors.*$");
+    static QRegularExpression regex_atoms("^\\s*POSITION.*$");
+    static QRegularExpression regex_grab_energy("^\\s+energy  without entropy=\\s+([0-9.-]+)\\s+energy\\(sigma->0\\) =\\s+([0-9.-]+).*$");
+
+    std::string line;
+    while(true) {
+        const std::streampos line_start = infile.tellg();
+        if(!std::getline(infile, line)) {
+            break;
+        }
+
+        const QString qline(line.c_str());
+
+        if(readstate & (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_ELEMENTS)) {
+            if(contains_token(line, "vasp.")) {
+                QRegularExpressionMatch match = regex_vasp_version.match(qline);
+                if(match.hasMatch()) {
+                    vasp_version = match.captured(1).toUInt();
+                    continue;
+                }
+            }
+        }
+
+        if(readstate & (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_ELEMENTS)) {
+            if(contains_token(line, "VRHFIN")) {
+                QRegularExpressionMatch match = regex_element.match(qline);
+                if(match.hasMatch()) {
+                    elements.push_back(match.captured(2).toStdString());
+                    continue;
+                }
+            }
+        }
+
+        if(readstate & (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_IONS_PER_ELEMENT)) {
+            if(contains_token(line, "ions per type")) {
+                QRegularExpressionMatch match = regex_ions_per_element.match(qline);
+                if(match.hasMatch()) {
+                    QStringList pieces = match.captured(2).split(" ", Qt::SkipEmptyParts);
+                    nr_atoms_per_elm.clear();
+                    nr_atoms = 0;
+
+                    for(unsigned int i=0; i<pieces.size(); i++) {
+                        nr_atoms_per_elm.push_back(pieces[i].toUInt());
+                        nr_atoms += pieces[i].toUInt();
+                    }
+
+                    readstate &= ~(1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_ELEMENTS);
+                    readstate &= ~(1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_IONS_PER_ELEMENT);
+                    readstate |= (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_LATTICE_VECTORS);
+
+                    if(!(vasp_version == 4 || vasp_version == 5 || vasp_version == 6)) {
+                        throw std::runtime_error("Invalid VASP version encountered: " + QString::number(vasp_version).toStdString());
+                    }
+
+                    continue;
+                }
+            }
+        }
+
+        if(readstate & (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_LATTICE_VECTORS)) {
+            if(contains_token(line, "direct lattice vectors")) {
+                QRegularExpressionMatch match = regex_lattice_vectors.match(qline);
+                if(match.hasMatch()) {
+                    for(unsigned int i=0; i<3; i++) {
+                        if(!std::getline(infile, line)) {
+                            throw std::runtime_error("Unexpected end-of-file while reading OUTCAR lattice vectors.");
+                        }
+
+                        double x, y, z, d4, d5, d6;
+                        if(parse_six_columns(line, x, y, z, d4, d5, d6)) {
+                            unitcell(i,0) = x;
+                            unitcell(i,1) = y;
+                            unitcell(i,2) = z;
+                        }
+                    }
+
+                    readstate &= ~(1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_LATTICE_VECTORS);
+                    readstate |= (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_ATOMS);
+
+                    continue;
+                }
+            }
+        }
+
+        if(readstate & (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_ATOMS)) {
+            if(contains_token(line, "energy  without entropy=")) {
+                QRegularExpressionMatch match = regex_grab_energy.match(qline);
+                if(match.hasMatch()) {
+                    last_energy = match.captured(2).toDouble();
+                    has_energy = true;
+                    continue;
+                }
+            }
+        }
+
+        if(readstate & (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_ATOMS)) {
+            if(contains_token(line, "POSITION")) {
+                QRegularExpressionMatch match = regex_atoms.match(qline);
+                if(match.hasMatch()) {
+                    last_atoms_block_start = line_start;
+                }
+            }
+        }
+    }
+
+    if(last_atoms_block_start == std::streampos(-1)) {
+        throw std::runtime_error("OUTCAR does not contain ionic images.");
+    }
+
+    infile.clear();
+    infile.seekg(last_atoms_block_start);
+    if(!infile.good()) {
+        throw std::runtime_error("Failed to seek to final ionic structure in OUTCAR.");
+    }
+
+    if(!std::getline(infile, line) || !regex_atoms.match(QString(line.c_str())).hasMatch()) {
+        throw std::runtime_error("Failed to read final ionic structure header from OUTCAR.");
+    }
+
+    if(!std::getline(infile, line)) {
+        throw std::runtime_error("Unexpected end-of-file before final ionic coordinates.");
+    }
+
+    auto final_structure = std::make_shared<Structure>(unitcell);
+    for(unsigned int i=0; i<nr_atoms_per_elm.size(); i++) {
+        for(unsigned int j=0; j<nr_atoms_per_elm[i]; j++) {
+            if(!std::getline(infile, line)) {
+                throw std::runtime_error("Unexpected end-of-file while reading final ionic coordinates.");
+            }
+
+            double x, y, z, fx, fy, fz;
+            if(!parse_six_columns(line, x, y, z, fx, fy, fz)) {
+                throw std::runtime_error("Invalid atomic position line in final ionic structure.");
+            }
+
+            unsigned int atnr = AtomSettings::get().get_atom_elnr(elements[i]);
+            final_structure->add_atom(atnr, x, y, z, fx, fy, fz);
+        }
+    }
+
+    if(has_energy) {
+        final_structure->set_energy(last_energy);
+    }
+
+    return final_structure;
 }
 
 /**

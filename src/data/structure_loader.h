@@ -65,6 +65,15 @@ public:
     std::vector<std::shared_ptr<Structure>> load_outcar(const std::string& filename);
 
     /**
+     * @brief      Load only the final ionic structure from an OUTCAR file
+     *
+     * @param[in]  filename  The filename
+     *
+     * @return     Last ionic structure
+     */
+    std::shared_ptr<Structure> load_outcar_last(const std::string& filename);
+
+    /**
      * @brief      Load structure + vibrational data from pymkmkit YAML file
      *
      * @param[in]  filename  The filename

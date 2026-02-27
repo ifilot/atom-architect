@@ -72,17 +72,8 @@ bool NebCalculationLoader::load(const QString& root_directory, QString* error_me
         }
 
         try {
-            auto trajectory = structure_loader.load_outcar(outcar_path.toStdString());
-            if(trajectory.empty()) {
-                if(error_message) {
-                    *error_message = QObject::tr("OUTCAR in folder '%1' does not contain ionic images.")
-                                         .arg(image_directories[i].fileName());
-                }
-                structures_.clear();
-                return false;
-            }
-
-            structures_.push_back(trajectory.back());
+            auto final_structure = structure_loader.load_outcar_last(outcar_path.toStdString());
+            structures_.push_back(final_structure);
         } catch (const std::exception& e) {
             if(error_message) {
                 *error_message = QObject::tr("Failed to read OUTCAR in folder '%1': %2")
