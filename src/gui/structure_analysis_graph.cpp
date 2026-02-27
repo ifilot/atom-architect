@@ -1,16 +1,16 @@
-#include "geometry_optimization_graph.h"
+#include "structure_analysis_graph.h"
 
 #include <QVBoxLayout>
 #include <QSignalBlocker>
 #include <QHeaderView>
 
-GeometryOptimizationGraph::GeometryOptimizationGraph(QWidget *parent)
+StructureAnalysisGraph::StructureAnalysisGraph(QWidget *parent)
     : QWidget(parent)
 {
     QVBoxLayout *layout = new QVBoxLayout(this);
     setLayout(layout);
 
-    title = new QLabel("OPTIMIZATION GRAPH", this);
+    title = new QLabel("STRUCTURE ENERGY PROFILE", this);
     title->setStyleSheet("font-weight: bold;");
     layout->addWidget(title);
 
@@ -47,10 +47,11 @@ GeometryOptimizationGraph::GeometryOptimizationGraph(QWidget *parent)
             });
 }
 
-void GeometryOptimizationGraph::set_structures(
-    const std::vector<std::shared_ptr<Structure>>& s)
+void StructureAnalysisGraph::set_structures(const std::vector<std::shared_ptr<Structure>>& s,
+                                            SeriesKind kind)
 {
-    title->setText("OPTIMIZATION GRAPH");
+    series_kind_ = kind;
+    title->setText(series_kind_ == SeriesKind::NEB ? "NEB ENERGY PROFILE" : "OPTIMIZATION GRAPH");
     stack->setCurrentWidget(chartview);
 
     structures = s;
@@ -58,7 +59,7 @@ void GeometryOptimizationGraph::set_structures(
     rebuild_chart();
 }
 
-void GeometryOptimizationGraph::set_frequency_modes(const std::vector<Structure::Eigenmode>& modes)
+void StructureAnalysisGraph::set_frequency_modes(const std::vector<Structure::Eigenmode>& modes)
 {
     title->setText("FREQUENCIES");
     stack->setCurrentWidget(frequency_table);
@@ -85,7 +86,7 @@ void GeometryOptimizationGraph::set_frequency_modes(const std::vector<Structure:
     }
 }
 
-void GeometryOptimizationGraph::set_current_index(size_t idx)
+void StructureAnalysisGraph::set_current_index(size_t idx)
 {
     current_index = idx;
 
@@ -100,13 +101,13 @@ void GeometryOptimizationGraph::set_current_index(size_t idx)
     }
 }
 
-void GeometryOptimizationGraph::rebuild_chart()
+void StructureAnalysisGraph::rebuild_chart()
 {
     chart = new QChart();
     auto *energy = new QLineSeries();
     auto *force = new QLineSeries();
 
-    for (size_t i = 0; i < structures.size(); ++i) {
+    for(size_t i = 0; i < structures.size(); ++i) {
         energy->append(i + 1, structures[i]->get_energy());
         force->append(i + 1, structures[i]->get_rms_force());
     }
@@ -127,20 +128,24 @@ void GeometryOptimizationGraph::rebuild_chart()
     force->attachAxis(axisX);
     force->attachAxis(axisY2);
 
-    axisX->setRange(1, structures.size());
+    axisX->setRange(1, (double)structures.size());
     chartview->setChart(chart);
 
     update_highlight();
 }
 
-void GeometryOptimizationGraph::update_highlight()
+void StructureAnalysisGraph::update_highlight()
 {
-    while (chart->series().size() > 2)
+    if(!chart || structures.empty() || current_index >= structures.size()) {
+        return;
+    }
+
+    while(chart->series().size() > 2) {
         chart->removeSeries(chart->series().last());
+    }
 
     auto *s1 = new QScatterSeries();
-    *s1 << QPointF(current_index + 1,
-                   structures[current_index]->get_energy());
+    *s1 << QPointF(current_index + 1, structures[current_index]->get_energy());
 
     chart->addSeries(s1);
     s1->attachAxis(axisX);

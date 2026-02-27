@@ -8,21 +8,27 @@
 #include "anaglyph_widget.h"
 #include "../data/structure.h"
 
-class GeometryOptimizationViewer : public QWidget {
+class StructureAnalysisViewer : public QWidget {
     Q_OBJECT
 
 public:
     enum class ViewerMode {
-        GEOMETRY_OPTIMIZATION,
+        STRUCTURE_SERIES,
         FREQUENCY
     };
 
-    explicit GeometryOptimizationViewer(QWidget *parent = nullptr);
+    enum class SeriesKind {
+        GEOMETRY_OPTIMIZATION,
+        NEB
+    };
+
+    explicit StructureAnalysisViewer(QWidget *parent = nullptr);
 
     void set_structure(const std::shared_ptr<Structure>& structure);
     void set_structure_conservative(const std::shared_ptr<Structure>& structure);
     void set_index(size_t index, size_t total);
     void set_mode(ViewerMode mode);
+    void set_series_kind(SeriesKind kind);
     void set_header_widget(QWidget *widget);
     void set_side_toolbar(QWidget *widget);
     inline AnaglyphWidget* get_anaglyph_widget() {
@@ -48,6 +54,8 @@ protected:
     void dropEvent(QDropEvent *event) override;
 
 private:
+    void update_title();
+
     AnaglyphWidget *anaglyph_widget;
 
     QPushButton *button_first;
@@ -63,5 +71,6 @@ private:
     QHBoxLayout *header_layout = nullptr;
     QHBoxLayout *viewport_layout = nullptr;
 
-    ViewerMode viewer_mode = ViewerMode::GEOMETRY_OPTIMIZATION;
+    ViewerMode viewer_mode = ViewerMode::STRUCTURE_SERIES;
+    SeriesKind series_kind_ = SeriesKind::GEOMETRY_OPTIMIZATION;
 };

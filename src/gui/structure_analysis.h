@@ -6,20 +6,21 @@
 #include <memory>
 #include <vector>
 
-#include "geometry_optimization_viewer.h"
-#include "geometry_optimization_graph.h"
+#include "structure_analysis_viewer.h"
+#include "structure_analysis_graph.h"
 #include "../data/structure_loader.h"
 
-class AnalysisGeometryOptimization : public QObject {
+class StructureAnalysis : public QObject {
     Q_OBJECT
 
 public:
-    explicit AnalysisGeometryOptimization(QObject *parent = nullptr);
+    explicit StructureAnalysis(QObject *parent = nullptr);
 
-    GeometryOptimizationViewer* viewer() const { return viewer_; }
-    GeometryOptimizationGraph* graph() const { return graph_; }
+    StructureAnalysisViewer* viewer() const { return viewer_; }
+    StructureAnalysisGraph* graph() const { return graph_; }
 
-    void set_structures(const std::vector<std::shared_ptr<Structure>>& structures);
+    void set_structures(const std::vector<std::shared_ptr<Structure>>& structures,
+                        StructureAnalysisViewer::SeriesKind series_kind = StructureAnalysisViewer::SeriesKind::GEOMETRY_OPTIMIZATION);
     void set_frequency_structure(const std::shared_ptr<Structure>& structure);
 
 public slots:
@@ -39,7 +40,7 @@ private slots:
 private:
     enum class AnalysisMode {
         NONE,
-        GEOMETRY_OPTIMIZATION,
+        STRUCTURE_SERIES,
         FREQUENCY
     };
 
@@ -48,10 +49,11 @@ private:
     std::shared_ptr<Structure> build_frequency_frame_structure(size_t mode_index, double phase) const;
 
 private:
-    GeometryOptimizationViewer *viewer_;
-    GeometryOptimizationGraph *graph_;
+    StructureAnalysisViewer *viewer_;
+    StructureAnalysisGraph *graph_;
 
     AnalysisMode mode_ = AnalysisMode::NONE;
+    StructureAnalysisViewer::SeriesKind current_series_kind_ = StructureAnalysisViewer::SeriesKind::GEOMETRY_OPTIMIZATION;
     std::vector<std::shared_ptr<Structure>> structures_;
     std::shared_ptr<Structure> frequency_structure_;
 

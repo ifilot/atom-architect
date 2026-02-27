@@ -39,15 +39,16 @@ add_executable(atom-architect WIN32
     src/gui/toolbar.cpp
     src/gui/user_action.cpp
     src/gui/scene.cpp
-    src/gui/analysis_geometry_optimization.cpp
-    src/gui/geometry_optimization_viewer.cpp
-    src/gui/geometry_optimization_graph.cpp
+    src/gui/structure_analysis.cpp
+    src/gui/structure_analysis_viewer.cpp
+    src/gui/structure_analysis_graph.cpp
     src/gui/analysis_neb.cpp
     src/gui/logwindow.cpp
     src/data/atom_settings.cpp
     src/data/atom.cpp
     src/data/bond.cpp
     src/data/fragment.cpp
+    src/data/neb_calculation_loader.cpp
     src/data/model.cpp
     src/data/model_loader.cpp
     src/data/structure.cpp

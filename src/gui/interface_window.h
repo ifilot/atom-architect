@@ -39,9 +39,10 @@
 #include <QVector>
 
 #include "anaglyph_widget.h"
-#include "analysis_geometry_optimization.h"
+#include "structure_analysis.h"
 #include "mainwindow.h"
 #include "../data/structure_loader.h"
+#include "../data/neb_calculation_loader.h"
 #include "structure_info_widget.h"
 #include "../data/structure_saver.h"
 #include "toolbar.h"
@@ -63,7 +64,7 @@ private:
     QLabel *interaction_label;
     QLabel *selection_label;
     StructureInfoWidget *structure_info_widget;
-    AnalysisGeometryOptimization *geometryOptimization;
+    StructureAnalysis *structureAnalysis;
 
     ToolBarWidget *editor_toolbar;
     ToolBarWidget *analysis_toolbar;
@@ -124,6 +125,7 @@ public slots:
     void open_file(const QString& filename);
     void open_editor_file();
     void open_analysis_file();
+    void open_analysis_neb_calculation();
 
     /**
      * @brief      Saves a file.

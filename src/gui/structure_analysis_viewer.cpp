@@ -1,4 +1,4 @@
-#include "geometry_optimization_viewer.h"
+#include "structure_analysis_viewer.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -11,7 +11,7 @@ namespace {
 constexpr double THZ_TO_WAVENUMBER = 33.35640951981521;
 }
 
-GeometryOptimizationViewer::GeometryOptimizationViewer(QWidget *parent)
+StructureAnalysisViewer::StructureAnalysisViewer(QWidget *parent)
     : QWidget(parent)
 {
     setAcceptDrops(true);
@@ -19,18 +19,16 @@ GeometryOptimizationViewer::GeometryOptimizationViewer(QWidget *parent)
     QVBoxLayout *layout = new QVBoxLayout(this);
     setLayout(layout);
 
-    // ---- Header ----
     QWidget *header = new QWidget(this);
     header_layout = new QHBoxLayout(header);
     header_layout->setContentsMargins(0, 0, 0, 0);
     header_layout->setSpacing(6);
-    label_title = new QLabel("GEOMETRY OPTIMIZATION", header);
+    label_title = new QLabel("STRUCTURE ANALYSIS", header);
     label_title->setStyleSheet("font-weight: bold;");
     header_layout->addWidget(label_title);
     header_layout->addStretch();
     layout->addWidget(header);
 
-    // ---- Anaglyph ----
     QWidget *viewportRow = new QWidget(this);
     viewport_layout = new QHBoxLayout(viewportRow);
     viewport_layout->setContentsMargins(0, 0, 0, 0);
@@ -42,7 +40,6 @@ GeometryOptimizationViewer::GeometryOptimizationViewer(QWidget *parent)
     viewport_layout->addWidget(anaglyph_widget, 1);
     layout->addWidget(viewportRow, 1);
 
-    // ---- Controls ----
     QWidget *controls = new QWidget(this);
     QHBoxLayout *controlsLayout = new QHBoxLayout(controls);
 
@@ -66,14 +63,16 @@ GeometryOptimizationViewer::GeometryOptimizationViewer(QWidget *parent)
 
     layout->addWidget(controls);
 
-    connect(button_first, &QPushButton::clicked, this, &GeometryOptimizationViewer::first_requested);
-    connect(button_previous, &QPushButton::clicked, this, &GeometryOptimizationViewer::prev_requested);
-    connect(button_next, &QPushButton::clicked, this, &GeometryOptimizationViewer::next_requested);
-    connect(button_last, &QPushButton::clicked, this, &GeometryOptimizationViewer::last_requested);
-    connect(button_edit, &QPushButton::clicked, this, &GeometryOptimizationViewer::edit_requested);
+    connect(button_first, &QPushButton::clicked, this, &StructureAnalysisViewer::first_requested);
+    connect(button_previous, &QPushButton::clicked, this, &StructureAnalysisViewer::prev_requested);
+    connect(button_next, &QPushButton::clicked, this, &StructureAnalysisViewer::next_requested);
+    connect(button_last, &QPushButton::clicked, this, &StructureAnalysisViewer::last_requested);
+    connect(button_edit, &QPushButton::clicked, this, &StructureAnalysisViewer::edit_requested);
+
+    update_title();
 }
 
-void GeometryOptimizationViewer::set_header_widget(QWidget *widget)
+void StructureAnalysisViewer::set_header_widget(QWidget *widget)
 {
     if(widget == nullptr || header_layout == nullptr) {
         return;
@@ -83,7 +82,7 @@ void GeometryOptimizationViewer::set_header_widget(QWidget *widget)
     header_layout->insertWidget(0, widget, 0, Qt::AlignLeft);
 }
 
-void GeometryOptimizationViewer::set_side_toolbar(QWidget *widget)
+void StructureAnalysisViewer::set_side_toolbar(QWidget *widget)
 {
     if(widget == nullptr || viewport_layout == nullptr) {
         return;
@@ -93,67 +92,75 @@ void GeometryOptimizationViewer::set_side_toolbar(QWidget *widget)
     viewport_layout->insertWidget(0, widget, 0, Qt::AlignTop);
 }
 
-void GeometryOptimizationViewer::set_structure_conservative(
-    const std::shared_ptr<Structure>& structure)
+void StructureAnalysisViewer::set_structure_conservative(const std::shared_ptr<Structure>& structure)
 {
     anaglyph_widget->set_structure_conservative(structure);
 }
 
-void GeometryOptimizationViewer::set_structure(
-    const std::shared_ptr<Structure>& structure)
+void StructureAnalysisViewer::set_structure(const std::shared_ptr<Structure>& structure)
 {
     anaglyph_widget->set_structure(structure);
 }
 
-void GeometryOptimizationViewer::set_mode(ViewerMode mode)
+void StructureAnalysisViewer::set_mode(ViewerMode mode)
 {
     viewer_mode = mode;
+    update_title();
+}
 
-    if(viewer_mode == ViewerMode::GEOMETRY_OPTIMIZATION) {
-        label_title->setText("GEOMETRY OPTIMIZATION");
-    } else {
+void StructureAnalysisViewer::set_series_kind(SeriesKind kind)
+{
+    series_kind_ = kind;
+    update_title();
+}
+
+void StructureAnalysisViewer::update_title()
+{
+    if(viewer_mode == ViewerMode::FREQUENCY) {
         label_title->setText("FREQUENCY ANALYSIS");
+        return;
     }
-}
 
-void GeometryOptimizationViewer::set_index(size_t index, size_t total)
-{
-    if(viewer_mode == ViewerMode::GEOMETRY_OPTIMIZATION) {
-        label_structure_id->setText(
-            tr("<b>Image:</b> %1 / %2").arg(index + 1).arg(total));
-        label_current_energy->setText(
-            tr("<b>Energy:</b> %1").arg(
-                anaglyph_widget->get_structure()->get_energy(), 0, 'f', 6));
+    if(series_kind_ == SeriesKind::NEB) {
+        label_title->setText("NEB ANALYSIS");
     } else {
-        label_structure_id->setText(
-            tr("<b>Mode:</b> %1 / %2").arg(index + 1).arg(total));
-        const double cm1 = anaglyph_widget->get_structure()->get_energy() * THZ_TO_WAVENUMBER;
-        label_current_energy->setText(
-            tr("<b>Frequency (cm<sup>-1</sup>):</b> %1").arg(cm1, 0, 'f', 2));
+        label_title->setText("GEOMETRY OPTIMIZATION");
     }
 }
 
-// -------------------- Drag & Drop --------------------
+void StructureAnalysisViewer::set_index(size_t index, size_t total)
+{
+    if(viewer_mode == ViewerMode::STRUCTURE_SERIES) {
+        label_structure_id->setText(tr("<b>Image:</b> %1 / %2").arg(index + 1).arg(total));
+        label_current_energy->setText(
+            tr("<b>Energy:</b> %1").arg(anaglyph_widget->get_structure()->get_energy(), 0, 'f', 6));
+    } else {
+        label_structure_id->setText(tr("<b>Mode:</b> %1 / %2").arg(index + 1).arg(total));
+        const double cm1 = anaglyph_widget->get_structure()->get_energy() * THZ_TO_WAVENUMBER;
+        label_current_energy->setText(tr("<b>Frequency (cm<sup>-1</sup>):</b> %1").arg(cm1, 0, 'f', 2));
+    }
+}
 
-void GeometryOptimizationViewer::dragEnterEvent(QDragEnterEvent *event)
+void StructureAnalysisViewer::dragEnterEvent(QDragEnterEvent *event)
 {
     event->acceptProposedAction();
 }
 
-void GeometryOptimizationViewer::dragMoveEvent(QDragMoveEvent *event)
+void StructureAnalysisViewer::dragMoveEvent(QDragMoveEvent *event)
 {
     event->acceptProposedAction();
 }
 
-void GeometryOptimizationViewer::dragLeaveEvent(QDragLeaveEvent *event)
+void StructureAnalysisViewer::dragLeaveEvent(QDragLeaveEvent *event)
 {
     event->accept();
 }
 
-void GeometryOptimizationViewer::dropEvent(QDropEvent *event)
+void StructureAnalysisViewer::dropEvent(QDropEvent *event)
 {
-    if (!event->mimeData()->hasUrls())
+    if (!event->mimeData()->hasUrls()) {
         return;
+    }
 
     for (const QUrl &url : event->mimeData()->urls()) {
         QString path = url.toLocalFile();

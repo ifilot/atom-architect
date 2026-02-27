@@ -1,34 +1,35 @@
-#include "analysis_geometry_optimization.h"
+#include "structure_analysis.h"
 
 #include <cmath>
 
-AnalysisGeometryOptimization::AnalysisGeometryOptimization(QObject *parent)
+StructureAnalysis::StructureAnalysis(QObject *parent)
     : QObject(parent)
 {
-    viewer_ = new GeometryOptimizationViewer();
-    graph_  = new GeometryOptimizationGraph();
+    viewer_ = new StructureAnalysisViewer();
+    graph_  = new StructureAnalysisGraph();
 
-    connect(viewer_, &GeometryOptimizationViewer::first_requested, this, &AnalysisGeometryOptimization::first);
-    connect(viewer_, &GeometryOptimizationViewer::prev_requested, this, &AnalysisGeometryOptimization::prev);
-    connect(viewer_, &GeometryOptimizationViewer::next_requested, this, &AnalysisGeometryOptimization::next);
-    connect(viewer_, &GeometryOptimizationViewer::last_requested, this, &AnalysisGeometryOptimization::last);
-    connect(viewer_, &GeometryOptimizationViewer::file_dropped, this, &AnalysisGeometryOptimization::load_file);
-    connect(graph_, &GeometryOptimizationGraph::frequency_selected,
-            this, &AnalysisGeometryOptimization::select_frequency_mode);
+    connect(viewer_, &StructureAnalysisViewer::first_requested, this, &StructureAnalysis::first);
+    connect(viewer_, &StructureAnalysisViewer::prev_requested, this, &StructureAnalysis::prev);
+    connect(viewer_, &StructureAnalysisViewer::next_requested, this, &StructureAnalysis::next);
+    connect(viewer_, &StructureAnalysisViewer::last_requested, this, &StructureAnalysis::last);
+    connect(viewer_, &StructureAnalysisViewer::file_dropped, this, &StructureAnalysis::load_file);
+    connect(graph_, &StructureAnalysisGraph::frequency_selected,
+            this, &StructureAnalysis::select_frequency_mode);
 
     frequency_animation_timer_.setInterval(40);
     connect(&frequency_animation_timer_, &QTimer::timeout,
-            this, &AnalysisGeometryOptimization::tick_frequency_animation);
+            this, &StructureAnalysis::tick_frequency_animation);
 }
 
-void AnalysisGeometryOptimization::set_structures(
-    const std::vector<std::shared_ptr<Structure>>& s)
+void StructureAnalysis::set_structures(const std::vector<std::shared_ptr<Structure>>& s,
+                                       StructureAnalysisViewer::SeriesKind series_kind)
 {
     if(s.empty()) {
         return;
     }
 
-    mode_ = AnalysisMode::GEOMETRY_OPTIMIZATION;
+    mode_ = AnalysisMode::STRUCTURE_SERIES;
+    current_series_kind_ = series_kind;
     structures_ = s;
     frequency_structure_.reset();
     current_index_ = 0;
@@ -37,14 +38,19 @@ void AnalysisGeometryOptimization::set_structures(
     Structure::set_debug_logging_enabled(true);
 
     graph_->setVisible(true);
-    viewer_->set_mode(GeometryOptimizationViewer::ViewerMode::GEOMETRY_OPTIMIZATION);
-    graph_->set_structures(structures_);
+    viewer_->set_mode(StructureAnalysisViewer::ViewerMode::STRUCTURE_SERIES);
+    viewer_->set_series_kind(series_kind);
+
+    const auto graph_kind = (series_kind == StructureAnalysisViewer::SeriesKind::NEB)
+        ? StructureAnalysisGraph::SeriesKind::NEB
+        : StructureAnalysisGraph::SeriesKind::GEOMETRY_OPTIMIZATION;
+    graph_->set_structures(structures_, graph_kind);
 
     update_current();
     viewer_->set_structure(structures_[current_index_]);
 }
 
-void AnalysisGeometryOptimization::set_frequency_structure(const std::shared_ptr<Structure>& structure)
+void StructureAnalysis::set_frequency_structure(const std::shared_ptr<Structure>& structure)
 {
     if(!structure || structure->get_nr_eigenmodes() == 0) {
         return;
@@ -60,15 +66,15 @@ void AnalysisGeometryOptimization::set_frequency_structure(const std::shared_ptr
     graph_->setVisible(true);
     graph_->set_frequency_modes(frequency_structure_->get_eigenmodes());
     graph_->set_current_index(current_index_);
-    viewer_->set_mode(GeometryOptimizationViewer::ViewerMode::FREQUENCY);
+    viewer_->set_mode(StructureAnalysisViewer::ViewerMode::FREQUENCY);
 
     update_current();
     frequency_animation_timer_.start();
 }
 
-void AnalysisGeometryOptimization::update_current()
+void StructureAnalysis::update_current()
 {
-    if(mode_ == AnalysisMode::GEOMETRY_OPTIMIZATION) {
+    if(mode_ == AnalysisMode::STRUCTURE_SERIES) {
         if(structures_.empty()) {
             return;
         }
@@ -84,7 +90,7 @@ void AnalysisGeometryOptimization::update_current()
     }
 }
 
-void AnalysisGeometryOptimization::update_frequency_mode()
+void StructureAnalysis::update_frequency_mode()
 {
     if(!frequency_structure_) {
         return;
@@ -99,9 +105,8 @@ void AnalysisGeometryOptimization::update_frequency_mode()
     viewer_->set_index(current_index_, frequency_structure_->get_nr_eigenmodes());
 }
 
-std::shared_ptr<Structure> AnalysisGeometryOptimization::build_frequency_frame_structure(
-    size_t mode_index,
-    double phase) const
+std::shared_ptr<Structure> StructureAnalysis::build_frequency_frame_structure(size_t mode_index,
+                                                                              double phase) const
 {
     auto display = std::make_shared<Structure>(frequency_structure_->get_unitcell());
 
@@ -121,9 +126,9 @@ std::shared_ptr<Structure> AnalysisGeometryOptimization::build_frequency_frame_s
     return display;
 }
 
-void AnalysisGeometryOptimization::first()
+void StructureAnalysis::first()
 {
-    if(mode_ == AnalysisMode::GEOMETRY_OPTIMIZATION) {
+    if(mode_ == AnalysisMode::STRUCTURE_SERIES) {
         current_index_ = 0;
     } else if(mode_ == AnalysisMode::FREQUENCY && frequency_structure_) {
         current_index_ = 0;
@@ -136,9 +141,9 @@ void AnalysisGeometryOptimization::first()
     }
 }
 
-void AnalysisGeometryOptimization::prev()
+void StructureAnalysis::prev()
 {
-    if(mode_ == AnalysisMode::GEOMETRY_OPTIMIZATION) {
+    if(mode_ == AnalysisMode::STRUCTURE_SERIES) {
         current_index_ = (current_index_ == 0) ? structures_.size() - 1 : current_index_ - 1;
     } else if(mode_ == AnalysisMode::FREQUENCY && frequency_structure_) {
         const size_t n = frequency_structure_->get_nr_eigenmodes();
@@ -152,9 +157,9 @@ void AnalysisGeometryOptimization::prev()
     }
 }
 
-void AnalysisGeometryOptimization::next()
+void StructureAnalysis::next()
 {
-    if(mode_ == AnalysisMode::GEOMETRY_OPTIMIZATION) {
+    if(mode_ == AnalysisMode::STRUCTURE_SERIES) {
         current_index_ = (current_index_ + 1) % structures_.size();
     } else if(mode_ == AnalysisMode::FREQUENCY && frequency_structure_) {
         const size_t n = frequency_structure_->get_nr_eigenmodes();
@@ -168,9 +173,9 @@ void AnalysisGeometryOptimization::next()
     }
 }
 
-void AnalysisGeometryOptimization::last()
+void StructureAnalysis::last()
 {
-    if(mode_ == AnalysisMode::GEOMETRY_OPTIMIZATION) {
+    if(mode_ == AnalysisMode::STRUCTURE_SERIES) {
         current_index_ = structures_.size() - 1;
     } else if(mode_ == AnalysisMode::FREQUENCY && frequency_structure_) {
         current_index_ = frequency_structure_->get_nr_eigenmodes() - 1;
@@ -183,7 +188,7 @@ void AnalysisGeometryOptimization::last()
     }
 }
 
-void AnalysisGeometryOptimization::tick_frequency_animation()
+void StructureAnalysis::tick_frequency_animation()
 {
     if(mode_ != AnalysisMode::FREQUENCY) {
         return;
@@ -193,7 +198,7 @@ void AnalysisGeometryOptimization::tick_frequency_animation()
     update_frequency_mode();
 }
 
-void AnalysisGeometryOptimization::select_frequency_mode(size_t index)
+void StructureAnalysis::select_frequency_mode(size_t index)
 {
     if(mode_ != AnalysisMode::FREQUENCY || !frequency_structure_) {
         return;
@@ -209,8 +214,7 @@ void AnalysisGeometryOptimization::select_frequency_mode(size_t index)
     update_current();
 }
 
-
-void AnalysisGeometryOptimization::set_camera_align(QAction* action)
+void StructureAnalysis::set_camera_align(QAction* action)
 {
     if(!action || !viewer_ || !viewer_->get_anaglyph_widget()) {
         return;
@@ -219,7 +223,7 @@ void AnalysisGeometryOptimization::set_camera_align(QAction* action)
     viewer_->get_anaglyph_widget()->get_user_action()->set_camera_alignment(action->data().toInt());
 }
 
-void AnalysisGeometryOptimization::set_camera_mode(QAction* action)
+void StructureAnalysis::set_camera_mode(QAction* action)
 {
     if(!action || !viewer_ || !viewer_->get_anaglyph_widget()) {
         return;
@@ -228,7 +232,7 @@ void AnalysisGeometryOptimization::set_camera_mode(QAction* action)
     viewer_->get_anaglyph_widget()->get_user_action()->set_camera_mode(action->data().toInt());
 }
 
-void AnalysisGeometryOptimization::set_stereo(const QString& stereo_name)
+void StructureAnalysis::set_stereo(const QString& stereo_name)
 {
     if(!viewer_ || !viewer_->get_anaglyph_widget()) {
         return;
@@ -237,7 +241,7 @@ void AnalysisGeometryOptimization::set_stereo(const QString& stereo_name)
     viewer_->get_anaglyph_widget()->set_stereo(stereo_name);
 }
 
-void AnalysisGeometryOptimization::load_file(const QString &filename)
+void StructureAnalysis::load_file(const QString &filename)
 {
     StructureLoader sl;
     std::vector<std::shared_ptr<Structure>> loaded;
@@ -258,6 +262,6 @@ void AnalysisGeometryOptimization::load_file(const QString &filename)
     if(loaded.size() == 1 && loaded.front()->get_nr_eigenmodes() > 0) {
         set_frequency_structure(loaded.front());
     } else {
-        set_structures(loaded);
+        set_structures(loaded, StructureAnalysisViewer::SeriesKind::GEOMETRY_OPTIMIZATION);
     }
 }

@@ -36,7 +36,7 @@
 #include <QStringList>
 
 #include "interface_window.h"
-#include "analysis_geometry_optimization.h"
+#include "structure_analysis.h"
 #include "analysis_neb.h"
 #include "logwindow.h"
 

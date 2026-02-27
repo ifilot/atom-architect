@@ -237,8 +237,8 @@ InterfaceWindow::InterfaceWindow(MainWindow *mw)
     // ------------------------------------------------------------
     // Geometry optimization viewer (BOTTOM-LEFT)
     // ------------------------------------------------------------
-    geometryOptimization = new AnalysisGeometryOptimization(this);
-    this->analysis_panel_ = geometryOptimization->viewer();
+    structureAnalysis = new StructureAnalysis(this);
+    this->analysis_panel_ = structureAnalysis->viewer();
 
     QMenuBar *analysisMenuBar = new QMenuBar(this);
     analysisMenuBar->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Fixed);
@@ -273,6 +273,7 @@ InterfaceWindow::InterfaceWindow(MainWindow *mw)
 
     QAction *analysisActionOpen = analysisMenuFile->addAction(tr("Open"));
     analysisActionOpen->setShortcuts(QKeySequence::Open);
+    QAction *analysisActionOpenNeb = analysisMenuFile->addAction(tr("Open NEB calculation"));
     QAction *analysisActionSendToEditor = analysisMenuFile->addAction(tr("Send to editor"));
 
     analysisActionCameraDefault->setText(tr("Default"));
@@ -321,7 +322,7 @@ InterfaceWindow::InterfaceWindow(MainWindow *mw)
     analysisActionProjectionInterlacedCheckerboardLr->setIcon(QIcon(":/assets/icon/interlaced_checkerboard_lr_32.png"));
     analysisActionProjectionInterlacedCheckerboardRl->setIcon(QIcon(":/assets/icon/interlaced_checkerboard_rl_32.png"));
 
-    for(QAction *action : {analysisActionOpen, analysisActionSendToEditor,
+    for(QAction *action : {analysisActionOpen, analysisActionOpenNeb, analysisActionSendToEditor,
                            analysisActionCameraDefault, analysisActionCameraTop, analysisActionCameraBottom,
                            analysisActionCameraLeft, analysisActionCameraRight, analysisActionCameraFront,
                            analysisActionCameraBack, analysisActionCameraPerspective, analysisActionCameraOrthographic,
@@ -356,13 +357,13 @@ InterfaceWindow::InterfaceWindow(MainWindow *mw)
     analysisMenuProjectionInterlaced->addAction(analysisActionProjectionInterlacedCheckerboardLr);
     analysisMenuProjectionInterlaced->addAction(analysisActionProjectionInterlacedCheckerboardRl);
 
-    geometryOptimization->viewer()->set_header_widget(analysisMenuBar);
+    structureAnalysis->viewer()->set_header_widget(analysisMenuBar);
 
-    analysis_toolbar = new ToolBarWidget(geometryOptimization->viewer(), false);
+    analysis_toolbar = new ToolBarWidget(structureAnalysis->viewer(), false);
     analysis_toolbar->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
-    geometryOptimization->viewer()->set_side_toolbar(analysis_toolbar);
+    structureAnalysis->viewer()->set_side_toolbar(analysis_toolbar);
 
-    leftSplitter->addWidget(geometryOptimization->viewer());
+    leftSplitter->addWidget(structureAnalysis->viewer());
 
     // ============================================================
     // RIGHT COLUMN (Structure info + Optimization graph)
@@ -383,7 +384,7 @@ InterfaceWindow::InterfaceWindow(MainWindow *mw)
     // ------------------------------------------------------------
     // Optimization graph (BOTTOM-RIGHT)
     // ------------------------------------------------------------
-    rightSplitter->addWidget(geometryOptimization->graph());
+    rightSplitter->addWidget(structureAnalysis->graph());
 
     // ============================================================
     // Initial 50/50/50/50 layout (relative to MainWindow size)
@@ -422,12 +423,12 @@ InterfaceWindow::InterfaceWindow(MainWindow *mw)
 
     connect(analysis_toolbar->get_action("toggle_periodicity_xy"),
             SIGNAL(triggered()),
-            geometryOptimization->viewer()->get_anaglyph_widget(),
+            structureAnalysis->viewer()->get_anaglyph_widget(),
             SLOT(toggle_periodicity_xy()));
 
     connect(analysis_toolbar->get_action("toggle_periodicity_z"),
             SIGNAL(triggered()),
-            geometryOptimization->viewer()->get_anaglyph_widget(),
+            structureAnalysis->viewer()->get_anaglyph_widget(),
             SLOT(toggle_periodicity_z()));
 
     connect(anaglyph_widget, SIGNAL(signal_interaction_message(const QString&)),
@@ -449,12 +450,13 @@ InterfaceWindow::InterfaceWindow(MainWindow *mw)
             anaglyph_widget->get_user_action().get(),
             SLOT(set_fragment(const Fragment&)));
 
-    connect(geometryOptimization->viewer(), SIGNAL(edit_requested()),
+    connect(structureAnalysis->viewer(), SIGNAL(edit_requested()),
             this, SLOT(load_structure_from_geometry_analysis()));
 
     connect(editorActionOpen, &QAction::triggered, this, &InterfaceWindow::open_editor_file);
     connect(editorActionSave, &QAction::triggered, this, &InterfaceWindow::save_editor_file);
     connect(analysisActionOpen, &QAction::triggered, this, &InterfaceWindow::open_analysis_file);
+    connect(analysisActionOpenNeb, &QAction::triggered, this, &InterfaceWindow::open_analysis_neb_calculation);
     connect(analysisActionSendToEditor, &QAction::triggered, this, &InterfaceWindow::load_structure_from_geometry_analysis);
 
     connect(editorActionSelectAll, SIGNAL(triggered()), this, SLOT(select_all_atoms()));
@@ -474,16 +476,16 @@ InterfaceWindow::InterfaceWindow(MainWindow *mw)
     connect(editorActionProjectionInterlacedCheckerboardLr, &QAction::triggered, this, [this]{ this->anaglyph_widget->set_stereo("stereo_interlaced_checkerboard_lr"); });
     connect(editorActionProjectionInterlacedCheckerboardRl, &QAction::triggered, this, [this]{ this->anaglyph_widget->set_stereo("stereo_interlaced_checkerboard_rl"); });
 
-    connect(analysisMenuCameraAlign, SIGNAL(triggered(QAction*)), geometryOptimization, SLOT(set_camera_align(QAction*)));
-    connect(analysisMenuCameraMode, SIGNAL(triggered(QAction*)), geometryOptimization, SLOT(set_camera_mode(QAction*)));
-    connect(analysisActionProjectionTwoDimensional, &QAction::triggered, this, [this]{ this->geometryOptimization->set_stereo("no_stereo_flat"); });
-    connect(analysisActionProjectionAnaglyphRedCyan, &QAction::triggered, this, [this]{ this->geometryOptimization->set_stereo("stereo_anaglyph_red_cyan"); });
-    connect(analysisActionProjectionInterlacedRowsLr, &QAction::triggered, this, [this]{ this->geometryOptimization->set_stereo("stereo_interlaced_rows_lr"); });
-    connect(analysisActionProjectionInterlacedRowsRl, &QAction::triggered, this, [this]{ this->geometryOptimization->set_stereo("stereo_interlaced_rows_rl"); });
-    connect(analysisActionProjectionInterlacedColumnsLr, &QAction::triggered, this, [this]{ this->geometryOptimization->set_stereo("stereo_interlaced_columns_lr"); });
-    connect(analysisActionProjectionInterlacedColumnsRl, &QAction::triggered, this, [this]{ this->geometryOptimization->set_stereo("stereo_interlaced_columns_rl"); });
-    connect(analysisActionProjectionInterlacedCheckerboardLr, &QAction::triggered, this, [this]{ this->geometryOptimization->set_stereo("stereo_interlaced_checkerboard_lr"); });
-    connect(analysisActionProjectionInterlacedCheckerboardRl, &QAction::triggered, this, [this]{ this->geometryOptimization->set_stereo("stereo_interlaced_checkerboard_rl"); });
+    connect(analysisMenuCameraAlign, SIGNAL(triggered(QAction*)), structureAnalysis, SLOT(set_camera_align(QAction*)));
+    connect(analysisMenuCameraMode, SIGNAL(triggered(QAction*)), structureAnalysis, SLOT(set_camera_mode(QAction*)));
+    connect(analysisActionProjectionTwoDimensional, &QAction::triggered, this, [this]{ this->structureAnalysis->set_stereo("no_stereo_flat"); });
+    connect(analysisActionProjectionAnaglyphRedCyan, &QAction::triggered, this, [this]{ this->structureAnalysis->set_stereo("stereo_anaglyph_red_cyan"); });
+    connect(analysisActionProjectionInterlacedRowsLr, &QAction::triggered, this, [this]{ this->structureAnalysis->set_stereo("stereo_interlaced_rows_lr"); });
+    connect(analysisActionProjectionInterlacedRowsRl, &QAction::triggered, this, [this]{ this->structureAnalysis->set_stereo("stereo_interlaced_rows_rl"); });
+    connect(analysisActionProjectionInterlacedColumnsLr, &QAction::triggered, this, [this]{ this->structureAnalysis->set_stereo("stereo_interlaced_columns_lr"); });
+    connect(analysisActionProjectionInterlacedColumnsRl, &QAction::triggered, this, [this]{ this->structureAnalysis->set_stereo("stereo_interlaced_columns_rl"); });
+    connect(analysisActionProjectionInterlacedCheckerboardLr, &QAction::triggered, this, [this]{ this->structureAnalysis->set_stereo("stereo_interlaced_checkerboard_lr"); });
+    connect(analysisActionProjectionInterlacedCheckerboardRl, &QAction::triggered, this, [this]{ this->structureAnalysis->set_stereo("stereo_interlaced_checkerboard_rl"); });
 
     this->active_panel_timer_ = new QTimer(this);
     this->active_panel_timer_->setInterval(40);
@@ -543,8 +545,8 @@ void InterfaceWindow::set_active_panel(bool editor_active)
         this->anaglyph_widget->set_active_highlight(editor_active);
     }
 
-    if(this->geometryOptimization != nullptr && this->geometryOptimization->viewer() != nullptr) {
-        auto *analysisAnaglyph = this->geometryOptimization->viewer()->get_anaglyph_widget();
+    if(this->structureAnalysis != nullptr && this->structureAnalysis->viewer() != nullptr) {
+        auto *analysisAnaglyph = this->structureAnalysis->viewer()->get_anaglyph_widget();
         if(analysisAnaglyph != nullptr) {
             analysisAnaglyph->set_active_highlight(!editor_active);
         }
@@ -627,7 +629,7 @@ void InterfaceWindow::open_file(const QString& filename)
 
         // ---- Update analysis panels ----
         if (structures.size() == 1 && structures.front()->get_nr_eigenmodes() > 0) {
-            geometryOptimization->set_frequency_structure(structures.front()->clone_for_view());
+            structureAnalysis->set_frequency_structure(structures.front()->clone_for_view());
         } else {
             std::vector<std::shared_ptr<Structure>> geometry_structures;
             geometry_structures.reserve(structures.size());
@@ -636,7 +638,7 @@ void InterfaceWindow::open_file(const QString& filename)
                 geometry_structures.push_back(s->clone_for_view());
             }
 
-            geometryOptimization->set_structures(geometry_structures);
+            structureAnalysis->set_structures(geometry_structures);
         }
 
         // ---- Also sync editor + info to first structure ----
@@ -717,7 +719,44 @@ void InterfaceWindow::open_analysis_file()
         return;
     }
 
-    geometryOptimization->load_file(filename);
+    structureAnalysis->load_file(filename);
+}
+
+void InterfaceWindow::open_analysis_neb_calculation()
+{
+    const QString folder = QFileDialog::getExistingDirectory(
+        this,
+        tr("Open NEB calculation"),
+        QString(),
+        QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks
+    );
+
+    if(folder.isEmpty()) {
+        return;
+    }
+
+    NebCalculationLoader neb_loader;
+    QString error_message;
+    if(!neb_loader.load(folder, &error_message)) {
+        QMessageBox message_box(this);
+        message_box.setIcon(QMessageBox::Critical);
+        message_box.setWindowTitle(tr("Could not open NEB calculation"));
+        message_box.setText(tr("The selected folder is not a valid VASP NEB calculation."));
+        message_box.setInformativeText(error_message);
+        message_box.setStyleSheet("QLabel{min-width: 420px; font-weight: normal;}");
+        message_box.exec();
+        return;
+    }
+
+    std::vector<std::shared_ptr<Structure>> geometry_structures;
+    const auto& loaded_structures = neb_loader.structures();
+    geometry_structures.reserve(loaded_structures.size());
+
+    for(const auto& structure : loaded_structures) {
+        geometry_structures.push_back(structure->clone_for_view());
+    }
+
+    structureAnalysis->set_structures(geometry_structures, StructureAnalysisViewer::SeriesKind::NEB);
 }
 
 void InterfaceWindow::save_editor_file()
@@ -915,6 +954,6 @@ void InterfaceWindow::decrement_structure_stack_pointer() {
  */
 void InterfaceWindow::load_structure_from_geometry_analysis() {
     this->anaglyph_widget->set_structure(
-        this->geometryOptimization->viewer()->get_anaglyph_widget()->get_structure()->clone_for_view()
+        this->structureAnalysis->viewer()->get_anaglyph_widget()->get_structure()->clone_for_view()
     );
 }
