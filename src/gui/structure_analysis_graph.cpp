@@ -152,6 +152,22 @@ void StructureAnalysisGraph::rebuild_chart()
     auto *energy = new QLineSeries();
     auto *force = new QLineSeries();
 
+    const QColor energy_color(0x37, 0x7e, 0xb8);
+    const QColor force_color(0x4d, 0xaf, 0x4a);
+
+    QPen energy_pen(energy_color);
+    energy_pen.setWidth(2);
+    energy->setPen(energy_pen);
+
+    QPen force_pen(force_color);
+    force_pen.setWidth(2);
+    force->setPen(force_pen);
+
+    if(series_kind_ == SeriesKind::NEB) {
+        energy->setPointsVisible(true);
+        energy->setPointLabelsVisible(false);
+    }
+
     for(size_t i = 0; i < structures.size(); ++i) {
         energy->append(i + 1, structures[i]->get_energy());
         force->append(i + 1, structures[i]->get_rms_force());
@@ -164,6 +180,20 @@ void StructureAnalysisGraph::rebuild_chart()
     axisY = new QValueAxis();
     axisY2 = new QValueAxis();
 
+    axisX->setTitleText(tr("Frame number"));
+    axisX->setLabelFormat("%.0f");
+    axisX->setTickType(QValueAxis::TicksDynamic);
+    axisX->setTickAnchor(1.0);
+    axisX->setTickInterval(1.0);
+
+    axisY->setTitleText(tr("Energy (eV)"));
+    axisY->setLabelsColor(energy_color);
+    axisY->setLinePenColor(energy_color);
+
+    axisY2->setTitleText(tr("Force (eV/Å)"));
+    axisY2->setLabelsColor(force_color);
+    axisY2->setLinePenColor(force_color);
+
     chart->addAxis(axisX, Qt::AlignBottom);
     chart->addAxis(axisY, Qt::AlignLeft);
     chart->addAxis(axisY2, Qt::AlignRight);
@@ -174,6 +204,7 @@ void StructureAnalysisGraph::rebuild_chart()
     force->attachAxis(axisY2);
 
     axisX->setRange(1, (double)structures.size());
+    chart->legend()->setVisible(true);
     chartview->setChart(chart);
 
     update_highlight();
@@ -193,10 +224,29 @@ void StructureAnalysisGraph::update_highlight()
         chart->removeSeries(chart->series().last());
     }
 
+    auto *energy = qobject_cast<QLineSeries*>(chart->series()[0]);
+    auto *force = qobject_cast<QLineSeries*>(chart->series()[1]);
+
+    if(energy) {
+        energy->setName(tr("Energy: %1 eV").arg(structures[current_index]->get_energy(), 0, 'f', 4));
+    }
+
+    if(force) {
+        force->setName(tr("Force: %1 eV/Å").arg(structures[current_index]->get_rms_force(), 0, 'f', 4));
+    }
+
     auto *s1 = new QScatterSeries();
+    s1->setColor(QColor(0xff, 0x66, 0x00));
+    s1->setMarkerSize(10.0);
+    s1->setName(QString());
     *s1 << QPointF(current_index + 1, structures[current_index]->get_energy());
 
     chart->addSeries(s1);
     s1->attachAxis(axisX);
     s1->attachAxis(axisY);
+
+    const auto markers = chart->legend()->markers(s1);
+    if(!markers.isEmpty()) {
+        markers[0]->setVisible(false);
+    }
 }
