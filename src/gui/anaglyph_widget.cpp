@@ -21,6 +21,7 @@
 #include "anaglyph_widget.h"
 
 #include <QAction>
+#include <algorithm>
 #include <QMenu>
 #include <QOpenGLContext>
 #include <QTimer>
@@ -251,7 +252,11 @@ void AnaglyphWidget::set_structure(const std::shared_ptr<Structure>& s)
 
     VectorPosition z = VectorPosition::Ones(3);
     auto p = structure->get_unitcell() * z * 1.5;
-    scene->camera_position = QVector3D(0.0f, -p.norm(), 0.0f);
+    default_camera_distance_ = std::max(5.0f, static_cast<float>(p.norm()));
+    scene->camera_position = QVector3D(0.0f, -default_camera_distance_, 0.0f);
+    view_pan_translation_ = QVector3D(0.0f, 0.0f, 0.0f);
+    scene->camera_mode = CameraMode::PERSPECTIVE;
+    reset_matrices();
 
     update();
 }
@@ -378,6 +383,11 @@ void AnaglyphWidget::mousePressEvent(QMouseEvent* event)
             QVector3D ray_direction;
             scene->calculate_ray(event->pos(), &ray_origin, &ray_direction);
 
+            // Panning translates the camera in world space while keeping
+            // orientation fixed, so the ray origin must include the same
+            // world-space pan translation used for rendering.
+            ray_origin += view_pan_translation_;
+
             const int selected_atom = get_atom_raycast(ray_origin, ray_direction);
             if (selected_atom != -1) {
                 structure->select_atom(selected_atom);
@@ -396,6 +406,11 @@ void AnaglyphWidget::mousePressEvent(QMouseEvent* event)
         }
 #endif
     }
+
+    if (event->buttons() & Qt::MiddleButton) {
+        middle_mouse_pan_flag = true;
+        pan_last_pos = event->pos();
+    }
 }
 
 /**
@@ -411,6 +426,10 @@ void AnaglyphWidget::mouseReleaseEvent(QMouseEvent* event)
 
         scene->arcball_rotation.setToIdentity();
         arcball_rotation_flag = false;
+    }
+
+    if (middle_mouse_pan_flag && !(event->buttons() & Qt::MiddleButton)) {
+        middle_mouse_pan_flag = false;
     }
 }
 
@@ -431,6 +450,30 @@ void AnaglyphWidget::mouseMoveEvent(QMouseEvent* event)
     user_action->update(logicalPos, dpr);
 
     setFocus(Qt::MouseFocusReason);
+
+    if (middle_mouse_pan_flag) {
+        const QPoint current_pos = event->pos();
+        const QPoint delta = current_pos - pan_last_pos;
+        pan_last_pos = current_pos;
+
+        const QVector3D eye = scene->camera_position + view_pan_translation_;
+        const QVector3D center = QVector3D(0.0f, 1.0f, 0.0f) + view_pan_translation_;
+        const QVector3D forward = (center - eye).normalized();
+
+        QVector3D up_world(0.0f, 0.0f, 1.0f);
+        QVector3D right = QVector3D::crossProduct(forward, up_world);
+        if (right.lengthSquared() < 1e-8f) {
+            right = QVector3D(1.0f, 0.0f, 0.0f);
+        } else {
+            right.normalize();
+        }
+        const QVector3D up_plane = QVector3D::crossProduct(right, forward).normalized();
+
+        const float pan_speed = std::max(0.002f, -scene->camera_position[1] * 0.0015f);
+        view_pan_translation_ += (-float(delta.x()) * pan_speed) * right;
+        view_pan_translation_ += ( float(delta.y()) * pan_speed) * up_plane;
+        update();
+    }
 
     if (!arcball_rotation_flag) {
         return;
@@ -534,6 +577,27 @@ void AnaglyphWidget::wheelEvent(QWheelEvent* event)
 void AnaglyphWidget::window_move_event()
 {
     top_left = mapToGlobal(QPoint(0, 0));
+    update();
+}
+
+/**
+ * @brief reset_view.
+ *
+ */
+void AnaglyphWidget::reset_view()
+{
+    view_pan_translation_ = QVector3D(0.0f, 0.0f, 0.0f);
+    scene->camera_position = QVector3D(0.0f, -default_camera_distance_, 0.0f);
+    scene->camera_mode = CameraMode::PERSPECTIVE;
+
+    const float w = float(scene->canvas_width);
+    const float h = float(scene->canvas_height);
+    if (h > 0.0f) {
+        scene->projection.setToIdentity();
+        scene->projection.perspective(45.0f, w / h, 0.01f, 1000.0f);
+    }
+
+    reset_matrices();
     update();
 }
 
@@ -800,9 +864,10 @@ void AnaglyphWidget::paint_regular()
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
     // View matrix
-    const QVector3D lookat(0.0f, 1.0f, 0.0f);
+    const QVector3D eye = scene->camera_position + view_pan_translation_;
+    const QVector3D lookat = QVector3D(0.0f, 1.0f, 0.0f) + view_pan_translation_;
     scene->view.setToIdentity();
-    scene->view.lookAt(scene->camera_position, lookat, QVector3D(0.0f, 0.0f, 1.0f));
+    scene->view.lookAt(eye, lookat, QVector3D(0.0f, 0.0f, 1.0f));
 
     // ============================================================
     // SILHOUETTE PASS (MSAA)
@@ -889,7 +954,8 @@ void AnaglyphWidget::paint_stereographic()
     const QColor bg = viewportBackgroundColor(active_highlight_);
     glClearColor(bg.redF(), bg.greenF(), bg.blueF(), 1.0f);
 
-    const QVector3D lookat(0.0f, 1.0f, 0.0f);
+    const QVector3D eye_center = scene->camera_position + view_pan_translation_;
+    const QVector3D lookat = QVector3D(0.0f, 1.0f, 0.0f) + view_pan_translation_;
     const float dist = 1.0f - scene->camera_position[1];
     const float eye_sep = dist / 30.0f;
 
@@ -897,7 +963,7 @@ void AnaglyphWidget::paint_stereographic()
     // LEFT SILHOUETTE (MSAA)
     // ------------------------------------------------------------
     scene->view.setToIdentity();
-    scene->view.lookAt(scene->camera_position - QVector3D(eye_sep / 2.0f, 0, 0),
+    scene->view.lookAt(eye_center - QVector3D(eye_sep / 2.0f, 0, 0),
                        lookat, QVector3D(0, 0, 1));
 
     glBindFramebuffer(GL_FRAMEBUFFER, msaa_fbo[FrameBuffer::SILHOUETTE_LEFT]);
@@ -916,7 +982,7 @@ void AnaglyphWidget::paint_stereographic()
     // RIGHT SILHOUETTE (MSAA)
     // ------------------------------------------------------------
     scene->view.setToIdentity();
-    scene->view.lookAt(scene->camera_position + QVector3D(eye_sep / 2.0f, 0, 0),
+    scene->view.lookAt(eye_center + QVector3D(eye_sep / 2.0f, 0, 0),
                        lookat, QVector3D(0, 0, 1));
 
     glBindFramebuffer(GL_FRAMEBUFFER, msaa_fbo[FrameBuffer::SILHOUETTE_RIGHT]);
@@ -935,7 +1001,7 @@ void AnaglyphWidget::paint_stereographic()
     // LEFT STRUCTURE (MSAA)
     // ------------------------------------------------------------
     scene->view.setToIdentity();
-    scene->view.lookAt(scene->camera_position - QVector3D(eye_sep / 2.0f, 0, 0),
+    scene->view.lookAt(eye_center - QVector3D(eye_sep / 2.0f, 0, 0),
                        lookat, QVector3D(0, 0, 1));
 
     glBindFramebuffer(GL_FRAMEBUFFER, msaa_fbo[FrameBuffer::STRUCTURE_LEFT]);
@@ -952,7 +1018,7 @@ void AnaglyphWidget::paint_stereographic()
     // RIGHT STRUCTURE (MSAA)
     // ------------------------------------------------------------
     scene->view.setToIdentity();
-    scene->view.lookAt(scene->camera_position + QVector3D(eye_sep / 2.0f, 0, 0),
+    scene->view.lookAt(eye_center + QVector3D(eye_sep / 2.0f, 0, 0),
                        lookat, QVector3D(0, 0, 1));
 
     glBindFramebuffer(GL_FRAMEBUFFER, msaa_fbo[FrameBuffer::STRUCTURE_RIGHT]);

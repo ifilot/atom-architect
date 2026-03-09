@@ -100,6 +100,10 @@ private:
 
     // used for arcball rotation
     bool arcball_rotation_flag = false;             // whether arcball rotation is active
+    bool middle_mouse_pan_flag = false;             // whether middle-mouse panning is active
+    QPoint pan_last_pos;                            // previous mouse position during panning
+    QVector3D view_pan_translation_ = QVector3D(0.0f, 0.0f, 0.0f); // world-space camera-plane pan
+    float default_camera_distance_ = 10.0f;         // default camera distance used by reset
 
     QOpenGLVertexArrayObject vao;
     QOpenGLBuffer vbo[4];
@@ -232,6 +236,11 @@ public slots:
      * @brief      Clean the anaglyph class
      */
     void cleanup();
+
+    /**
+     * @brief      Reset view orientation, pan and zoom to default values.
+     */
+    void reset_view();
 
     /**
      * @brief      Toggle showing periodicity in xy direction

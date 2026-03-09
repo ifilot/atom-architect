@@ -113,6 +113,7 @@ InterfaceWindow::InterfaceWindow(MainWindow *mw)
     QMenu *editorMenuCameraMode = new QMenu(tr("Mode"), editorMenuCamera);
     QAction *editorActionCameraPerspective = new QAction(editorMenuCameraMode);
     QAction *editorActionCameraOrthographic = new QAction(editorMenuCameraMode);
+    QAction *editorActionResetView = new QAction(editorMenuView);
 
     QMenu *editorMenuProjection = new QMenu(tr("Projection"), editorMenuView);
     QAction *editorActionProjectionTwoDimensional = new QAction(editorMenuProjection);
@@ -152,6 +153,8 @@ InterfaceWindow::InterfaceWindow(MainWindow *mw)
     editorActionCameraOrthographic->setText(tr("Orthographic"));
     editorActionCameraOrthographic->setData(QVariant((int)CameraMode::ORTHOGRAPHIC));
     editorActionCameraOrthographic->setShortcut(Qt::CTRL | Qt::Key_5);
+    editorActionResetView->setText(tr("Reset view"));
+    editorActionResetView->setShortcut(Qt::CTRL | Qt::Key_0);
 
     editorActionProjectionTwoDimensional->setText(tr("Two-dimensional"));
     editorActionProjectionAnaglyphRedCyan->setText(tr("Anaglyph (red/cyan)"));
@@ -176,7 +179,7 @@ InterfaceWindow::InterfaceWindow(MainWindow *mw)
                            editorActionSetFrozen, editorActionSetUnfrozen, editorActionCameraDefault,
                            editorActionCameraTop, editorActionCameraBottom, editorActionCameraLeft,
                            editorActionCameraRight, editorActionCameraFront, editorActionCameraBack,
-                           editorActionCameraPerspective, editorActionCameraOrthographic,
+                           editorActionCameraPerspective, editorActionCameraOrthographic, editorActionResetView,
                            editorActionProjectionTwoDimensional, editorActionProjectionAnaglyphRedCyan,
                            editorActionProjectionInterlacedRowsLr, editorActionProjectionInterlacedRowsRl,
                            editorActionProjectionInterlacedColumnsLr, editorActionProjectionInterlacedColumnsRl,
@@ -187,6 +190,8 @@ InterfaceWindow::InterfaceWindow(MainWindow *mw)
 
     editorMenuView->addMenu(editorMenuProjection);
     editorMenuView->addMenu(editorMenuCamera);
+    editorMenuView->addSeparator();
+    editorMenuView->addAction(editorActionResetView);
     editorMenuCamera->addMenu(editorMenuCameraAlign);
     editorMenuCameraAlign->addAction(editorActionCameraDefault);
     editorMenuCameraAlign->addAction(editorActionCameraTop);
@@ -263,6 +268,7 @@ InterfaceWindow::InterfaceWindow(MainWindow *mw)
     QMenu *analysisMenuCameraMode = new QMenu(tr("Mode"), analysisMenuCamera);
     QAction *analysisActionCameraPerspective = new QAction(analysisMenuCameraMode);
     QAction *analysisActionCameraOrthographic = new QAction(analysisMenuCameraMode);
+    QAction *analysisActionResetView = new QAction(analysisMenuView);
 
     QMenu *analysisMenuProjection = new QMenu(tr("Projection"), analysisMenuView);
     QAction *analysisActionProjectionTwoDimensional = new QAction(analysisMenuProjection);
@@ -307,6 +313,8 @@ InterfaceWindow::InterfaceWindow(MainWindow *mw)
     analysisActionCameraOrthographic->setText(tr("Orthographic"));
     analysisActionCameraOrthographic->setData(QVariant((int)CameraMode::ORTHOGRAPHIC));
     analysisActionCameraOrthographic->setShortcut(Qt::CTRL | Qt::Key_5);
+    analysisActionResetView->setText(tr("Reset view"));
+    analysisActionResetView->setShortcut(Qt::CTRL | Qt::Key_0);
 
     analysisActionProjectionTwoDimensional->setText(tr("Two-dimensional"));
     analysisActionProjectionAnaglyphRedCyan->setText(tr("Anaglyph (red/cyan)"));
@@ -330,6 +338,7 @@ InterfaceWindow::InterfaceWindow(MainWindow *mw)
                            analysisActionCameraDefault, analysisActionCameraTop, analysisActionCameraBottom,
                            analysisActionCameraLeft, analysisActionCameraRight, analysisActionCameraFront,
                            analysisActionCameraBack, analysisActionCameraPerspective, analysisActionCameraOrthographic,
+                           analysisActionResetView,
                            analysisActionProjectionTwoDimensional, analysisActionProjectionAnaglyphRedCyan,
                            analysisActionProjectionInterlacedRowsLr, analysisActionProjectionInterlacedRowsRl,
                            analysisActionProjectionInterlacedColumnsLr, analysisActionProjectionInterlacedColumnsRl,
@@ -340,6 +349,8 @@ InterfaceWindow::InterfaceWindow(MainWindow *mw)
 
     analysisMenuView->addMenu(analysisMenuProjection);
     analysisMenuView->addMenu(analysisMenuCamera);
+    analysisMenuView->addSeparator();
+    analysisMenuView->addAction(analysisActionResetView);
     analysisMenuCamera->addMenu(analysisMenuCameraAlign);
     analysisMenuCameraAlign->addAction(analysisActionCameraDefault);
     analysisMenuCameraAlign->addAction(analysisActionCameraTop);
@@ -497,6 +508,7 @@ InterfaceWindow::InterfaceWindow(MainWindow *mw)
     connect(editorActionProjectionInterlacedColumnsRl, &QAction::triggered, this, [this]{ this->anaglyph_widget->set_stereo("stereo_interlaced_columns_rl"); });
     connect(editorActionProjectionInterlacedCheckerboardLr, &QAction::triggered, this, [this]{ this->anaglyph_widget->set_stereo("stereo_interlaced_checkerboard_lr"); });
     connect(editorActionProjectionInterlacedCheckerboardRl, &QAction::triggered, this, [this]{ this->anaglyph_widget->set_stereo("stereo_interlaced_checkerboard_rl"); });
+    connect(editorActionResetView, &QAction::triggered, anaglyph_widget, &AnaglyphWidget::reset_view);
 
     connect(analysisMenuCameraAlign, SIGNAL(triggered(QAction*)), structureAnalysis, SLOT(set_camera_align(QAction*)));
     connect(analysisMenuCameraMode, SIGNAL(triggered(QAction*)), structureAnalysis, SLOT(set_camera_mode(QAction*)));
@@ -508,6 +520,8 @@ InterfaceWindow::InterfaceWindow(MainWindow *mw)
     connect(analysisActionProjectionInterlacedColumnsRl, &QAction::triggered, this, [this]{ this->structureAnalysis->set_stereo("stereo_interlaced_columns_rl"); });
     connect(analysisActionProjectionInterlacedCheckerboardLr, &QAction::triggered, this, [this]{ this->structureAnalysis->set_stereo("stereo_interlaced_checkerboard_lr"); });
     connect(analysisActionProjectionInterlacedCheckerboardRl, &QAction::triggered, this, [this]{ this->structureAnalysis->set_stereo("stereo_interlaced_checkerboard_rl"); });
+    connect(analysisActionResetView, &QAction::triggered,
+            structureAnalysis->viewer()->get_anaglyph_widget(), &AnaglyphWidget::reset_view);
 
     this->active_panel_timer_ = new QTimer(this);
     this->active_panel_timer_->setInterval(40);
