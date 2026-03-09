@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -20,17 +20,21 @@
 
 #include "scene.h"
 
+/**
+ * @brief Scene.
+ *
+ */
 Scene::Scene() {
 }
 
-/**
- * @brief       calculate a ray originating based on mouse position and current view
- *
- * @param       mouse position
- * @param       pointer to vector holding ray origin
- * @param       pointer to vector holding ray direction
- * @return      void
- */
+    /**
+     * @brief       calculate a ray originating based on mouse position and current view
+     *
+     * @param       mouse position
+     * @param       pointer to vector holding ray origin
+     * @param       pointer to vector holding ray direction
+     * @return      void
+     */
 void Scene::calculate_ray(const QPointF& mouse_position, QVector3D* ray_origin, QVector3D* ray_direction) {
     const float screen_width = (float)this->canvas_width;
     const float screen_height = (float)this->canvas_height;

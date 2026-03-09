@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -17,6 +17,7 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>. *
  *                                                                          *
  ****************************************************************************/
+
 #pragma once
 
 #include <QApplication>
@@ -25,6 +26,9 @@
 
 #include "config.h"
 
+/**
+ * @brief AtomArchitectApplication class.
+ */
 class AtomArchitectApplication : public QApplication
 {
 public:
@@ -44,5 +48,11 @@ public:
     bool notify(QObject* receiver, QEvent* event);
 
 private:
+/**
+ * @brief throw_message_window.
+ *
+ * @param title Parameter title.
+ * @param message Parameter message.
+ */
     void throw_message_window(const QString& title, const QString& message);
 };

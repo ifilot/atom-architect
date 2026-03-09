@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -17,17 +17,23 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>. *
  *                                                                          *
  ****************************************************************************/
+
 #include "structure_saver.h"
 
+/**
+ * @brief StructureSaver.
+ *
+ */
 StructureSaver::StructureSaver() {
 
 }
 
-/**
- * @brief      Saves structures as a poscar.
- *
- * @param      structure  The structure
- */
+    /**
+     * @brief      Saves structures as a poscar.
+     *
+     * @param      structure  The structure
+     * @param[in]  filename   The filename
+     */
 void StructureSaver::save_poscar(const Structure* structure, const std::string& filename) {
     const std::string path = filename;
     std::ofstream outfile(path.c_str());

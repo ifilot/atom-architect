@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -27,6 +27,9 @@
 #include <QToolBar>
 #include <QIcon>
 
+/**
+ * @brief ToolBarWidget class.
+ */
 class ToolBarWidget : public QToolBar {
 private:
     std::unordered_map<std::string, QAction*> actions;
@@ -37,7 +40,7 @@ public:
      *
      * @param      parent  The parent
      */
-    ToolBarWidget(QWidget* parent = nullptr);
+    ToolBarWidget(QWidget* parent = nullptr, bool include_add_fragment = true);
 
     /**
      * @brief      Get an action by action name

@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -20,6 +20,14 @@
 
 #include "shader_program.h"
 
+/**
+ * @brief ShaderProgram.
+ *
+ * @param _name Parameter _name.
+ * @param type Parameter type.
+ * @param vertex_filename Parameter vertex_filename.
+ * @param fragment_filename Parameter fragment_filename.
+ */
 ShaderProgram::ShaderProgram(const std::string& _name, const ShaderProgramType type, const QString& vertex_filename, const QString& fragment_filename) {
     this->name = _name;
     this->type = type;
@@ -44,11 +52,19 @@ ShaderProgram::ShaderProgram(const std::string& _name, const ShaderProgramType t
     this->add_uniforms();
 }
 
+/**
+ * @brief ~ShaderProgram.
+ *
+ */
 ShaderProgram::~ShaderProgram() {
     delete this->m_program;
     this->m_program = 0;
 }
 
+/**
+ * @brief add_attributes.
+ *
+ */
 void ShaderProgram::add_attributes() {
     // add attributes depending on the shader program type
     switch(this->type) {
@@ -66,6 +82,10 @@ void ShaderProgram::add_attributes() {
     }
 }
 
+/**
+ * @brief add_uniforms.
+ *
+ */
 void ShaderProgram::add_uniforms() {
     // add uniforms depending on the shader program type
     if (this->type == ShaderProgramType::ModelShader) {

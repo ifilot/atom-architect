@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -20,8 +20,18 @@
 
 #include "model_loader.h"
 
+    /**
+     * @brief      Constructs a new instance.
+     */
 ModelLoader::ModelLoader() {}
 
+    /**
+     * @brief      Loads a model.
+     *
+     * @param[in]  path  The path
+     *
+     * @return     Shared pointer to model object
+     */
 std::shared_ptr<Model> ModelLoader::load_model(const std::string& path) {
 
     std::shared_ptr<Model> model;
@@ -43,11 +53,11 @@ std::shared_ptr<Model> ModelLoader::load_model(const std::string& path) {
     return model;
 }
 
-/**
- * @brief      Load object data from obj file
- *
- * @param[in]  path   Path to file
- */
+    /**
+     * @brief      Load object data from obj file
+     *
+     * @param[in]  path   Path to file
+     */
 std::shared_ptr<Model> ModelLoader::load_data_obj(const std::string& path) {
     qDebug() << "Loading obj: " << QString(path.c_str());
     std::ifstream file(path);
@@ -137,11 +147,11 @@ std::shared_ptr<Model> ModelLoader::load_data_obj(const std::string& path) {
     }
 }
 
-/**
- * @brief      Load object data from ply file
- *
- * @param[in]  path   Path to file
- */
+    /**
+     * @brief      Load object data from ply file
+     *
+     * @param[in]  path   Path to file
+     */
 std::shared_ptr<Model> ModelLoader::load_data_ply(const std::string& path) {
     std::ifstream file(path);
 
@@ -170,11 +180,11 @@ std::shared_ptr<Model> ModelLoader::load_data_ply(const std::string& path) {
     }
 }
 
-/**
- * @brief      Loads a ply file from hard drive stored as little endian binary
- *
- * @param[in]  path   Path to file
- */
+    /**
+     * @brief      Loads a ply file from hard drive stored as little endian binary
+     *
+     * @param[in]  path   Path to file
+     */
 std::shared_ptr<Model> ModelLoader::load_data_ply_binary(const std::string& path) {
     std::shared_ptr<Model> models;
 
@@ -280,11 +290,11 @@ std::shared_ptr<Model> ModelLoader::load_data_ply_binary(const std::string& path
     }
 }
 
-/**
- * @brief      Loads a ply file from hard drive stored in ascii format
- *
- * @param[in]  path   The path
- */
+    /**
+     * @brief      Loads a ply file from hard drive stored in ascii format
+     *
+     * @param[in]  path   The path
+     */
 std::shared_ptr<Model> ModelLoader::load_data_ply_ascii(const std::string& path) {
     std::ifstream file(path);
     static QRegularExpression whitespace("\\s+");

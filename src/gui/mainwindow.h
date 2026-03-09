@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -36,12 +36,15 @@
 #include <QStringList>
 
 #include "interface_window.h"
-#include "analysis_geometry_optimization.h"
+#include "structure_analysis.h"
 #include "analysis_neb.h"
 #include "logwindow.h"
 
 #include "../config.h"
 
+/**
+ * @brief InterfaceWindow class.
+ */
 class InterfaceWindow; // forward declaration to avoid circular dependencies
 
 /**
@@ -74,6 +77,11 @@ public:
     void set_cli_parser(const QCommandLineParser& cli_parser);
 
 protected:
+    /**
+     * @brief moveEvent.
+     *
+     * @param QMoveEvent Parameter QMoveEvent.
+     */
     void moveEvent(QMoveEvent*) Q_DECL_OVERRIDE;
 
 private slots:
@@ -102,9 +110,29 @@ private slots:
      */
     void set_stereo(QString fragment_shader);
 
+/**
+ * @brief dragEnterEvent.
+ *
+ * @param event Parameter event.
+ */
     void dragEnterEvent(QDragEnterEvent *event) override;
+/**
+ * @brief dragMoveEvent.
+ *
+ * @param event Parameter event.
+ */
     void dragMoveEvent(QDragMoveEvent *event) override;
+/**
+ * @brief dragLeaveEvent.
+ *
+ * @param event Parameter event.
+ */
     void dragLeaveEvent(QDragLeaveEvent *event) override;
+/**
+ * @brief dropEvent.
+ *
+ * @param event Parameter event.
+ */
     void dropEvent(QDropEvent *event) override;
 
     /**

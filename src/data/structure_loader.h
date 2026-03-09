@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -37,6 +37,9 @@ enum OutcarReadStatus {
     VASP_OUTCAR_READ_STATE_FINISHED
 };
 
+/**
+ * @brief StructureLoader class.
+ */
 class StructureLoader {
 private:
 
@@ -63,6 +66,24 @@ public:
      * @return     Structures
      */
     std::vector<std::shared_ptr<Structure>> load_outcar(const std::string& filename);
+
+    /**
+     * @brief      Load only the final ionic structure from an OUTCAR file
+     *
+     * @param[in]  filename  The filename
+     *
+     * @return     Last ionic structure
+     */
+    std::shared_ptr<Structure> load_outcar_last(const std::string& filename);
+
+    /**
+     * @brief      Load structure + vibrational data from pymkmkit YAML file
+     *
+     * @param[in]  filename  The filename
+     *
+     * @return     Structures
+     */
+    std::vector<std::shared_ptr<Structure>> load_yaml(const std::string& filename);
 
     /**
      * @brief      Load NEB binary

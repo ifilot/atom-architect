@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -37,6 +37,9 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/norm.hpp>
 
+/**
+ * @brief Model class.
+ */
 class Model {
 private:
     std::vector<glm::vec3> positions;
@@ -50,6 +53,13 @@ private:
 
 public:
 
+/**
+ * @brief Model.
+ *
+ * @param positions Parameter positions.
+ * @param normals Parameter normals.
+ * @param indices Parameter indices.
+ */
     Model(std::vector<glm::vec3> positions, std::vector<glm::vec3> normals, std::vector<unsigned int> indices);
 
     /**
@@ -74,18 +84,34 @@ public:
      */
     void load_to_vao();
 
+    /**
+     * @brief get_num_vertices.
+     *
+     */
     inline size_t get_num_vertices() const {
         return this->positions.size();
     }
 
+    /**
+     * @brief get_num_normals.
+     *
+     */
     inline size_t get_num_normals() const {
         return this->normals.size();
     }
 
+    /**
+     * @brief get_num_indices.
+     *
+     */
     inline size_t get_num_indices() const {
         return this->indices.size();
     }
 
+    /**
+     * @brief is_loaded.
+     *
+     */
     inline bool is_loaded() const {
         return this->flag_loaded_vao;
     }

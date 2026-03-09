@@ -1,12 +1,20 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
  *   published by the Free Software Foundation, either version 3 of the     *
  *   License, or (at your option) any later version.                        *
+ *                                                                          *
+ *   This program is distributed in the hope that it will be useful,        *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of         *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the          *
+ *   GNU General Public License for more details.                           *
+ *                                                                          *
+ *   You should have received a copy of the GNU General Public license      *
+ *   along with this program.  If not, see <https://www.gnu.org/licenses/>. *
  *                                                                          *
  ****************************************************************************/
 
@@ -43,7 +51,8 @@ StructureInfoBasicTab::StructureInfoBasicTab(QWidget* parent)
 }
 
 /**
- * @brief      Update data in tab based on current structure
+ * @brief update_data.
+ *
  */
 void StructureInfoBasicTab::update_data()
 {
@@ -72,9 +81,13 @@ void StructureInfoBasicTab::update_data()
     this->get_label("unitcell_dimensions")->setText(unitcell_str);
 }
 
-/**
- * @brief      Get pointer to label from key
- */
+    /**
+     * @brief      Get pointer to label from key
+     *
+     * @param[in]  key  The key
+     *
+     * @return     The label.
+     */
 QLabel* StructureInfoBasicTab::get_label(const std::string& key)
 {
     auto it = this->labelmap.find(key);
@@ -85,9 +98,9 @@ QLabel* StructureInfoBasicTab::get_label(const std::string& key)
     return it->second;
 }
 
-/**
- * @brief      Reset tab
- */
+    /**
+     * @brief      Resets the object.
+     */
 void StructureInfoBasicTab::reset()
 {
 }

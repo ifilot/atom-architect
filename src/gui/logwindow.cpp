@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -21,6 +21,11 @@
 #include "../config.h"
 #include "logwindow.h"
 
+/**
+ * @brief LogWindow.
+ *
+ * @param param Parameter param.
+ */
 LogWindow::LogWindow(const std::shared_ptr<QStringList>& _log_messages) :
     log_messages(_log_messages) {
     qDebug() << "Spawning Debug log window";
@@ -57,6 +62,10 @@ LogWindow::LogWindow(const std::shared_ptr<QStringList>& _log_messages) :
     timer->start(1000);
 }
 
+/**
+ * @brief update_log.
+ *
+ */
 void LogWindow::update_log() {
     int newsize = this->log_messages->size();
     for(int i=this->linesread; i<newsize; i++) {

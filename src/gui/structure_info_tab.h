@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -28,6 +28,9 @@
 
 #include "../data/structure.h"
 
+/**
+ * @brief StructureInfoTab class.
+ */
 class StructureInfoTab : public QWidget {
 protected:
     std::shared_ptr<Structure> structure;
@@ -36,6 +39,11 @@ protected:
     QScrollArea *scrollarea;
 
 public:
+    /**
+     * @brief StructureInfoTab.
+     *
+     * @param parent Parameter parent.
+     */
     explicit StructureInfoTab(QWidget *parent = nullptr) : QWidget(parent) {
         this->container_layout = new QVBoxLayout();
         this->scrollarea = new QScrollArea();
@@ -44,13 +52,26 @@ public:
         this->container_layout->addWidget(this->scrollarea);
     }
 
+    /**
+     * @brief set_structure.
+     *
+     * @param _structure Parameter _structure.
+     */
     inline void set_structure(const std::shared_ptr<Structure>& _structure) {
         this->structure = _structure;
         this->update_data();
     }
 
+/**
+ * @brief update_data.
+ *
+ */
     virtual void update_data() = 0;
 
+/**
+ * @brief reset.
+ *
+ */
     virtual void reset() = 0;
 
 protected:

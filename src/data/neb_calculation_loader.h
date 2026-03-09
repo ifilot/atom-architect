@@ -18,40 +18,37 @@
  *                                                                          *
  ****************************************************************************/
 
-#include "bond.h"
+#pragma once
+
+#include <QString>
+
+#include <memory>
+#include <vector>
+
+#include "structure.h"
 
 /**
- * @brief Bond.
- *
- * @param _atom1 Parameter _atom1.
- * @param _atom2 Parameter _atom2.
- * @param _atom1_idx Parameter _atom1_idx.
- * @param param Parameter param.
- * @param param Parameter param.
- * @param param Parameter param.
- * @param param Parameter param.
+ * @brief NebCalculationLoader class.
  */
-Bond::Bond(const Atom& _atom1, const Atom& _atom2, unsigned int _atom1_idx, unsigned int _atom2_idx) :
-atom1(_atom1),
-atom2(_atom2),
-atom1_idx(_atom1_idx),
-atom2_idx(_atom2_idx) {
-    auto v = this->atom2.get_pos_qtvec() - this->atom1.get_pos_qtvec();
+class NebCalculationLoader {
+public:
+/**
+ * @brief load.
+ *
+ * @param root_directory Parameter root_directory.
+ * @param error_message Parameter error_message.
+ */
+    bool load(const QString& root_directory, QString* error_message = nullptr);
 
-    this->direction = v.normalized();
-    this->length = v.length();
-
-    // avoid gimball locking
-    if (fabs(this->direction[2]) > .999) {
-        if(this->direction[2] < 0.0) {
-            this->axis = QVector3D(0.0, 1.0, 0.0);
-            this->angle = -M_PI;
-        } else {
-            this->axis = QVector3D(0.0, 0.0, 1.0);
-            this->angle = 0.0;
-        }
-    } else {
-        this->axis = QVector3D::crossProduct(QVector3D(0.0, 0.0, 1.0), this->direction);
-        this->angle = std::acos(this->direction[2]);
+    /**
+     * @brief structures.
+     *
+     */
+    const std::vector<std::shared_ptr<Structure>>& structures() const {
+        return structures_;
     }
-}
+
+private:
+    std::vector<std::shared_ptr<Structure>> structures_;
+};
+

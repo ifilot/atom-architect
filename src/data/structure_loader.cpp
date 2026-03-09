@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -20,18 +20,110 @@
 
 #include "structure_loader.h"
 
+#include <Eigen/Eigenvalues>
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstdio>
+#include <limits>
+
+namespace {
 /**
- * @brief      Constructs a new instance.
+ * @brief leading_spaces.
+ *
+ * @param value Parameter value.
  */
-StructureLoader::StructureLoader(){}
+int leading_spaces(const std::string& value) {
+    int count = 0;
+    while(count < (int)value.size() && value[(size_t)count] == ' ') {
+        count++;
+    }
+    return count;
+}
 
 /**
- * @brief      Load a file
+ * @brief sorted_mae.
  *
- * @param[in]  filename  The filename
- *
- * @return     shared ptr to structure object
+ * @param lhs Parameter lhs.
+ * @param rhs Parameter rhs.
  */
+double sorted_mae(const std::vector<double>& lhs,
+                  const std::vector<double>& rhs) {
+    const size_t n = std::min(lhs.size(), rhs.size());
+    if(n == 0) {
+        return std::numeric_limits<double>::infinity();
+    }
+
+    std::vector<double> a(lhs.begin(), lhs.begin() + n);
+    std::vector<double> b(rhs.begin(), rhs.begin() + n);
+    std::sort(a.begin(), a.end());
+    std::sort(b.begin(), b.end());
+
+    double mae = 0.0;
+    for(size_t i=0; i<n; i++) {
+        mae += std::abs(a[i] - b[i]);
+    }
+
+    return mae / (double)n;
+}
+
+/**
+ * @brief contains_token.
+ *
+ * @param line Parameter line.
+ * @param token Parameter token.
+ */
+inline bool contains_token(const std::string& line, const char* token) {
+    return line.find(token) != std::string::npos;
+}
+
+/**
+ * @brief parse_six_columns.
+ *
+ * @param line Parameter line.
+ * @param c1 Parameter c1.
+ * @param c2 Parameter c2.
+ * @param c3 Parameter c3.
+ * @param c4 Parameter c4.
+ * @param c5 Parameter c5.
+ * @param c6 Parameter c6.
+ */
+inline bool parse_six_columns(const std::string& line,
+                              double& c1,
+                              double& c2,
+                              double& c3,
+                              double& c4,
+                              double& c5,
+                              double& c6)
+{
+    const char* p = line.c_str();
+    char* end;
+
+    c1 = std::strtod(p, &end); if (p == end) return false; p = end;
+    c2 = std::strtod(p, &end); if (p == end) return false; p = end;
+    c3 = std::strtod(p, &end); if (p == end) return false; p = end;
+    c4 = std::strtod(p, &end); if (p == end) return false; p = end;
+    c5 = std::strtod(p, &end); if (p == end) return false; p = end;
+    c6 = std::strtod(p, &end); if (p == end) return false;
+
+    return true;
+}
+
+}
+
+    /**
+     * @brief      Constructs a new instance.
+     */
+StructureLoader::StructureLoader(){}
+
+    /**
+     * @brief      Load a file
+     *
+     * @param[in]  filename  The filename
+     *
+     * @return     shared ptr to structure object
+     */
 std::shared_ptr<Structure> StructureLoader::load_file(const std::string& filename) {
     qDebug() << "Building structure via StructureLoader";
     QFileInfo qfi(QString(filename.c_str()));
@@ -49,6 +141,8 @@ std::shared_ptr<Structure> StructureLoader::load_file(const std::string& filenam
     }  else if(qfi.completeSuffix() == "xyz") {
         qDebug() << "Opening .xyz file";
         structure = this->load_xyz(filename);
+    } else if(qfi.completeSuffix() == "yaml" || qfi.completeSuffix() == "yml") {
+        structure = this->load_yaml(filename).back();
     }
 
     if(!structure) {
@@ -60,13 +154,364 @@ std::shared_ptr<Structure> StructureLoader::load_file(const std::string& filenam
     }
 }
 
-/**
- * @brief      Load structure from .geo file
- *
- * @param[in]  filename  The filename
- *
- * @return     Structure
- */
+    /**
+     * @brief      Load structure + vibrational data from pymkmkit YAML file
+     *
+     * @param[in]  filename  The filename
+     *
+     * @return     Structures
+     */
+std::vector<std::shared_ptr<Structure>> StructureLoader::load_yaml(const std::string& filename) {
+    qDebug() << "Loading PyMKMKit YAML file: " << QString(filename.c_str());
+
+    std::ifstream infile(filename);
+    if(!infile.is_open()) {
+        throw std::runtime_error("Could not open " + filename);
+    }
+
+    enum class ParseMode {
+        None,
+        Lattice,
+        Coordinates,
+        Frequencies,
+        DofLabels,
+        Hessian
+    };
+
+    ParseMode mode = ParseMode::None;
+
+    std::vector<std::array<double, 3>> lattice_vectors;
+    struct ParsedAtom {
+        std::string element;
+        double x = 0.0;
+        double y = 0.0;
+        double z = 0.0;
+    };
+    std::vector<ParsedAtom> coordinates_direct;
+    std::vector<double> frequencies_cm1;
+    std::vector<std::string> dof_labels;
+    std::vector<std::vector<double>> hessian_rows;
+    std::vector<double> current_hessian_row;
+
+    bool has_energy = false;
+    double electronic_energy = 0.0;
+    bool has_pymkmkit_token = false;
+
+    static const QRegularExpression regex_number("[-+]?(?:[0-9]*\\.[0-9]+|[0-9]+)(?:[eE][-+]?[0-9]+)?");
+    static const QRegularExpression regex_dof("^([0-9]+)([XYZ])$");
+
+    std::string line;
+    while(std::getline(infile, line)) {
+        const QString qline = QString::fromStdString(line);
+        const QString trimmed = qline.trimmed();
+        const int indent = leading_spaces(line);
+
+        if(trimmed.isEmpty()) {
+            continue;
+        }
+
+        if(trimmed == "pymkmkit:") {
+            has_pymkmkit_token = true;
+            continue;
+        }
+
+        if(trimmed == "lattice_vectors:") {
+            mode = ParseMode::Lattice;
+            continue;
+        }
+        if(trimmed == "coordinates_direct:") {
+            mode = ParseMode::Coordinates;
+            continue;
+        }
+        if(trimmed == "frequencies_cm-1:") {
+            mode = ParseMode::Frequencies;
+            continue;
+        }
+        if(trimmed == "dof_labels:") {
+            mode = ParseMode::DofLabels;
+            continue;
+        }
+        if(trimmed == "matrix:") {
+            mode = ParseMode::Hessian;
+            continue;
+        }
+
+        if(trimmed.startsWith("electronic:")) {
+            const QString value = trimmed.section(':', 1).trimmed();
+            electronic_energy = value.toDouble();
+            has_energy = true;
+            continue;
+        }
+
+        if(trimmed.endsWith(":") &&
+           trimmed != "lattice_vectors:" &&
+           trimmed != "coordinates_direct:" &&
+           trimmed != "frequencies_cm-1:" &&
+           trimmed != "dof_labels:" &&
+           trimmed != "matrix:") {
+            mode = ParseMode::None;
+            continue;
+        }
+
+        switch(mode) {
+            case ParseMode::Lattice: {
+                if(!trimmed.startsWith("-")) {
+                    break;
+                }
+
+                auto it = regex_number.globalMatch(trimmed);
+                std::array<double, 3> parsed_values = {0.0, 0.0, 0.0};
+                size_t parsed_count = 0;
+                while(it.hasNext() && parsed_count < 3) {
+                    parsed_values[parsed_count++] = it.next().captured(0).toDouble();
+                }
+
+                if(parsed_count != 3) {
+                    throw std::runtime_error("Invalid lattice vector encountered in YAML file.");
+                }
+
+                lattice_vectors.push_back(parsed_values);
+                break;
+            }
+
+            case ParseMode::Coordinates: {
+                if(!trimmed.startsWith("- ")) {
+                    break;
+                }
+
+                const QString data = trimmed.mid(2).trimmed();
+                const QStringList parts = data.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
+                if(parts.size() < 4) {
+                    throw std::runtime_error("Invalid coordinates_direct line in YAML file.");
+                }
+
+                coordinates_direct.push_back({
+                    parts[0].toStdString(),
+                    parts[1].toDouble(),
+                    parts[2].toDouble(),
+                    parts[3].toDouble()
+                });
+                break;
+            }
+
+            case ParseMode::Frequencies: {
+                if(trimmed.startsWith("- ")) {
+                    frequencies_cm1.push_back(trimmed.mid(2).trimmed().toDouble());
+                }
+                break;
+            }
+
+            case ParseMode::DofLabels: {
+                if(trimmed.startsWith("- ")) {
+                    dof_labels.push_back(trimmed.mid(2).trimmed().toStdString());
+                }
+                break;
+            }
+
+            case ParseMode::Hessian: {
+                if(!trimmed.startsWith("-")) {
+                    break;
+                }
+
+                auto it = regex_number.globalMatch(trimmed);
+                if(!it.hasNext()) {
+                    break;
+                }
+
+                const double value = it.next().captured(0).toDouble();
+
+                // New Hessian row starts with the outer sequence item at 4 spaces indentation.
+                if(indent <= 4 && !current_hessian_row.empty()) {
+                    hessian_rows.push_back(current_hessian_row);
+                    current_hessian_row.clear();
+                }
+
+                current_hessian_row.push_back(value);
+                break;
+            }
+
+            case ParseMode::None:
+            default:
+                break;
+        }
+    }
+
+    if(!current_hessian_row.empty()) {
+        hessian_rows.push_back(current_hessian_row);
+    }
+
+    if(!has_pymkmkit_token) {
+        throw std::runtime_error("Invalid PyMKMKit YAML file: missing 'pymkmkit' token.");
+    }
+
+    if(lattice_vectors.size() != 3) {
+        throw std::runtime_error("YAML file does not contain exactly 3 lattice vectors.");
+    }
+
+    if(coordinates_direct.empty()) {
+        throw std::runtime_error("YAML file does not contain any coordinates_direct atoms.");
+    }
+
+    MatrixUnitcell unitcell = MatrixUnitcell::Zero(3,3);
+    for(int row=0; row<3; row++) {
+        // Keep the same row-wise lattice convention as OUTCAR/POSCAR loaders.
+        // Each YAML lattice_vectors entry is one direct-lattice vector [x, y, z].
+        unitcell(row, 0) = lattice_vectors[(size_t)row][0];
+        unitcell(row, 1) = lattice_vectors[(size_t)row][1];
+        unitcell(row, 2) = lattice_vectors[(size_t)row][2];
+    }
+
+    auto structure = std::make_shared<Structure>(unitcell);
+    for(const auto& atom : coordinates_direct) {
+        const unsigned int atnr = AtomSettings::get().get_atom_elnr(atom.element);
+        VectorPosition direct(atom.x, atom.y, atom.z);
+        // lattice vectors are stored row-wise (POSCAR convention in this codebase),
+        // hence direct->Cartesian uses unitcell.transpose() * fractional_vector.
+        VectorPosition cart = unitcell.transpose() * direct;
+        structure->add_atom(atnr, cart(0), cart(1), cart(2));
+    }
+
+    if(has_energy) {
+        structure->set_energy(electronic_energy);
+    }
+
+    if(!dof_labels.empty() && !hessian_rows.empty()) {
+        const size_t n = dof_labels.size();
+        if(hessian_rows.size() != n) {
+            throw std::runtime_error("YAML Hessian matrix row count does not match number of DOF labels.");
+        }
+
+        std::vector<int> dof_atom_indices;
+        std::vector<QChar> dof_axes;
+        std::vector<double> dof_masses_amu;
+        dof_atom_indices.reserve(n);
+        dof_axes.reserve(n);
+        dof_masses_amu.reserve(n);
+
+        for(size_t dof_idx=0; dof_idx<n; dof_idx++) {
+            QRegularExpressionMatch label_match = regex_dof.match(QString::fromStdString(dof_labels[dof_idx]));
+            if(!label_match.hasMatch()) {
+                throw std::runtime_error("Could not parse DOF label: " + dof_labels[dof_idx]);
+            }
+
+            const int atom_index = label_match.captured(1).toInt() - 1; // YAML labels are 1-based
+            if(atom_index < 0 || atom_index >= (int)coordinates_direct.size()) {
+                throw std::runtime_error("DOF label atom index out of bounds: " + dof_labels[dof_idx]);
+            }
+
+            const std::string& element = coordinates_direct[(size_t)atom_index].element;
+            dof_atom_indices.push_back(atom_index);
+            dof_axes.push_back(label_match.captured(2)[0]);
+            dof_masses_amu.push_back(AtomSettings::get().get_atom_mass(element));
+        }
+
+        // YAML Hessian values are expected in eV/Å^2. Convert to a mass-weighted dynamical matrix.
+        Eigen::MatrixXd dynmat((int)n, (int)n);
+        for(size_t i=0; i<n; i++) {
+            if(hessian_rows[i].size() != n) {
+                throw std::runtime_error("YAML Hessian matrix is not square.");
+            }
+
+            for(size_t j=0; j<n; j++) {
+                const double h_ij = hessian_rows[i][j];
+                dynmat((int)i, (int)j) = h_ij / std::sqrt(dof_masses_amu[i] * dof_masses_amu[j]);
+            }
+        }
+
+        Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> solver(dynmat);
+        if(solver.info() != Eigen::Success) {
+            throw std::runtime_error("Eigen decomposition failed for YAML Hessian matrix.");
+        }
+
+        // sqrt(eV/Å^2/amu) -> THz
+        constexpr double EV_TO_J = 1.602176634e-19;
+        constexpr double ANGSTROM_TO_M = 1.0e-10;
+        constexpr double AMU_TO_KG = 1.66053906660e-27;
+        constexpr double TWO_PI = 2.0 * M_PI;
+        constexpr double SQRT_UNIT_TO_HZ =
+            std::sqrt(EV_TO_J / (ANGSTROM_TO_M * ANGSTROM_TO_M * AMU_TO_KG)) / TWO_PI;
+        constexpr double HZ_TO_THZ = 1.0e-12;
+
+        std::vector<double> computed_freq_cm1;
+        std::vector<double> computed_freq_cm1_flipped;
+        computed_freq_cm1.reserve(n);
+        computed_freq_cm1_flipped.reserve(n);
+
+        size_t negative_count_normal = 0;
+        size_t negative_count_flipped = 0;
+
+        for(size_t mode_idx=0; mode_idx<n; mode_idx++) {
+            const double eig = solver.eigenvalues()((int)mode_idx);
+            const double signed_cm1 = (eig >= 0.0 ? 1.0 : -1.0) * std::sqrt(std::abs(eig)) * SQRT_UNIT_TO_HZ * HZ_TO_THZ * 33.35640951981521;
+            const double signed_cm1_flipped = -signed_cm1;
+
+            computed_freq_cm1.push_back(signed_cm1);
+            computed_freq_cm1_flipped.push_back(signed_cm1_flipped);
+
+            if(signed_cm1 < -1e-8) {
+                negative_count_normal++;
+            }
+            if(signed_cm1_flipped < -1e-8) {
+                negative_count_flipped++;
+            }
+        }
+
+        bool flip_frequency_sign = false;
+        if(!frequencies_cm1.empty()) {
+            const double mae_normal = sorted_mae(computed_freq_cm1, frequencies_cm1);
+            const double mae_flipped = sorted_mae(computed_freq_cm1_flipped, frequencies_cm1);
+            flip_frequency_sign = (mae_flipped + 1e-12 < mae_normal);
+
+            qDebug() << "PyMKMKit YAML reconstructed frequency MAE (cm^-1), normal sign:" << mae_normal
+                     << ", flipped sign:" << mae_flipped
+                     << ", selected:" << (flip_frequency_sign ? "flipped" : "normal");
+        } else {
+            flip_frequency_sign = (negative_count_flipped < negative_count_normal);
+            qDebug() << "PyMKMKit YAML sign heuristic based on negative-mode count, normal/flipped:"
+                     << negative_count_normal << "/" << negative_count_flipped
+                     << ", selected:" << (flip_frequency_sign ? "flipped" : "normal");
+        }
+
+        structure->clear_eigenmodes();
+
+        for(size_t mode_idx=0; mode_idx<n; mode_idx++) {
+            std::vector<QVector3D> mode_vectors(coordinates_direct.size(), QVector3D(0.0, 0.0, 0.0));
+
+            for(size_t dof_idx=0; dof_idx<n; dof_idx++) {
+                const int atom_index = dof_atom_indices[dof_idx];
+                const QChar axis = dof_axes[dof_idx];
+
+                // Convert from mass-weighted eigenvector component to Cartesian displacement.
+                const double amplitude = solver.eigenvectors()((int)dof_idx, (int)mode_idx) /
+                                         std::sqrt(dof_masses_amu[dof_idx]);
+
+                if(axis == 'X') {
+                    mode_vectors[(size_t)atom_index].setX(amplitude);
+                } else if(axis == 'Y') {
+                    mode_vectors[(size_t)atom_index].setY(amplitude);
+                } else if(axis == 'Z') {
+                    mode_vectors[(size_t)atom_index].setZ(amplitude);
+                }
+            }
+
+            const double freq_cm1 = flip_frequency_sign ? computed_freq_cm1_flipped[mode_idx]
+                                                        : computed_freq_cm1[mode_idx];
+            const double freq_thz = freq_cm1 / 33.35640951981521;
+
+            structure->add_eigenmode(freq_thz, mode_vectors);
+        }
+    }
+
+    return {structure};
+}
+
+    /**
+     * @brief      Load structure from .geo file
+     *
+     * @param[in]  filename  The filename
+     *
+     * @return     Structure
+     */
 std::shared_ptr<Structure> StructureLoader::load_geo(const std::string& filename) {
     std::ifstream infile(filename);
 
@@ -134,19 +579,22 @@ std::shared_ptr<Structure> StructureLoader::load_geo(const std::string& filename
     return structure;
 }
 
-/**
- * @brief      Load structure from .xyz file
- *
- * @param[in]  filename  The filename
- *
- * @return     Structure
- */
+    /**
+     * @brief      Load structure from .xyz file
+     *
+     * @param[in]  filename  The filename
+     *
+     * @return     Structure
+     */
 std::shared_ptr<Structure> StructureLoader::load_xyz(const std::string& filename) {
     static QRegularExpression whitespace("\\s+");
 
     std::ifstream infile(filename);
 
-    // grab number of atoms
+    if(!infile.is_open()) {
+        throw std::runtime_error("Could not open " + filename);
+    }
+
     std::string line;
     std::getline(infile, line);
     unsigned int nr_atoms = QString(line.c_str()).toUInt();
@@ -212,13 +660,13 @@ std::shared_ptr<Structure> StructureLoader::load_xyz(const std::string& filename
     return structure;
 }
 
-/**
- * @brief      Load structure from POSCAR file
- *
- * @param[in]  filename  The filename
- *
- * @return     Structure
- */
+    /**
+     * @brief      Load structure from POSCAR file
+     *
+     * @param[in]  filename  The filename
+     *
+     * @return     Structure
+     */
 std::shared_ptr<Structure> StructureLoader::load_poscar(const std::string& filename) {
     std::ifstream infile(filename);
     if (!infile) {
@@ -380,13 +828,13 @@ std::shared_ptr<Structure> StructureLoader::load_poscar(const std::string& filen
     return structure;
 }
 
-/**
- * @brief      Load structure from OUTCAR file
- *
- * @param[in]  filename  The filename
- *
- * @return     Structure
- */
+    /**
+     * @brief      Load structure from OUTCAR file
+     *
+     * @param[in]  filename  The filename
+     *
+     * @return     Structures
+     */
 std::vector<std::shared_ptr<Structure>> StructureLoader::load_outcar(const std::string& filename) {
     qDebug() << "Loading OUTCAR: " << QString(filename.c_str());
     std::ifstream infile(filename);
@@ -394,6 +842,11 @@ std::vector<std::shared_ptr<Structure>> StructureLoader::load_outcar(const std::
     if(!infile.is_open()) {
         throw std::runtime_error("Could not open " + filename);
     }
+
+    struct ParsedEigenmode {
+        double eigenvalue = 0.0;
+        std::vector<QVector3D> eigenvectors;
+    };
 
     // vasp version
     unsigned int vasp_version = 0;
@@ -412,6 +865,9 @@ std::vector<std::shared_ptr<Structure>> StructureLoader::load_outcar(const std::
     std::vector<double> energies;
     std::vector<std::string> elements;
     std::vector<unsigned int> nr_atoms_per_elm;
+    std::vector<ParsedEigenmode> parsed_eigenmodes;
+
+    bool reading_mode_eigenvectors = false;
 
     /*
     * Define all the regex patterns
@@ -422,29 +878,75 @@ std::vector<std::shared_ptr<Structure>> StructureLoader::load_outcar(const std::
     static QRegularExpression regex_ions_per_element("^\\s*(ions per type =\\s+)([0-9 ]+)\\s*$");
     static QRegularExpression regex_lattice_vectors("^\\s*direct lattice vectors.*$");
     static QRegularExpression regex_atoms("^\\s*POSITION.*$");
-    static QRegularExpression regex_grab_numbers("^\\s+([0-9.-]+)\\s+([0-9.-]+)\\s+([0-9.-]+)\\s+([0-9.-]+)\\s+([0-9.-]+)\\s+([0-9.-]+).*$");
     static QRegularExpression regex_grab_energy("^\\s+energy  without entropy=\\s+([0-9.-]+)\\s+energy\\(sigma->0\\) =\\s+([0-9.-]+).*$");
+    static QRegularExpression regex_frequency_mode("^\\s*[0-9]+\\s+f(/i)?\\s*=\\s*([0-9eE.+-]+)\\s+THz.*$");
+    static QRegularExpression regex_frequency_eigenvector(
+        "^\\s*(?:[0-9]+\\s+)?([0-9eE.+-]+)\\s+([0-9eE.+-]+)\\s+([0-9eE.+-]+)\\s+([0-9eE.+-]+)\\s+([0-9eE.+-]+)\\s+([0-9eE.+-]+)\\s*$");
 
     std::string line;
 
     std::vector<std::shared_ptr<Structure>> structures;
 
     while(std::getline(infile, line)) { // loop over all the lines in the file
+        const QString qline(line.c_str());
+
+        if(reading_mode_eigenvectors) {
+            QRegularExpressionMatch mode_vector_match = regex_frequency_eigenvector.match(qline);
+            if(mode_vector_match.hasMatch()) {
+                parsed_eigenmodes.back().eigenvectors.emplace_back(
+                    mode_vector_match.captured(4).toDouble(),
+                    mode_vector_match.captured(5).toDouble(),
+                    mode_vector_match.captured(6).toDouble()
+                );
+
+                if(parsed_eigenmodes.back().eigenvectors.size() == nr_atoms) {
+                    reading_mode_eigenvectors = false;
+                    qDebug() << "Completed eigenmode" << parsed_eigenmodes.size()
+                             << "with" << nr_atoms << "eigenvectors.";
+                }
+
+                continue;
+            }
+
+            if(!parsed_eigenmodes.back().eigenvectors.empty()) {
+                reading_mode_eigenvectors = false;
+            }
+        }
+
+        if(contains_token(line, "THz")) {
+            QRegularExpressionMatch frequency_mode_match = regex_frequency_mode.match(qline);
+            if(frequency_mode_match.hasMatch()) {
+            double eigenvalue = frequency_mode_match.captured(2).toDouble();
+            if(frequency_mode_match.captured(1) == "/i") {
+                eigenvalue *= -1.0;
+            }
+
+            parsed_eigenmodes.push_back({eigenvalue, {}});
+            reading_mode_eigenvectors = true;
+
+            qDebug() << "Detected frequency mode" << parsed_eigenmodes.size()
+                     << "(THz):" << eigenvalue;
+            continue;
+            }
+        }
+
         /*
          * Collect the vasp version (4 or 5)
          */
         if(readstate & (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_ELEMENTS) ) {
             // get the elements and put these in an array
-            QRegularExpressionMatch match = regex_vasp_version.match(QString(line.c_str()));
-            if (match.hasMatch()) {
+            if(contains_token(line, "vasp.")) {
+                QRegularExpressionMatch match = regex_vasp_version.match(qline);
+                if (match.hasMatch()) {
 
-                vasp_version = match.captured(1).toUInt();
-                unsigned int version_major = match.captured(2).toUInt();
-                unsigned int version_minor = match.captured(3).toUInt();
+                    vasp_version = match.captured(1).toUInt();
+                    unsigned int version_major = match.captured(2).toUInt();
+                    unsigned int version_minor = match.captured(3).toUInt();
 
-                qDebug() << "Detected VASP: " << vasp_version << "." << version_major << "." << version_minor;
+                    qDebug() << "Detected VASP: " << vasp_version << "." << version_major << "." << version_minor;
 
-                continue;
+                    continue;
+                }
             }
         }
 
@@ -452,13 +954,15 @@ std::vector<std::shared_ptr<Structure>> StructureLoader::load_outcar(const std::
          * Collect the elements
          */
         if(readstate & (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_ELEMENTS) ) {
-            QRegularExpressionMatch match = regex_element.match(QString(line.c_str()));
-            if (match.hasMatch()) {
-                elements.push_back(match.captured(2).toStdString());
+            if(contains_token(line, "VRHFIN")) {
+                QRegularExpressionMatch match = regex_element.match(qline);
+                if (match.hasMatch()) {
+                    elements.push_back(match.captured(2).toStdString());
 
-                qDebug() << "Captured element:" << match.captured(2);
+                    qDebug() << "Captured element:" << match.captured(2);
 
-                continue;
+                    continue;
+                }
             }
         }
 
@@ -466,27 +970,28 @@ std::vector<std::shared_ptr<Structure>> StructureLoader::load_outcar(const std::
          * Collect the number of ions of each element type
          */
         if(readstate & (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_IONS_PER_ELEMENT) ) {
+            if(contains_token(line, "ions per type")) {
+                QRegularExpressionMatch match = regex_ions_per_element.match(qline);
+                if (match.hasMatch()) {
+                    QString subline = match.captured(2);
+                    QStringList pieces = subline.split(whitespace);
+                    for(unsigned int i=0; i<pieces.size(); i++) {
+                        nr_atoms_per_elm.push_back(pieces[i].toUInt());
+                        nr_atoms += pieces[i].toUInt();
+                    }
 
-            QRegularExpressionMatch match = regex_ions_per_element.match(QString(line.c_str()));
-            if (match.hasMatch()) {
-                QString subline = match.captured(2);
-                QStringList pieces = subline.split(whitespace);
-                for(unsigned int i=0; i<pieces.size(); i++) {
-                    nr_atoms_per_elm.push_back(pieces[i].toUInt());
-                    nr_atoms += pieces[i].toUInt();
+                    // remove ions state and elements state
+                    readstate &= ~(1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_ELEMENTS);
+                    readstate &= ~(1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_IONS_PER_ELEMENT);
+                    readstate |= (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_LATTICE_VECTORS);
+
+                    // check if a vasp version has been identified, if not, terminate
+                    if(!(vasp_version == 4 || vasp_version == 5 || vasp_version == 6)) {
+                        throw std::runtime_error("Invalid VASP version encountered: " + QString::number(vasp_version).toStdString());
+                    }
+
+                    continue;
                 }
-
-                // remove ions state and elements state
-                readstate &= ~(1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_ELEMENTS);
-                readstate &= ~(1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_IONS_PER_ELEMENT);
-                readstate |= (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_LATTICE_VECTORS);
-
-                // check if a vasp version has been identified, if not, terminate
-                if(!(vasp_version == 4 || vasp_version == 5 || vasp_version == 6)) {
-                    throw std::runtime_error("Invalid VASP version encountered: " + QString::number(vasp_version).toStdString());
-                }
-
-                continue;
             }
         }
 
@@ -497,24 +1002,26 @@ std::vector<std::shared_ptr<Structure>> StructureLoader::load_outcar(const std::
          */
         if(readstate & (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_LATTICE_VECTORS) ) {
             // get the dimensionality of the unit cell
-            QRegularExpressionMatch match = regex_lattice_vectors.match(QString(line.c_str()));
-            if (match.hasMatch()) {
+            if(contains_token(line, "direct lattice vectors")) {
+                QRegularExpressionMatch match = regex_lattice_vectors.match(qline);
+                if (match.hasMatch()) {
 
-                // grab next tree lines
-                for(unsigned int i=0; i<3; i++) {
-                    std::getline(infile, line);
-                    QRegularExpressionMatch match2 = regex_grab_numbers.match(QString(line.c_str()));
-                    if (match2.hasMatch()) {
-                        unitcell(i,0) = match2.captured(1).toDouble();
-                        unitcell(i,1) = match2.captured(2).toDouble();
-                        unitcell(i,2) = match2.captured(3).toDouble();
+                    // grab next tree lines
+                    for(unsigned int i=0; i<3; i++) {
+                        std::getline(infile, line);
+                        double x, y, z, d4, d5, d6;
+                        if(parse_six_columns(line, x, y, z, d4, d5, d6)) {
+                            unitcell(i,0) = x;
+                            unitcell(i,1) = y;
+                            unitcell(i,2) = z;
+                        }
                     }
+
+                    readstate &= ~(1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_LATTICE_VECTORS);
+                    readstate |= (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_ATOMS);
+
+                    continue;
                 }
-
-                readstate &= ~(1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_LATTICE_VECTORS);
-                readstate |= (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_ATOMS);
-
-                continue;
             }
         }
 
@@ -522,16 +1029,18 @@ std::vector<std::shared_ptr<Structure>> StructureLoader::load_outcar(const std::
          * Collect the energy of the state
          */
         if(readstate & (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_ATOMS) ) {
-            QRegularExpressionMatch match = regex_grab_energy.match(QString(line.c_str()));
-            if (match.hasMatch()) {
+            if(contains_token(line, "energy  without entropy=")) {
+                QRegularExpressionMatch match = regex_grab_energy.match(qline);
+                if (match.hasMatch()) {
 
-                energies.push_back(match.captured(2).toDouble());
+                    energies.push_back(match.captured(2).toDouble());
 
-                if(vasp_version == 5) {
-                    nr_states++;
+                    if(vasp_version == 5) {
+                        nr_states++;
+                    }
+
+                    continue;
                 }
-
-                continue;
             }
         }
 
@@ -540,24 +1049,23 @@ std::vector<std::shared_ptr<Structure>> StructureLoader::load_outcar(const std::
          */
         if(readstate & (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_ATOMS) ) {
 
-            QRegularExpressionMatch match = regex_atoms.match(QString(line.c_str()));
+            if(!contains_token(line, "POSITION")) {
+                continue;
+            }
+
+            QRegularExpressionMatch match = regex_atoms.match(qline);
             if (match.hasMatch()) {
                 std::getline(infile, line); // skip dashed line
 
                 // create a new structure
                 structures.push_back(std::make_shared<Structure>(unitcell));
+                qDebug() << "Parsed ionic structure" << structures.size() << "from OUTCAR.";
 
                 for(unsigned i=0; i<nr_atoms_per_elm.size(); i++) {
                     for(unsigned int j=0; j<nr_atoms_per_elm[i]; j++) {
                         std::getline(infile, line);
-                        QRegularExpressionMatch match2 = regex_grab_numbers.match(QString(line.c_str()));
-                        if (match2.hasMatch()) {
-                            double x = match2.captured(1).toDouble();
-                            double y = match2.captured(2).toDouble();
-                            double z = match2.captured(3).toDouble();
-                            double fx = match2.captured(4).toDouble();
-                            double fy = match2.captured(5).toDouble();
-                            double fz = match2.captured(6).toDouble();
+                        double x, y, z, fx, fy, fz;
+                        if(parse_six_columns(line, x, y, z, fx, fy, fz)) {
 
                             unsigned int atnr = AtomSettings::get().get_atom_elnr(elements[i]);
                             structures.back()->add_atom(atnr, x, y, z, fx, fy, fz);
@@ -584,16 +1092,232 @@ std::vector<std::shared_ptr<Structure>> StructureLoader::load_outcar(const std::
         structures[i]->set_energy(energies[i]);
     }
 
+    if(!parsed_eigenmodes.empty()) {
+        if(structures.empty()) {
+            throw std::runtime_error("Encountered eigenmodes in OUTCAR without atomic structures.");
+        }
+
+        qDebug() << "Frequency calculation detected. Ionic structures parsed:" << structures.size()
+                 << "; eigenmodes parsed:" << parsed_eigenmodes.size();
+
+        // For frequency calculations, keep only the first ionic structure as reference geometry.
+        auto reference_structure = structures.front();
+        reference_structure->clear_eigenmodes();
+
+        unsigned int nr_added_modes = 0;
+        for(const auto& mode : parsed_eigenmodes) {
+            if(mode.eigenvectors.size() != nr_atoms) {
+                qDebug() << "Skipping incomplete eigenmode, expected" << nr_atoms
+                         << "vectors but found" << mode.eigenvectors.size();
+                continue;
+            }
+
+            reference_structure->add_eigenmode(mode.eigenvalue, mode.eigenvectors);
+            nr_added_modes++;
+        }
+
+        qDebug() << "Stored" << nr_added_modes << "eigenmodes on first ionic structure.";
+
+        structures = {reference_structure};
+
+        if(!energies.empty()) {
+            structures.front()->set_energy(energies.front());
+        }
+    }
+
     return structures;
 }
 
-/**
- * @brief      Load NEB binary
- *
- * @param[in]  filename  The filename
- *
- * @return     Bundled set of structures
- */
+    /**
+     * @brief      Load only the final ionic structure from an OUTCAR file
+     *
+     * @param[in]  filename  The filename
+     *
+     * @return     Last ionic structure
+     */
+std::shared_ptr<Structure> StructureLoader::load_outcar_last(const std::string& filename) {
+    qDebug() << "Loading final ionic step from OUTCAR: " << QString(filename.c_str());
+    std::ifstream infile(filename);
+
+    if(!infile.is_open()) {
+        throw std::runtime_error("Could not open " + filename);
+    }
+
+    unsigned int vasp_version = 0;
+
+    unsigned int readstate = 0;
+    readstate |= (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_ELEMENTS);
+    readstate |= (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_IONS_PER_ELEMENT);
+    readstate |= (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_OPEN);
+
+    unsigned int nr_atoms = 0;
+
+    MatrixUnitcell unitcell = MatrixUnitcell::Zero(3,3);
+    std::vector<std::string> elements;
+    std::vector<unsigned int> nr_atoms_per_elm;
+
+    bool has_energy = false;
+    double last_energy = 0.0;
+
+    std::streampos last_atoms_block_start = std::streampos(-1);
+
+    static QRegularExpression regex_vasp_version("^\\s*vasp.([0-9]).([0-9]+).([0-9]+).*$");
+    static QRegularExpression regex_element("^\\s*(VRHFIN\\s+=)([A-Za-z]+)\\s*:.*$");
+    static QRegularExpression regex_ions_per_element("^\\s*(ions per type =\\s+)([0-9 ]+)\\s*$");
+    static QRegularExpression regex_lattice_vectors("^\\s*direct lattice vectors.*$");
+    static QRegularExpression regex_atoms("^\\s*POSITION.*$");
+    static QRegularExpression regex_grab_energy("^\\s+energy  without entropy=\\s+([0-9.-]+)\\s+energy\\(sigma->0\\) =\\s+([0-9.-]+).*$");
+
+    std::string line;
+    while(true) {
+        const std::streampos line_start = infile.tellg();
+        if(!std::getline(infile, line)) {
+            break;
+        }
+
+        const QString qline(line.c_str());
+
+        if(readstate & (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_ELEMENTS)) {
+            if(contains_token(line, "vasp.")) {
+                QRegularExpressionMatch match = regex_vasp_version.match(qline);
+                if(match.hasMatch()) {
+                    vasp_version = match.captured(1).toUInt();
+                    continue;
+                }
+            }
+        }
+
+        if(readstate & (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_ELEMENTS)) {
+            if(contains_token(line, "VRHFIN")) {
+                QRegularExpressionMatch match = regex_element.match(qline);
+                if(match.hasMatch()) {
+                    elements.push_back(match.captured(2).toStdString());
+                    continue;
+                }
+            }
+        }
+
+        if(readstate & (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_IONS_PER_ELEMENT)) {
+            if(contains_token(line, "ions per type")) {
+                QRegularExpressionMatch match = regex_ions_per_element.match(qline);
+                if(match.hasMatch()) {
+                    QStringList pieces = match.captured(2).split(" ", Qt::SkipEmptyParts);
+                    nr_atoms_per_elm.clear();
+                    nr_atoms = 0;
+
+                    for(unsigned int i=0; i<pieces.size(); i++) {
+                        nr_atoms_per_elm.push_back(pieces[i].toUInt());
+                        nr_atoms += pieces[i].toUInt();
+                    }
+
+                    readstate &= ~(1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_ELEMENTS);
+                    readstate &= ~(1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_IONS_PER_ELEMENT);
+                    readstate |= (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_LATTICE_VECTORS);
+
+                    if(!(vasp_version == 4 || vasp_version == 5 || vasp_version == 6)) {
+                        throw std::runtime_error("Invalid VASP version encountered: " + QString::number(vasp_version).toStdString());
+                    }
+
+                    continue;
+                }
+            }
+        }
+
+        if(readstate & (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_LATTICE_VECTORS)) {
+            if(contains_token(line, "direct lattice vectors")) {
+                QRegularExpressionMatch match = regex_lattice_vectors.match(qline);
+                if(match.hasMatch()) {
+                    for(unsigned int i=0; i<3; i++) {
+                        if(!std::getline(infile, line)) {
+                            throw std::runtime_error("Unexpected end-of-file while reading OUTCAR lattice vectors.");
+                        }
+
+                        double x, y, z, d4, d5, d6;
+                        if(parse_six_columns(line, x, y, z, d4, d5, d6)) {
+                            unitcell(i,0) = x;
+                            unitcell(i,1) = y;
+                            unitcell(i,2) = z;
+                        }
+                    }
+
+                    readstate &= ~(1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_LATTICE_VECTORS);
+                    readstate |= (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_ATOMS);
+
+                    continue;
+                }
+            }
+        }
+
+        if(readstate & (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_ATOMS)) {
+            if(contains_token(line, "energy  without entropy=")) {
+                QRegularExpressionMatch match = regex_grab_energy.match(qline);
+                if(match.hasMatch()) {
+                    last_energy = match.captured(2).toDouble();
+                    has_energy = true;
+                    continue;
+                }
+            }
+        }
+
+        if(readstate & (1 << OutcarReadStatus::VASP_OUTCAR_READ_STATE_ATOMS)) {
+            if(contains_token(line, "POSITION")) {
+                QRegularExpressionMatch match = regex_atoms.match(qline);
+                if(match.hasMatch()) {
+                    last_atoms_block_start = line_start;
+                }
+            }
+        }
+    }
+
+    if(last_atoms_block_start == std::streampos(-1)) {
+        throw std::runtime_error("OUTCAR does not contain ionic images.");
+    }
+
+    infile.clear();
+    infile.seekg(last_atoms_block_start);
+    if(!infile.good()) {
+        throw std::runtime_error("Failed to seek to final ionic structure in OUTCAR.");
+    }
+
+    if(!std::getline(infile, line) || !regex_atoms.match(QString(line.c_str())).hasMatch()) {
+        throw std::runtime_error("Failed to read final ionic structure header from OUTCAR.");
+    }
+
+    if(!std::getline(infile, line)) {
+        throw std::runtime_error("Unexpected end-of-file before final ionic coordinates.");
+    }
+
+    auto final_structure = std::make_shared<Structure>(unitcell);
+    for(unsigned int i=0; i<nr_atoms_per_elm.size(); i++) {
+        for(unsigned int j=0; j<nr_atoms_per_elm[i]; j++) {
+            if(!std::getline(infile, line)) {
+                throw std::runtime_error("Unexpected end-of-file while reading final ionic coordinates.");
+            }
+
+            double x, y, z, fx, fy, fz;
+            if(!parse_six_columns(line, x, y, z, fx, fy, fz)) {
+                throw std::runtime_error("Invalid atomic position line in final ionic structure.");
+            }
+
+            unsigned int atnr = AtomSettings::get().get_atom_elnr(elements[i]);
+            final_structure->add_atom(atnr, x, y, z, fx, fy, fz);
+        }
+    }
+
+    if(has_energy) {
+        final_structure->set_energy(last_energy);
+    }
+
+    return final_structure;
+}
+
+    /**
+     * @brief      Load NEB binary
+     *
+     * @param[in]  filename  The filename
+     *
+     * @return     Bundled set of structures
+     */
 std::vector<std::vector<std::shared_ptr<Structure>>> StructureLoader::load_neb_bin(const std::string& filename) {
     std::ifstream infile(filename, std::ios::in | std::ios::binary);
 

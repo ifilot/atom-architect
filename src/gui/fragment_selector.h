@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -36,6 +36,9 @@
 #include "anaglyph_widget.h"
 #include "periodic_table.h"
 
+/**
+ * @brief FragmentSelector class.
+ */
 class FragmentSelector : public StructureInfoTab {
     Q_OBJECT
 
@@ -50,6 +53,11 @@ private:
     QPushButton *button_periodic_table;
 
 public:
+/**
+ * @brief FragmentSelector.
+ *
+ * @param parent Parameter parent.
+ */
     FragmentSelector(QWidget *parent = nullptr);
 
     /**
@@ -85,6 +93,11 @@ private:
     size_t string_levenshtein_distance(const std::string& str1, const std::string& str2);
 
 signals:
+/**
+ * @brief signal_new_fragment.
+ *
+ * @param fragment Parameter fragment.
+ */
     void signal_new_fragment(const Fragment& fragment);
 
 private slots:

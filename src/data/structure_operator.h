@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -24,6 +24,9 @@
 
 #include "structure.h"
 
+/**
+ * @brief StructureOperator class.
+ */
 class StructureOperator {
 private:
 
@@ -43,5 +46,10 @@ public:
     void add_fragment(Structure* structure, const Fragment& fragment, double distance);
 
 private:
+/**
+ * @brief build_z_align_matrix.
+ *
+ * @param target_direction Parameter target_direction.
+ */
     QMatrix4x4 build_z_align_matrix(const QVector3D& target_direction) const;
 };

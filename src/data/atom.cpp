@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -20,6 +20,19 @@
 
 #include "atom.h"
 
+/**
+ * @brief Atom.
+ *
+ * @param _atnr Parameter _atnr.
+ * @param _x Parameter _x.
+ * @param _y Parameter _y.
+ * @param _z Parameter _z.
+ * @param param Parameter param.
+ * @param param Parameter param.
+ * @param param Parameter param.
+ * @param param Parameter param.
+ * @param param Parameter param.
+ */
 Atom::Atom(unsigned int _atnr, double _x, double _y, double _z, unsigned int _atomtype) :
 atnr(_atnr),
 x(_x),
@@ -29,33 +42,33 @@ atomtype(_atomtype) {
 
 }
 
-/**
- * @brief      Distance between two atoms
- *
- * @param[in]  other  The other atom
- *
- * @return     Distance
- */
+    /**
+     * @brief      Distance between two atoms
+     *
+     * @param[in]  other  The other atom
+     *
+     * @return     Distance
+     */
 double Atom::dist(const Atom& other) const {
     return std::sqrt(this->dist2(other));
 }
 
-/**
- * @brief      Squared distance between two atoms
- *
- * @param[in]  other  The other atom
- *
- * @return     Squared distance
- */
+    /**
+     * @brief      Squared distance between two atoms
+     *
+     * @param[in]  other  The other atom
+     *
+     * @return     Squared distance
+     */
 double Atom::dist2(const Atom& other) const {
     return (this->x - other.x) * (this->x - other.x) +
            (this->y - other.y) * (this->y - other.y) +
            (this->z - other.z) * (this->z - other.z);
 }
 
-/**
- * @brief      Select this atom
- */
+    /**
+     * @brief      Select this atom
+     */
 void Atom::select_atom() {
     select++;
     select = select % 3;

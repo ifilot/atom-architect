@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -25,7 +25,7 @@
  *
  * @param      parent  The parent
  */
-ToolBarWidget::ToolBarWidget(QWidget* parent) :
+ToolBarWidget::ToolBarWidget(QWidget* parent, bool include_add_fragment) :
 QToolBar(parent) {
     // set vertical orientation
     this->setOrientation(Qt::Vertical);
@@ -34,17 +34,18 @@ QToolBar(parent) {
     setIconSize(QSize(32, 32));
     this->add_action("toggle_periodicity_xy", "expand_xy");
     this->add_action("toggle_periodicity_z", "expand_z");
-    // this->add_action("---");
-    this->add_action("add_fragment", "add_fragment");
+    if(include_add_fragment) {
+        this->add_action("add_fragment", "add_fragment");
+    }
 }
 
-/**
- * @brief      Get an action by action name
- *
- * @param[in]  action_name  The action name
- *
- * @return     The action.
- */
+    /**
+     * @brief      Get an action by action name
+     *
+     * @param[in]  action_name  The action name
+     *
+     * @return     The action.
+     */
 QAction* ToolBarWidget::get_action(const std::string& action_name) {
     auto got = this->actions.find(action_name);
     if(got != this->actions.end()) {
@@ -54,11 +55,11 @@ QAction* ToolBarWidget::get_action(const std::string& action_name) {
     }
 }
 
-/**
- * @brief      Add an action to the toolbar
- *
- * @param[in]  action_name  The action name
- */
+    /**
+     * @brief      Add an action to the toolbar
+     *
+     * @param[in]  action_name  The action name
+     */
 void ToolBarWidget::add_action(const std::string& action_name, const QString& icon) {
     if(action_name == "---") {
         this->addSeparator();

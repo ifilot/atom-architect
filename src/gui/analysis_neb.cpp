@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -20,6 +20,11 @@
 
 #include "analysis_neb.h"
 
+/**
+ * @brief AnalysisNEB.
+ *
+ * @param param Parameter param.
+ */
 AnalysisNEB::AnalysisNEB(QWidget* parent) : QWidget(parent) {
     this->setWindowIcon(QIcon(":/assets/icon/atom_architect_256.ico"));
 
@@ -69,9 +74,9 @@ AnalysisNEB::AnalysisNEB(QWidget* parent) : QWidget(parent) {
     this->resize(800,400);
 }
 
-/**
- * @brief      Update the graph
- */
+    /**
+     * @brief      Update the graph
+     */
 void AnalysisNEB::update_graph() {
     this->chart = new QChart();
 
@@ -186,9 +191,9 @@ void AnalysisNEB::update_graph() {
     this->update_chart_highlight();
 }
 
-/**
- * @brief      Open new OUTCAR file
- */
+    /**
+     * @brief      Open a new object file
+     */
 void AnalysisNEB::open() {
     QString filename = QFileDialog::getOpenFileName(this, tr("Open file"), "", tr("VASP NEB binary (*.bin)"));
 
@@ -200,8 +205,9 @@ void AnalysisNEB::open() {
 }
 
 /**
- * @brief load_file
- * @param filename
+ * @brief load_file.
+ *
+ * @param filename Parameter filename.
  */
 void AnalysisNEB::load_file(const QString& filename) {
     StructureLoader sl;
@@ -225,15 +231,16 @@ void AnalysisNEB::load_file(const QString& filename) {
     this->update_graph();
 }
 
-/**
- * @brief      Close window
- */
+    /**
+     * @brief      Close the application
+     */
 void AnalysisNEB::exit() {
     this->close();
 }
 
 /**
- * @brief      Cycle to previous structure
+ * @brief prev.
+ *
  */
 void AnalysisNEB::prev() {
     if(this->structures.size() == 0) {
@@ -258,7 +265,8 @@ void AnalysisNEB::prev() {
 }
 
 /**
- * @brief      Cycle to next structure
+ * @brief next.
+ *
  */
 void AnalysisNEB::next() {
     if(this->structures.size() == 0) {
@@ -281,9 +289,9 @@ void AnalysisNEB::next() {
     this->update_chart_highlight();
 }
 
-/**
- * @brief      Update labels based on current structure
- */
+    /**
+     * @brief      Update labels based on current structure
+     */
 void AnalysisNEB::update_labels() {
     for(unsigned int i=0; i<this->anaglyph_widgets.size(); i++) {
         this->image_labels[i]->setText(tr("Image: %1 (%2 eV)").arg(i+1).arg(this->structures[i][this->current_structure_id]->get_energy()));
@@ -292,9 +300,9 @@ void AnalysisNEB::update_labels() {
 }
 
 
-/**
- * @brief      Highlight point of interest on chart
- */
+    /**
+     * @brief      Highlight point of interest on chart
+     */
 void AnalysisNEB::update_chart_highlight() {
     for(unsigned int i=0; i<this->structures.front().size(); i++) {
         QPen pen = this->spline_series[i]->pen();
@@ -309,9 +317,9 @@ void AnalysisNEB::update_chart_highlight() {
     }
 }
 
-/**
- * @brief      Builds a menu.
- */
+    /**
+     * @brief      Builds a menu.
+     */
 void AnalysisNEB::build_menu() {
     // add drop down menu
     QMenuBar *menuBar = new QMenuBar;
@@ -391,9 +399,11 @@ void AnalysisNEB::build_menu() {
     this->layout()->setMenuBar(menuBar);
 }
 
-/**
- * @brief      Align cameras
- */
+    /**
+     * @brief      Sets the camera align.
+     *
+     * @param      action  The action
+     */
 void AnalysisNEB::set_camera_align(QAction* action) {
     for(AnaglyphWidget* aw : this->anaglyph_widgets) {
         aw->get_user_action()->set_camera_alignment(action->data().toInt());

@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -21,7 +21,7 @@
 #include "anaglyph_widget.h"
 
 #include <QAction>
-#include <QGuiApplication>
+#include <algorithm>
 #include <QMenu>
 #include <QOpenGLContext>
 #include <QTimer>
@@ -29,20 +29,27 @@
 
 namespace {
 
-// Prefer the palette of the containing widget (what the user actually sees),
-// fall back to this widget, then the application palette.
-QColor effectiveWindowBg(const QWidget* w) {
-    if (w && w->parentWidget()) {
-        return w->parentWidget()->palette().color(QPalette::Window);
-    }
-    if (w) {
-        return w->palette().color(QPalette::Window);
-    }
-    return QGuiApplication::palette().color(QPalette::Window);
+// Single-point viewport background colors for inactive/active viewports.
+constexpr const char* kViewportBackgroundInactiveHex = "#f0f0f0";
+constexpr const char* kViewportBackgroundActiveHex = "#f5f5f5";
+
+/**
+ * @brief viewportBackgroundColor.
+ *
+ * @param active_highlight Parameter active_highlight.
+ */
+QColor viewportBackgroundColor(bool active_highlight) {
+    return QColor(active_highlight ? kViewportBackgroundActiveHex
+                                   : kViewportBackgroundInactiveHex);
 }
 
 } // namespace
 
+/**
+ * @brief AnaglyphWidget.
+ *
+ * @param parent Parameter parent.
+ */
 AnaglyphWidget::AnaglyphWidget(QWidget* parent)
     : QOpenGLWidget(parent)
 {
@@ -84,27 +91,45 @@ AnaglyphWidget::AnaglyphWidget(QWidget* parent)
     setAttribute(Qt::WA_NoSystemBackground);
 }
 
+/**
+ * @brief ~AnaglyphWidget.
+ *
+ */
 AnaglyphWidget::~AnaglyphWidget()
 {
     cleanup();
 }
 
+    /**
+     * @brief minimumSizeHint.
+     *
+     */
 QSize AnaglyphWidget::minimumSizeHint() const
 {
     return QSize(50, 50);
 }
 
+    /**
+     * @brief sizeHint.
+     *
+     */
 QSize AnaglyphWidget::sizeHint() const
 {
     return QSize(400, 400);
 }
 
+    /**
+     * @brief      Clean the anaglyph class
+     */
 void AnaglyphWidget::cleanup()
 {
     makeCurrent();
     doneCurrent();
 }
 
+    /**
+     * @brief      Initialize OpenGL environment
+     */
 void AnaglyphWidget::initializeGL()
 {
     qDebug() << "Connecting to OpenGL Context";
@@ -115,7 +140,7 @@ void AnaglyphWidget::initializeGL()
     initializeOpenGLFunctions();
 
     // Clear color is set every frame where needed; keep a sane initial value here.
-    const QColor bg = effectiveWindowBg(this);
+    const QColor bg = viewportBackgroundColor(false);
     glClearColor(bg.redF(), bg.greenF(), bg.blueF(), 1.0f);
 
     qDebug() << "Load shaders";
@@ -136,6 +161,9 @@ void AnaglyphWidget::initializeGL()
     emit(opengl_ready());
 }
 
+    /**
+     * @brief      Render scene
+     */
 void AnaglyphWidget::paintGL()
 {
     // Coordinate axes to its own framebuffer
@@ -150,9 +178,7 @@ void AnaglyphWidget::paintGL()
         glEnable(GL_DEPTH_TEST);
 
         // Transparent background (will be alpha-blended later)
-        QColor bg = parentWidget()
-            ? parentWidget()->palette().color(QPalette::Window)
-            : palette().color(QPalette::Window);
+        const QColor bg = viewportBackgroundColor(active_highlight_);
 
         glClearColor(bg.redF(), bg.greenF(), bg.blueF(), 0.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -202,6 +228,9 @@ void AnaglyphWidget::paintGL()
     }
 }
 
+    /**
+     * @brief      Paint the models in the models vector to the screen
+     */
 void AnaglyphWidget::draw_structure()
 {
     if (!structure) {
@@ -210,6 +239,11 @@ void AnaglyphWidget::draw_structure()
     structure_renderer->draw(structure.get(), flag_show_periodicity_xy, flag_show_periodicity_z);
 }
 
+    /**
+     * @brief      Sets the structure.
+     *
+     * @param[in]  _structure  The structure
+     */
 void AnaglyphWidget::set_structure(const std::shared_ptr<Structure>& s)
 {
     structure = s;
@@ -218,11 +252,31 @@ void AnaglyphWidget::set_structure(const std::shared_ptr<Structure>& s)
 
     VectorPosition z = VectorPosition::Ones(3);
     auto p = structure->get_unitcell() * z * 1.5;
-    scene->camera_position = QVector3D(0.0f, -p.norm(), 0.0f);
+    default_camera_distance_ = std::max(5.0f, static_cast<float>(p.norm()));
+    scene->camera_position = QVector3D(0.0f, -default_camera_distance_, 0.0f);
+    view_pan_translation_ = QVector3D(0.0f, 0.0f, 0.0f);
+    scene->camera_mode = CameraMode::PERSPECTIVE;
+    reset_matrices();
 
     update();
 }
 
+/**
+ * @brief set_active_highlight.
+ *
+ * @param active Parameter active.
+ */
+void AnaglyphWidget::set_active_highlight(bool active)
+{
+    this->active_highlight_ = active;
+    this->update();
+}
+
+/**
+ * @brief set_structure_conservative.
+ *
+ * @param structure Parameter structure.
+ */
 void AnaglyphWidget::set_structure_conservative(const std::shared_ptr<Structure>& s)
 {
     structure = s;
@@ -230,6 +284,12 @@ void AnaglyphWidget::set_structure_conservative(const std::shared_ptr<Structure>
     update();
 }
 
+    /**
+     * @brief      Resize window
+     *
+     * @param[in]  width   screen width
+     * @param[in]  height  screen height
+     */
 void AnaglyphWidget::resizeGL(int w, int h)
 {
     QOpenGLExtraFunctions* f =
@@ -304,6 +364,11 @@ void AnaglyphWidget::resizeGL(int w, int h)
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
+/**
+ * @brief mousePressEvent.
+ *
+ * @param event Parameter event.
+ */
 void AnaglyphWidget::mousePressEvent(QMouseEvent* event)
 {
     if (event->buttons() & Qt::LeftButton) {
@@ -317,6 +382,11 @@ void AnaglyphWidget::mousePressEvent(QMouseEvent* event)
             QVector3D ray_origin;
             QVector3D ray_direction;
             scene->calculate_ray(event->pos(), &ray_origin, &ray_direction);
+
+            // Panning translates the camera in world space while keeping
+            // orientation fixed, so the ray origin must include the same
+            // world-space pan translation used for rendering.
+            ray_origin += view_pan_translation_;
 
             const int selected_atom = get_atom_raycast(ray_origin, ray_direction);
             if (selected_atom != -1) {
@@ -336,8 +406,18 @@ void AnaglyphWidget::mousePressEvent(QMouseEvent* event)
         }
 #endif
     }
+
+    if (event->buttons() & Qt::MiddleButton) {
+        middle_mouse_pan_flag = true;
+        pan_last_pos = event->pos();
+    }
 }
 
+/**
+ * @brief mouseReleaseEvent.
+ *
+ * @param event Parameter event.
+ */
 void AnaglyphWidget::mouseReleaseEvent(QMouseEvent* event)
 {
     if (arcball_rotation_flag && !(event->buttons() & Qt::LeftButton)) {
@@ -347,8 +427,17 @@ void AnaglyphWidget::mouseReleaseEvent(QMouseEvent* event)
         scene->arcball_rotation.setToIdentity();
         arcball_rotation_flag = false;
     }
+
+    if (middle_mouse_pan_flag && !(event->buttons() & Qt::MiddleButton)) {
+        middle_mouse_pan_flag = false;
+    }
 }
 
+/**
+ * @brief mouseMoveEvent.
+ *
+ * @param event Parameter event.
+ */
 void AnaglyphWidget::mouseMoveEvent(QMouseEvent* event)
 {
     // Qt 5: widget-local logical coordinates
@@ -361,6 +450,30 @@ void AnaglyphWidget::mouseMoveEvent(QMouseEvent* event)
     user_action->update(logicalPos, dpr);
 
     setFocus(Qt::MouseFocusReason);
+
+    if (middle_mouse_pan_flag) {
+        const QPoint current_pos = event->pos();
+        const QPoint delta = current_pos - pan_last_pos;
+        pan_last_pos = current_pos;
+
+        const QVector3D eye = scene->camera_position + view_pan_translation_;
+        const QVector3D center = QVector3D(0.0f, 1.0f, 0.0f) + view_pan_translation_;
+        const QVector3D forward = (center - eye).normalized();
+
+        QVector3D up_world(0.0f, 0.0f, 1.0f);
+        QVector3D right = QVector3D::crossProduct(forward, up_world);
+        if (right.lengthSquared() < 1e-8f) {
+            right = QVector3D(1.0f, 0.0f, 0.0f);
+        } else {
+            right.normalize();
+        }
+        const QVector3D up_plane = QVector3D::crossProduct(right, forward).normalized();
+
+        const float pan_speed = std::max(0.002f, -scene->camera_position[1] * 0.0015f);
+        view_pan_translation_ += (-float(delta.x()) * pan_speed) * right;
+        view_pan_translation_ += ( float(delta.y()) * pan_speed) * up_plane;
+        update();
+    }
 
     if (!arcball_rotation_flag) {
         return;
@@ -396,6 +509,12 @@ void AnaglyphWidget::mouseMoveEvent(QMouseEvent* event)
     set_arcball_rotation(qRadiansToDegrees(angle), axis_model_space);
 }
 
+    /**
+     * @brief      Calculate the arcball vector for mouse rotation
+     *
+     * @param[in]  x, y  The mouse position
+     * @param[out] P  The arcball vector
+     */
 QVector3D AnaglyphWidget::get_arcball_vector(int x, int y)
 {
     QVector3D p( 1.0f * float(x) / float(geometry().width())  * 2.0f - 1.0f,
@@ -412,6 +531,11 @@ QVector3D AnaglyphWidget::get_arcball_vector(int x, int y)
     return p;
 }
 
+    /**
+     * @brief      Set the arcball vector rotation (angle and vector) to model and updates
+     *
+     * @param      arcball_angle, arcball_vector
+     */
 void AnaglyphWidget::set_arcball_rotation(float arcball_angle, const QVector4D& arcball_vector)
 {
     scene->arcball_rotation.setToIdentity();
@@ -419,6 +543,11 @@ void AnaglyphWidget::set_arcball_rotation(float arcball_angle, const QVector4D& 
     update();
 }
 
+/**
+ * @brief wheelEvent.
+ *
+ * @param event Parameter event.
+ */
 void AnaglyphWidget::wheelEvent(QWheelEvent* event)
 {
     scene->camera_position += event->angleDelta().ry() * 0.01f * QVector3D(0, 1, 0);
@@ -441,12 +570,40 @@ void AnaglyphWidget::wheelEvent(QWheelEvent* event)
     update();
 }
 
+/**
+ * @brief window_move_event.
+ *
+ */
 void AnaglyphWidget::window_move_event()
 {
     top_left = mapToGlobal(QPoint(0, 0));
     update();
 }
 
+/**
+ * @brief reset_view.
+ *
+ */
+void AnaglyphWidget::reset_view()
+{
+    view_pan_translation_ = QVector3D(0.0f, 0.0f, 0.0f);
+    scene->camera_position = QVector3D(0.0f, -default_camera_distance_, 0.0f);
+    scene->camera_mode = CameraMode::PERSPECTIVE;
+
+    const float w = float(scene->canvas_width);
+    const float h = float(scene->canvas_height);
+    if (h > 0.0f) {
+        scene->projection.setToIdentity();
+        scene->projection.perspective(45.0f, w / h, 0.01f, 1000.0f);
+    }
+
+    reset_matrices();
+    update();
+}
+
+    /**
+     * @brief      Set stereo projection
+     */
 void AnaglyphWidget::set_stereo(QString stereo_name)
 {
     stereographic_type_name = stereo_name.startsWith("stereo") ? stereo_name : "NONE";
@@ -455,6 +612,9 @@ void AnaglyphWidget::set_stereo(QString stereo_name)
 
 /* PRIVATE */
 
+    /**
+     * @brief      Load OpenGL shaders
+     */
 void AnaglyphWidget::load_shaders()
 {
     shader_manager->create_shader_program("model_shader", ShaderProgramType::ModelShader,
@@ -489,6 +649,9 @@ void AnaglyphWidget::load_shaders()
                                          ":/assets/shaders/simplecanvas.vs", ":/assets/shaders/simplecanvas.fs");
 }
 
+    /**
+     * @brief      Build a canvas used for stereographic rendering
+     */
 void AnaglyphWidget::build_framebuffers()
 {
     QOpenGLExtraFunctions* f = QOpenGLContext::currentContext()->extraFunctions();
@@ -593,6 +756,9 @@ void AnaglyphWidget::build_framebuffers()
     quad_vao.release();
 }
 
+    /**
+     * @brief      Reset rotation matrices
+     */
 void AnaglyphWidget::reset_matrices()
 {
     scene->rotation_matrix.setToIdentity();
@@ -601,6 +767,15 @@ void AnaglyphWidget::reset_matrices()
     scene->arcball_rotation.setToIdentity();
 }
 
+    /**
+     * @brief      get the closest atom from a raycast
+     *
+     * @param[in]  ray_origin  The ray origin
+     * @param[in]  ray_vector  The ray vector
+     * @param[in]  rot         rotation matrix
+     *
+     * @return     the atom, -1 if no atom is hit
+     */
 int AnaglyphWidget::get_atom_raycast(const QVector3D& ray_origin, const QVector3D& ray_vector)
 {
     if (!structure) {
@@ -674,6 +849,9 @@ int AnaglyphWidget::get_atom_raycast(const QVector3D& ray_origin, const QVector3
     return selected_atom;
 }
 
+    /**
+     * @brief      Regular draw call
+     */
 void AnaglyphWidget::paint_regular()
 {
     QOpenGLExtraFunctions* f = QOpenGLContext::currentContext()->extraFunctions();
@@ -686,9 +864,10 @@ void AnaglyphWidget::paint_regular()
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
     // View matrix
-    const QVector3D lookat(0.0f, 1.0f, 0.0f);
+    const QVector3D eye = scene->camera_position + view_pan_translation_;
+    const QVector3D lookat = QVector3D(0.0f, 1.0f, 0.0f) + view_pan_translation_;
     scene->view.setToIdentity();
-    scene->view.lookAt(scene->camera_position, lookat, QVector3D(0.0f, 0.0f, 1.0f));
+    scene->view.lookAt(eye, lookat, QVector3D(0.0f, 0.0f, 1.0f));
 
     // ============================================================
     // SILHOUETTE PASS (MSAA)
@@ -718,9 +897,7 @@ void AnaglyphWidget::paint_regular()
     glBindFramebuffer(GL_FRAMEBUFFER, msaa_fbo[FrameBuffer::STRUCTURE_NORMAL]);
     glEnable(GL_DEPTH_TEST);
 
-    QColor bg = parentWidget()
-        ? parentWidget()->palette().color(QPalette::Window)
-        : palette().color(QPalette::Window);
+    const QColor bg = viewportBackgroundColor(active_highlight_);
 
     glClearColor(bg.redF(), bg.greenF(), bg.blueF(), 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -761,6 +938,9 @@ void AnaglyphWidget::paint_regular()
     canvas_shader->release();
 }
 
+    /**
+     * @brief      Stereographic draw call
+     */
 void AnaglyphWidget::paint_stereographic()
 {
     QOpenGLExtraFunctions* f = QOpenGLContext::currentContext()->extraFunctions();
@@ -771,7 +951,11 @@ void AnaglyphWidget::paint_stereographic()
     glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
     glBlendEquation(GL_FUNC_ADD);
 
-    const QVector3D lookat(0.0f, 1.0f, 0.0f);
+    const QColor bg = viewportBackgroundColor(active_highlight_);
+    glClearColor(bg.redF(), bg.greenF(), bg.blueF(), 1.0f);
+
+    const QVector3D eye_center = scene->camera_position + view_pan_translation_;
+    const QVector3D lookat = QVector3D(0.0f, 1.0f, 0.0f) + view_pan_translation_;
     const float dist = 1.0f - scene->camera_position[1];
     const float eye_sep = dist / 30.0f;
 
@@ -779,7 +963,7 @@ void AnaglyphWidget::paint_stereographic()
     // LEFT SILHOUETTE (MSAA)
     // ------------------------------------------------------------
     scene->view.setToIdentity();
-    scene->view.lookAt(scene->camera_position - QVector3D(eye_sep / 2.0f, 0, 0),
+    scene->view.lookAt(eye_center - QVector3D(eye_sep / 2.0f, 0, 0),
                        lookat, QVector3D(0, 0, 1));
 
     glBindFramebuffer(GL_FRAMEBUFFER, msaa_fbo[FrameBuffer::SILHOUETTE_LEFT]);
@@ -798,7 +982,7 @@ void AnaglyphWidget::paint_stereographic()
     // RIGHT SILHOUETTE (MSAA)
     // ------------------------------------------------------------
     scene->view.setToIdentity();
-    scene->view.lookAt(scene->camera_position + QVector3D(eye_sep / 2.0f, 0, 0),
+    scene->view.lookAt(eye_center + QVector3D(eye_sep / 2.0f, 0, 0),
                        lookat, QVector3D(0, 0, 1));
 
     glBindFramebuffer(GL_FRAMEBUFFER, msaa_fbo[FrameBuffer::SILHOUETTE_RIGHT]);
@@ -817,7 +1001,7 @@ void AnaglyphWidget::paint_stereographic()
     // LEFT STRUCTURE (MSAA)
     // ------------------------------------------------------------
     scene->view.setToIdentity();
-    scene->view.lookAt(scene->camera_position - QVector3D(eye_sep / 2.0f, 0, 0),
+    scene->view.lookAt(eye_center - QVector3D(eye_sep / 2.0f, 0, 0),
                        lookat, QVector3D(0, 0, 1));
 
     glBindFramebuffer(GL_FRAMEBUFFER, msaa_fbo[FrameBuffer::STRUCTURE_LEFT]);
@@ -834,7 +1018,7 @@ void AnaglyphWidget::paint_stereographic()
     // RIGHT STRUCTURE (MSAA)
     // ------------------------------------------------------------
     scene->view.setToIdentity();
-    scene->view.lookAt(scene->camera_position + QVector3D(eye_sep / 2.0f, 0, 0),
+    scene->view.lookAt(eye_center + QVector3D(eye_sep / 2.0f, 0, 0),
                        lookat, QVector3D(0, 0, 1));
 
     glBindFramebuffer(GL_FRAMEBUFFER, msaa_fbo[FrameBuffer::STRUCTURE_RIGHT]);
@@ -873,6 +1057,11 @@ void AnaglyphWidget::paint_stereographic()
     stereo_shader->release();
 }
 
+    /**
+     * @brief      Open menu for atom
+     *
+     * @param[in]  pos   The position
+     */
 void AnaglyphWidget::custom_menu_requested(QPoint pos)
 {
     auto* menu = new QMenu(this);
@@ -881,6 +1070,9 @@ void AnaglyphWidget::custom_menu_requested(QPoint pos)
     menu->popup(pos);
 }
 
+    /**
+     * @brief      Update the scene
+     */
 void AnaglyphWidget::call_update()
 {
     if (structure && user_action &&
@@ -891,6 +1083,9 @@ void AnaglyphWidget::call_update()
     update();
 }
 
+    /**
+     * @brief Transmit interaction/status message.
+     */
 void AnaglyphWidget::transmit_message(const QString& text)
 {
     emit signal_interaction_message(text);

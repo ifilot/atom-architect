@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -30,6 +30,9 @@
 #include <QTimer>
 #include <QIcon>
 
+/**
+ * @brief LogWindow class.
+ */
 class LogWindow : public QWidget {
 
 Q_OBJECT
@@ -40,11 +43,24 @@ private:
     int linesread = 0;
 
 public:
+    /**
+     * @brief LogWindow.
+     *
+     */
     LogWindow(){}
 
+/**
+ * @brief LogWindow.
+ *
+ * @param _log_messages Parameter _log_messages.
+ */
     LogWindow(const std::shared_ptr<QStringList>& _log_messages);
 
 private slots:
+/**
+ * @brief update_log.
+ *
+ */
     void update_log();
 };
 

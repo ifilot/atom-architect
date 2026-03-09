@@ -1,7 +1,7 @@
 /****************************************************************************
  *                                                                          *
  *   ATOM ARCHITECT                                                         *
- *   Copyright (C) 2020-2024 Ivo Filot <i.a.w.filot@tue.nl>                 *
+ *   Copyright (C) 2020-2026 Ivo Filot <i.a.w.filot@tue.nl>                 *
  *                                                                          *
  *   This program is free software: you can redistribute it and/or modify   *
  *   it under the terms of the GNU Lesser General Public License as         *
@@ -28,6 +28,9 @@
 #include "anaglyph_widget.h"
 #include "../data/structure_loader.h"
 
+/**
+ * @brief AnalysisNEB class.
+ */
 class AnalysisNEB : public QWidget {
     Q_OBJECT
 
@@ -55,8 +58,18 @@ private:
     std::vector<QSplineSeries*> spline_series;
 
 public:
+/**
+ * @brief AnalysisNEB.
+ *
+ * @param parent Parameter parent.
+ */
     AnalysisNEB(QWidget* parent = nullptr);
 
+    /**
+     * @brief set_structures.
+     *
+     * @param _structures Parameter _structures.
+     */
     inline void set_structures(const std::vector<std::vector<std::shared_ptr<Structure>>>& _structures) {
         this->structures = _structures;
     }
