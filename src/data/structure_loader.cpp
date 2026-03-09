@@ -95,8 +95,19 @@ inline bool parse_six_columns(const std::string& line,
                               double& c3,
                               double& c4,
                               double& c5,
-                              double& c6) {
-    return std::sscanf(line.c_str(), " %lf %lf %lf %lf %lf %lf", &c1, &c2, &c3, &c4, &c5, &c6) == 6;
+                              double& c6)
+{
+    const char* p = line.c_str();
+    char* end;
+
+    c1 = std::strtod(p, &end); if (p == end) return false; p = end;
+    c2 = std::strtod(p, &end); if (p == end) return false; p = end;
+    c3 = std::strtod(p, &end); if (p == end) return false; p = end;
+    c4 = std::strtod(p, &end); if (p == end) return false; p = end;
+    c5 = std::strtod(p, &end); if (p == end) return false; p = end;
+    c6 = std::strtod(p, &end); if (p == end) return false;
+
+    return true;
 }
 
 }
