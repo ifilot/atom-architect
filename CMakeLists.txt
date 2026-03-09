@@ -24,6 +24,33 @@ find_package(Qt5 REQUIRED COMPONENTS Widgets Charts)
 find_package(Eigen3 REQUIRED)
 find_package(glm REQUIRED)
 
+set(ATOM_ARCHITECT_DATA_SOURCES
+    src/data/atom_settings.cpp
+    src/data/atom.cpp
+    src/data/bond.cpp
+    src/data/fragment.cpp
+    src/data/neb_calculation_loader.cpp
+    src/data/model.cpp
+    src/data/model_loader.cpp
+    src/data/structure.cpp
+    src/data/structure_loader.cpp
+    src/data/structure_saver.cpp
+    src/data/structure_operator.cpp
+)
+
+add_library(atom-architect-data STATIC
+    ${ATOM_ARCHITECT_DATA_SOURCES}
+    resources.qrc
+)
+
+target_link_libraries(atom-architect-data PUBLIC
+    Qt5::Core
+    Qt5::Widgets
+    Qt5::Charts
+    Eigen3::Eigen
+    glm::glm
+)
+
 add_executable(atom-architect WIN32
     src/main.cpp
     src/gui/anaglyph_widget.cpp
@@ -44,19 +71,7 @@ add_executable(atom-architect WIN32
     src/gui/structure_analysis_graph.cpp
     src/gui/analysis_neb.cpp
     src/gui/logwindow.cpp
-    src/data/atom_settings.cpp
-    src/data/atom.cpp
-    src/data/bond.cpp
-    src/data/fragment.cpp
-    src/data/neb_calculation_loader.cpp
-    src/data/model.cpp
-    src/data/model_loader.cpp
-    src/data/structure.cpp
-    src/data/structure_loader.cpp
-    src/data/structure_saver.cpp
-    src/data/structure_operator.cpp
     src/atomarchitectapplication.cpp
-    resources.qrc
 )
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
@@ -72,7 +87,31 @@ target_link_libraries(atom-architect PRIVATE
     Qt5::Charts
     Eigen3::Eigen
     glm::glm
+    atom-architect-data
 )
+
+include(CTest)
+if(BUILD_TESTING)
+    include(FetchContent)
+    FetchContent_Declare(
+        Catch2
+        GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+        GIT_TAG v3.7.1
+    )
+    FetchContent_MakeAvailable(Catch2)
+
+    add_executable(atom-architect-tests
+        tests/data_unit_tests.cpp
+    )
+
+    target_link_libraries(atom-architect-tests PRIVATE
+        Catch2::Catch2WithMain
+        atom-architect-data
+    )
+
+    include(Catch)
+    catch_discover_tests(atom-architect-tests)
+endif()
 
 if (MINGW)
     target_link_libraries(atom-architect PRIVATE ws2_32 bcrypt)
