@@ -1021,7 +1021,19 @@ void InterfaceWindow::decrement_structure_stack_pointer() {
      * @brief Copy structure from GeometryAnalysis window to Editor
      */
 void InterfaceWindow::load_structure_from_geometry_analysis() {
-    this->anaglyph_widget->set_structure(
-        this->structureAnalysis->viewer()->get_anaglyph_widget()->get_structure()->clone_for_view()
-    );
+    auto structure = this->structureAnalysis->viewer()->get_anaglyph_widget()->get_structure();
+    if(!structure) {
+        return;
+    }
+
+    auto editor_structure = structure->clone_for_view();
+
+    this->structure_stack.clear();
+    this->structure_stack.push_back(editor_structure);
+    this->structure_stack_pointer = 0;
+
+    emit new_file_loaded();
+
+    this->anaglyph_widget->set_structure(editor_structure);
+    this->structure_info_widget->set_structure(editor_structure);
 }
