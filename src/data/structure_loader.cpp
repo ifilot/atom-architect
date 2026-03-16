@@ -26,7 +26,6 @@
 #include <array>
 #include <cmath>
 #include <cstdio>
-#include <limits>
 
 namespace {
 /**
@@ -40,32 +39,6 @@ int leading_spaces(const std::string& value) {
         count++;
     }
     return count;
-}
-
-/**
- * @brief sorted_mae.
- *
- * @param lhs Parameter lhs.
- * @param rhs Parameter rhs.
- */
-double sorted_mae(const std::vector<double>& lhs,
-                  const std::vector<double>& rhs) {
-    const size_t n = std::min(lhs.size(), rhs.size());
-    if(n == 0) {
-        return std::numeric_limits<double>::infinity();
-    }
-
-    std::vector<double> a(lhs.begin(), lhs.begin() + n);
-    std::vector<double> b(rhs.begin(), rhs.begin() + n);
-    std::sort(a.begin(), a.end());
-    std::sort(b.begin(), b.end());
-
-    double mae = 0.0;
-    for(size_t i=0; i<n; i++) {
-        mae += std::abs(a[i] - b[i]);
-    }
-
-    return mae / (double)n;
 }
 
 /**
@@ -173,7 +146,6 @@ std::vector<std::shared_ptr<Structure>> StructureLoader::load_yaml(const std::st
         None,
         Lattice,
         Coordinates,
-        Frequencies,
         DofLabels,
         Hessian
     };
@@ -188,7 +160,6 @@ std::vector<std::shared_ptr<Structure>> StructureLoader::load_yaml(const std::st
         double z = 0.0;
     };
     std::vector<ParsedAtom> coordinates_direct;
-    std::vector<double> frequencies_cm1;
     std::vector<std::string> dof_labels;
     std::vector<std::vector<double>> hessian_rows;
     std::vector<double> current_hessian_row;
@@ -223,10 +194,6 @@ std::vector<std::shared_ptr<Structure>> StructureLoader::load_yaml(const std::st
             mode = ParseMode::Coordinates;
             continue;
         }
-        if(trimmed == "frequencies_cm-1:") {
-            mode = ParseMode::Frequencies;
-            continue;
-        }
         if(trimmed == "dof_labels:") {
             mode = ParseMode::DofLabels;
             continue;
@@ -246,7 +213,6 @@ std::vector<std::shared_ptr<Structure>> StructureLoader::load_yaml(const std::st
         if(trimmed.endsWith(":") &&
            trimmed != "lattice_vectors:" &&
            trimmed != "coordinates_direct:" &&
-           trimmed != "frequencies_cm-1:" &&
            trimmed != "dof_labels:" &&
            trimmed != "matrix:") {
             mode = ParseMode::None;
@@ -291,13 +257,6 @@ std::vector<std::shared_ptr<Structure>> StructureLoader::load_yaml(const std::st
                     parts[2].toDouble(),
                     parts[3].toDouble()
                 });
-                break;
-            }
-
-            case ParseMode::Frequencies: {
-                if(trimmed.startsWith("- ")) {
-                    frequencies_cm1.push_back(trimmed.mid(2).trimmed().toDouble());
-                }
                 break;
             }
 
@@ -433,43 +392,13 @@ std::vector<std::shared_ptr<Structure>> StructureLoader::load_yaml(const std::st
         constexpr double HZ_TO_THZ = 1.0e-12;
 
         std::vector<double> computed_freq_cm1;
-        std::vector<double> computed_freq_cm1_flipped;
         computed_freq_cm1.reserve(n);
-        computed_freq_cm1_flipped.reserve(n);
 
-        size_t negative_count_normal = 0;
-        size_t negative_count_flipped = 0;
 
         for(size_t mode_idx=0; mode_idx<n; mode_idx++) {
             const double eig = solver.eigenvalues()((int)mode_idx);
             const double signed_cm1 = (eig >= 0.0 ? 1.0 : -1.0) * std::sqrt(std::abs(eig)) * SQRT_UNIT_TO_HZ * HZ_TO_THZ * 33.35640951981521;
-            const double signed_cm1_flipped = -signed_cm1;
-
             computed_freq_cm1.push_back(signed_cm1);
-            computed_freq_cm1_flipped.push_back(signed_cm1_flipped);
-
-            if(signed_cm1 < -1e-8) {
-                negative_count_normal++;
-            }
-            if(signed_cm1_flipped < -1e-8) {
-                negative_count_flipped++;
-            }
-        }
-
-        bool flip_frequency_sign = false;
-        if(!frequencies_cm1.empty()) {
-            const double mae_normal = sorted_mae(computed_freq_cm1, frequencies_cm1);
-            const double mae_flipped = sorted_mae(computed_freq_cm1_flipped, frequencies_cm1);
-            flip_frequency_sign = (mae_flipped + 1e-12 < mae_normal);
-
-            qDebug() << "PyMKMKit YAML reconstructed frequency MAE (cm^-1), normal sign:" << mae_normal
-                     << ", flipped sign:" << mae_flipped
-                     << ", selected:" << (flip_frequency_sign ? "flipped" : "normal");
-        } else {
-            flip_frequency_sign = (negative_count_flipped < negative_count_normal);
-            qDebug() << "PyMKMKit YAML sign heuristic based on negative-mode count, normal/flipped:"
-                     << negative_count_normal << "/" << negative_count_flipped
-                     << ", selected:" << (flip_frequency_sign ? "flipped" : "normal");
         }
 
         structure->clear_eigenmodes();
@@ -494,8 +423,7 @@ std::vector<std::shared_ptr<Structure>> StructureLoader::load_yaml(const std::st
                 }
             }
 
-            const double freq_cm1 = flip_frequency_sign ? computed_freq_cm1_flipped[mode_idx]
-                                                        : computed_freq_cm1[mode_idx];
+            const double freq_cm1 = computed_freq_cm1[mode_idx];
             const double freq_thz = freq_cm1 / 33.35640951981521;
 
             structure->add_eigenmode(freq_thz, mode_vectors);
